@@ -1,0 +1,501 @@
+{
+  "users": [
+    {
+      "id": "user-001",
+      "name": "Ahmad Rizaldi",
+      "email": "a.rizaldi@webank.id",
+      "role": "risk_analyst",
+      "avatar_seed": "AR"
+    },
+    {
+      "id": "user-002",
+      "name": "Siti Nurhaliza",
+      "email": "s.nurhaliza@webank.id",
+      "role": "risk_analyst",
+      "avatar_seed": "SN"
+    },
+    {
+      "id": "user-003",
+      "name": "Budi Santoso",
+      "email": "b.santoso@webank.id",
+      "role": "tester",
+      "avatar_seed": "BS"
+    },
+    {
+      "id": "user-004",
+      "name": "Dewi Rahayu",
+      "email": "d.rahayu@webank.id",
+      "role": "tester",
+      "avatar_seed": "DR"
+    },
+    {
+      "id": "user-005",
+      "name": "Kevin Lim",
+      "email": "k.lim@webank.id",
+      "role": "admin",
+      "avatar_seed": "KL"
+    }
+  ],
+  "engine_modules": [
+    {
+      "id": "module-001",
+      "module_name": "loan_limit_rules",
+      "description": "Calculates maximum loan limit for a customer based on income bracket, employment type, tenure, and credit score.",
+      "updated_at": "2026-04-10T08:22:00Z",
+      "updated_by": "user-001",
+      "current_sql_code": "-- SCHEMATIC PLACEHOLDER — Phase 2 will sync with live risk engine on SQL Server\n-- Module: loan_limit_rules\n-- Last reviewed: 2026-04-10\n\nCREATE OR ALTER PROCEDURE [risk].[usp_CalculateLoanLimit]\n    @p_customer_id      BIGINT,\n    @p_monthly_income   DECIMAL(18, 2),\n    @p_employment_type  NVARCHAR(50),\n    @p_tenure_months    INT,\n    @p_credit_score     INT\nAS\nBEGIN\n    SET NOCOUNT ON;\n\n    DECLARE @v_base_limit     DECIMAL(18, 2) = 0;\n    DECLARE @v_income_factor  DECIMAL(5, 2)  = 1.0;\n    DECLARE @v_emp_adj        DECIMAL(5, 2)  = 1.0;\n    DECLARE @v_ceiling        DECIMAL(18, 2) = 500000000;  -- 500 M IDR\n    DECLARE @v_floor          DECIMAL(18, 2) = 1000000;    --   1 M IDR\n    DECLARE @v_final_limit    DECIMAL(18, 2);\n\n    -- Income bracket multiplier\n    SELECT @v_income_factor =\n        CASE\n            WHEN @p_monthly_income >= 20000000 THEN 30.0\n            WHEN @p_monthly_income >= 10000000 THEN 24.0\n            WHEN @p_monthly_income >= 5000000  THEN 18.0\n            WHEN @p_monthly_income >= 3000000  THEN 12.0\n            ELSE                                    6.0\n        END;\n\n    SET @v_base_limit = @p_monthly_income * @v_income_factor;\n\n    -- Employment-type adjustment from reference table\n    SELECT @v_emp_adj = em.multiplier\n    FROM   risk.ref_employment_multipliers AS em\n    WHERE  em.employment_type = @p_employment_type\n      AND  em.is_active = 1;\n\n    SET @v_base_limit = @v_base_limit * ISNULL(@v_emp_adj, 0.80);\n\n    -- Tenure haircut for new customers\n    IF @p_tenure_months < 6\n        SET @v_base_limit = @v_base_limit * 0.50;\n    ELSE IF @p_tenure_months < 12\n        SET @v_base_limit = @v_base_limit * 0.75;\n\n    -- Hard gate on credit score\n    IF @p_credit_score < 500\n    BEGIN\n        SELECT @v_floor AS loan_limit;\n        RETURN;\n    END;\n\n    -- Apply ceiling / floor\n    SET @v_final_limit =\n        CASE\n            WHEN @v_base_limit > @v_ceiling THEN @v_ceiling\n            WHEN @v_base_limit < @v_floor   THEN @v_floor\n            ELSE                                 @v_base_limit\n        END;\n\n    SELECT @v_final_limit AS loan_limit;\nEND;"
+    },
+    {
+      "id": "module-002",
+      "module_name": "leverage_ratio_rules",
+      "description": "Determines maximum debt-to-income leverage ratio permitted per customer segment (retail, SME, corporate).",
+      "updated_at": "2026-03-28T14:05:00Z",
+      "updated_by": "user-002",
+      "current_sql_code": "-- SCHEMATIC PLACEHOLDER — Phase 2 will sync with live risk engine on SQL Server\n-- Module: leverage_ratio_rules\n\nCREATE OR ALTER FUNCTION [risk].[fn_GetMaxLeverageRatio]\n(\n    @p_segment        NVARCHAR(20),  -- 'retail' | 'sme' | 'corporate'\n    @p_monthly_income DECIMAL(18, 2),\n    @p_existing_debt  DECIMAL(18, 2)\n)\nRETURNS DECIMAL(5, 4)\nAS\nBEGIN\n    DECLARE @v_base_ratio     DECIMAL(5, 4);\n    DECLARE @v_income_adj     DECIMAL(5, 4) = 0.0;\n    DECLARE @v_max_ratio      DECIMAL(5, 4) = 0.5500;\n    DECLARE @v_result         DECIMAL(5, 4);\n\n    -- Segment base ratios\n    SELECT @v_base_ratio =\n        CASE @p_segment\n            WHEN 'corporate' THEN 0.4500\n            WHEN 'sme'       THEN 0.3500\n            WHEN 'retail'    THEN 0.3000\n            ELSE                  0.2500\n        END;\n\n    -- High-income uplift for retail\n    IF @p_segment = 'retail' AND @p_monthly_income >= 10000000\n        SET @v_income_adj = 0.0500;\n\n    -- Penalise existing heavy debt\n    IF @p_existing_debt > @p_monthly_income * 12\n        SET @v_income_adj = @v_income_adj - 0.0500;\n\n    SET @v_result = @v_base_ratio + @v_income_adj;\n\n    RETURN CASE\n        WHEN @v_result > @v_max_ratio THEN @v_max_ratio\n        WHEN @v_result < 0.1000       THEN 0.1000\n        ELSE @v_result\n    END;\nEND;"
+    },
+    {
+      "id": "module-003",
+      "module_name": "repayment_behavior_score",
+      "description": "Computes a 0–1000 behavioural repayment score from payment history, missed payments, and early settlement events.",
+      "updated_at": "2026-04-02T09:40:00Z",
+      "updated_by": "user-001",
+      "current_sql_code": "-- SCHEMATIC PLACEHOLDER — Phase 2 will sync with live risk engine on SQL Server\n-- Module: repayment_behavior_score\n\nCREATE OR ALTER PROCEDURE [risk].[usp_ComputeRepaymentScore]\n    @p_customer_id      BIGINT,\n    @p_lookback_months  INT = 24\nAS\nBEGIN\n    SET NOCOUNT ON;\n\n    DECLARE @v_on_time_pct     DECIMAL(5, 4);\n    DECLARE @v_missed_count    INT;\n    DECLARE @v_early_settle    INT;\n    DECLARE @v_raw_score       DECIMAL(10, 4);\n    DECLARE @v_final_score     INT;\n\n    -- Aggregate payment history over lookback window\n    SELECT\n        @v_on_time_pct  = AVG(CASE WHEN ph.days_late = 0 THEN 1.0 ELSE 0.0 END),\n        @v_missed_count = SUM(CASE WHEN ph.days_late > 30  THEN 1 ELSE 0 END),\n        @v_early_settle = SUM(CASE WHEN ph.settled_early = 1 THEN 1 ELSE 0 END)\n    FROM risk.payment_history AS ph\n    WHERE ph.customer_id = @p_customer_id\n      AND ph.due_date >= DATEADD(MONTH, -@p_lookback_months, GETDATE());\n\n    -- Weighted composite score (weights placeholder)\n    SET @v_raw_score =\n          (@v_on_time_pct  * 600.0)\n        + (@v_early_settle * 20.0)\n        - (@v_missed_count * 50.0);\n\n    -- Clamp to [0, 1000]\n    SET @v_final_score = CASE\n        WHEN @v_raw_score > 1000 THEN 1000\n        WHEN @v_raw_score < 0    THEN 0\n        ELSE CAST(@v_raw_score AS INT)\n    END;\n\n    SELECT @v_final_score AS repayment_score;\nEND;"
+    },
+    {
+      "id": "module-004",
+      "module_name": "kyc_eligibility_rules",
+      "description": "Determines whether a customer passes KYC eligibility gates before any credit product can be issued.",
+      "updated_at": "2026-04-18T11:00:00Z",
+      "updated_by": "user-002",
+      "current_sql_code": "-- SCHEMATIC PLACEHOLDER — Phase 2 will sync with live risk engine on SQL Server\n-- Module: kyc_eligibility_rules\n\nCREATE OR ALTER FUNCTION [risk].[fn_IsKycEligible]\n(\n    @p_customer_id   BIGINT,\n    @p_product_code  NVARCHAR(20)\n)\nRETURNS BIT\nAS\nBEGIN\n    DECLARE @v_kyc_status       NVARCHAR(20);\n    DECLARE @v_id_verified      BIT;\n    DECLARE @v_pep_flag         BIT;\n    DECLARE @v_sanction_flag    BIT;\n    DECLARE @v_age              INT;\n    DECLARE @v_result           BIT = 0;\n\n    SELECT\n        @v_kyc_status    = c.kyc_status,\n        @v_id_verified   = c.id_verified,\n        @v_pep_flag      = c.is_pep,\n        @v_sanction_flag = c.is_sanctioned,\n        @v_age           = DATEDIFF(YEAR, c.date_of_birth, GETDATE())\n    FROM risk.customers AS c\n    WHERE c.customer_id = @p_customer_id;\n\n    -- Hard blocks\n    IF @v_sanction_flag = 1 RETURN 0;\n    IF @v_pep_flag = 1      RETURN 0;\n    IF @v_id_verified = 0   RETURN 0;\n    IF @v_age < 18          RETURN 0;\n    IF @v_age > 70 AND @p_product_code = 'LONG_TERM_LOAN' RETURN 0;\n\n    -- KYC status gate\n    IF @v_kyc_status NOT IN ('verified', 'enhanced_verified') RETURN 0;\n\n    RETURN 1;\nEND;"
+    },
+    {
+      "id": "module-005",
+      "module_name": "interest_rate_adjustment",
+      "description": "Applies dynamic interest rate adjustments based on risk tier, market benchmarks, and promotional flags.",
+      "updated_at": "2026-03-15T16:30:00Z",
+      "updated_by": "user-001",
+      "current_sql_code": "-- SCHEMATIC PLACEHOLDER — Phase 2 will sync with live risk engine on SQL Server\n-- Module: interest_rate_adjustment\n\nCREATE OR ALTER FUNCTION [risk].[fn_ComputeAdjustedRate]\n(\n    @p_customer_id   BIGINT,\n    @p_base_rate     DECIMAL(6, 4),\n    @p_risk_tier     NVARCHAR(10),   -- 'AAA' | 'AA' | 'A' | 'BBB' | 'BB' | 'B'\n    @p_product_code  NVARCHAR(20)\n)\nRETURNS DECIMAL(6, 4)\nAS\nBEGIN\n    DECLARE @v_tier_spread      DECIMAL(6, 4);\n    DECLARE @v_promo_discount   DECIMAL(6, 4) = 0.0;\n    DECLARE @v_loyalty_discount DECIMAL(6, 4) = 0.0;\n    DECLARE @v_tenure_months    INT;\n    DECLARE @v_final_rate       DECIMAL(6, 4);\n\n    -- Risk-tier spread lookup\n    SELECT @v_tier_spread = rt.spread\n    FROM   risk.ref_risk_tier_spreads AS rt\n    WHERE  rt.tier_code = @p_risk_tier\n      AND  rt.is_active = 1;\n\n    -- Active promotional discount\n    SELECT TOP 1 @v_promo_discount = p.discount_rate\n    FROM   risk.promotions AS p\n    WHERE  p.product_code = @p_product_code\n      AND  GETDATE() BETWEEN p.valid_from AND p.valid_to\n      AND  p.is_active = 1\n    ORDER BY p.discount_rate DESC;\n\n    -- Loyalty discount for long-tenure customers\n    SELECT @v_tenure_months = DATEDIFF(MONTH, c.onboard_date, GETDATE())\n    FROM   risk.customers AS c\n    WHERE  c.customer_id = @p_customer_id;\n\n    IF @v_tenure_months >= 36  SET @v_loyalty_discount = 0.0025;\n    IF @v_tenure_months >= 60  SET @v_loyalty_discount = 0.0050;\n\n    SET @v_final_rate =\n          @p_base_rate\n        + ISNULL(@v_tier_spread, 0.02)\n        - ISNULL(@v_promo_discount, 0.0)\n        - @v_loyalty_discount;\n\n    -- Floor at regulatory minimum\n    RETURN CASE WHEN @v_final_rate < 0.0600 THEN 0.0600 ELSE @v_final_rate END;\nEND;"
+    },
+    {
+      "id": "module-006",
+      "module_name": "credit_utilization_cap",
+      "description": "Enforces maximum credit utilization thresholds across a customer's active credit facilities.",
+      "updated_at": "2026-02-20T10:15:00Z",
+      "updated_by": "user-002",
+      "current_sql_code": "-- SCHEMATIC PLACEHOLDER — Phase 2 will sync with live risk engine on SQL Server\n-- Module: credit_utilization_cap\n\nCREATE OR ALTER PROCEDURE [risk].[usp_EnforceCreditUtilizationCap]\n    @p_customer_id   BIGINT,\n    @p_new_drawdown  DECIMAL(18, 2)\nAS\nBEGIN\n    SET NOCOUNT ON;\n\n    DECLARE @v_total_limit      DECIMAL(18, 2);\n    DECLARE @v_total_used       DECIMAL(18, 2);\n    DECLARE @v_current_util     DECIMAL(5, 4);\n    DECLARE @v_cap              DECIMAL(5, 4) = 0.8500;  -- 85% utilization cap\n    DECLARE @v_post_drawdown    DECIMAL(5, 4);\n    DECLARE @v_is_allowed       BIT = 1;\n\n    -- Aggregate all active facilities\n    SELECT\n        @v_total_limit = SUM(cf.credit_limit),\n        @v_total_used  = SUM(cf.outstanding_balance)\n    FROM risk.credit_facilities AS cf\n    WHERE cf.customer_id = @p_customer_id\n      AND cf.status = 'active';\n\n    IF @v_total_limit IS NULL OR @v_total_limit = 0\n    BEGIN\n        SELECT 0 AS is_allowed, NULL AS current_utilization, NULL AS projected_utilization;\n        RETURN;\n    END;\n\n    SET @v_current_util  = @v_total_used / @v_total_limit;\n    SET @v_post_drawdown = (@v_total_used + @p_new_drawdown) / @v_total_limit;\n\n    IF @v_post_drawdown > @v_cap\n        SET @v_is_allowed = 0;\n\n    SELECT\n        @v_is_allowed    AS is_allowed,\n        @v_current_util  AS current_utilization,\n        @v_post_drawdown AS projected_utilization;\nEND;"
+    }
+  ],
+  "strategy_changes": [
+    {
+      "id": "sc-001",
+      "title": "Increase loan limit for high-income customers",
+      "natural_language_brief": "Customers with monthly income above 15M IDR are hitting the current multiplier ceiling too early. We want to increase the income factor for the 10M–20M bracket from 24x to 27x and add a new bracket at 15M+ with a 28x multiplier to better reflect their repayment capacity.",
+      "target_module_id": "module-001",
+      "current_stage": "draft",
+      "created_by": "user-001",
+      "created_at": "2026-05-10T09:00:00Z",
+      "updated_at": "2026-05-10T09:00:00Z"
+    },
+    {
+      "id": "sc-002",
+      "title": "Adjust leverage ratio cap for SME segment",
+      "natural_language_brief": "The SME segment leverage ratio is currently capped at 35%. Following the new OJK circular on SME credit expansion, we need to raise this to 40% for verified SME customers with > 24 months tenure and debt-to-income below 20%.",
+      "target_module_id": "module-002",
+      "current_stage": "ready_for_uat",
+      "created_by": "user-002",
+      "created_at": "2026-05-08T14:30:00Z",
+      "updated_at": "2026-05-09T10:15:00Z"
+    },
+    {
+      "id": "sc-003",
+      "title": "Reweight early settlement bonus in repayment score",
+      "natural_language_brief": "Data shows our early settlement bonus (currently 20 points per event) is under-weighted compared to industry benchmarks. Propose increasing to 35 points per event, capped at 5 events in the lookback window.",
+      "target_module_id": "module-003",
+      "current_stage": "uat_in_progress",
+      "created_by": "user-001",
+      "created_at": "2026-05-06T11:00:00Z",
+      "updated_at": "2026-05-11T08:00:00Z"
+    },
+    {
+      "id": "sc-004",
+      "title": "Extend KYC eligibility to age 75 for savings products",
+      "natural_language_brief": "The current hard age cap of 70 blocks senior customers from accessing long-term savings products. Risk appetite review approved raising the cap to 75 for products classified as SAVINGS_LONG_TERM. PEP and sanctions checks remain unchanged.",
+      "target_module_id": "module-004",
+      "current_stage": "qa_review",
+      "created_by": "user-002",
+      "created_at": "2026-05-03T10:00:00Z",
+      "updated_at": "2026-05-10T15:30:00Z"
+    },
+    {
+      "id": "sc-005",
+      "title": "Add 3-year loyalty rate discount tier",
+      "natural_language_brief": "We currently offer a 0.25% loyalty discount at 36 months and 0.50% at 60 months. Risk and commercial have agreed to add an intermediate tier at 48 months with a 0.375% discount to reduce churn at the 4-year mark.",
+      "target_module_id": "module-005",
+      "current_stage": "approved_for_it",
+      "created_by": "user-001",
+      "created_at": "2026-04-28T09:00:00Z",
+      "updated_at": "2026-05-09T16:00:00Z"
+    },
+    {
+      "id": "sc-006",
+      "title": "Lower credit utilization cap from 85% to 80%",
+      "natural_language_brief": "Following Q1 arrears data showing elevated risk in the 80–85% utilization band, Risk Committee approved tightening the utilization cap from 85% to 80% for all retail customers. Corporate and SME segments are unaffected.",
+      "target_module_id": "module-006",
+      "current_stage": "sent_to_it",
+      "created_by": "user-002",
+      "created_at": "2026-04-20T08:00:00Z",
+      "updated_at": "2026-05-07T12:00:00Z"
+    }
+  ],
+  "strategy_change_versions": [
+    {
+      "id": "scv-001",
+      "strategy_change_id": "sc-001",
+      "version_number": 1,
+      "sql_before": "            WHEN @p_monthly_income >= 10000000 THEN 24.0",
+      "sql_after": "            WHEN @p_monthly_income >= 15000000 THEN 28.0\n            WHEN @p_monthly_income >= 10000000 THEN 27.0",
+      "diff_summary": "Added 15M+ income bracket at 28x multiplier; raised 10M–20M bracket from 24x to 27x.",
+      "ai_rationale": "Introducing a distinct 15M+ bracket avoids a cliff-edge jump from 24x to 30x at 20M IDR. The intermediate 28x value was calibrated against the Q4 2025 default-rate cohort data for that income band.",
+      "author_id": "user-001",
+      "source": "ai_proposal",
+      "created_at": "2026-05-10T09:15:00Z"
+    },
+    {
+      "id": "scv-002",
+      "strategy_change_id": "sc-002",
+      "version_number": 1,
+      "sql_before": "            WHEN 'sme'       THEN 0.3500",
+      "sql_after": "            WHEN 'sme'       THEN 0.4000  -- raised per OJK circular 2026/04",
+      "diff_summary": "Raised SME base leverage ratio from 35% to 40%.",
+      "ai_rationale": "Change is scoped to the base ratio lookup only. The conditional tenure and debt checks remain unchanged, so only qualified SME customers (tenure > 24 months, low existing debt) will reach the higher cap.",
+      "author_id": "user-002",
+      "source": "ai_proposal",
+      "created_at": "2026-05-08T14:45:00Z"
+    },
+    {
+      "id": "scv-003a",
+      "strategy_change_id": "sc-003",
+      "version_number": 1,
+      "sql_before": "+ (@v_early_settle * 20.0)",
+      "sql_after": "+ (LEAST(@v_early_settle, 5) * 35.0)",
+      "diff_summary": "Increased early settlement bonus from 20 to 35 points per event; capped contribution at 5 events.",
+      "ai_rationale": "Industry benchmark for early settlement weighting sits at 30–40 points. The 5-event cap prevents gaming by customers who split and prepay micro-loans artificially.",
+      "author_id": "user-001",
+      "source": "ai_proposal",
+      "created_at": "2026-05-06T11:20:00Z"
+    },
+    {
+      "id": "scv-003b",
+      "strategy_change_id": "sc-003",
+      "version_number": 2,
+      "sql_before": "+ (LEAST(@v_early_settle, 5) * 35.0)",
+      "sql_after": "+ (LEAST(@v_early_settle, 5) * 32.0)",
+      "diff_summary": "Analyst reduced bonus per event from 35 to 32 after reviewing back-test score distribution.",
+      "ai_rationale": "Human edit: back-test showed 35 points over-elevated borderline customers. 32 keeps the score improvement meaningful without crossing approval thresholds artificially.",
+      "author_id": "user-001",
+      "source": "human_edit",
+      "created_at": "2026-05-07T10:00:00Z"
+    },
+    {
+      "id": "scv-004",
+      "strategy_change_id": "sc-004",
+      "version_number": 1,
+      "sql_before": "    IF @v_age > 70 AND @p_product_code = 'LONG_TERM_LOAN' RETURN 0;",
+      "sql_after": "    IF @v_age > 75 AND @p_product_code IN ('LONG_TERM_LOAN', 'SAVINGS_LONG_TERM') RETURN 0;\n    IF @v_age > 70 AND @p_product_code NOT IN ('LONG_TERM_LOAN', 'SAVINGS_LONG_TERM') RETURN 0;",
+      "diff_summary": "Extended age cap to 75 for SAVINGS_LONG_TERM product code; other product codes retain 70-year cap.",
+      "ai_rationale": "The original single-line gate is split into two product-aware conditions. SAVINGS_LONG_TERM customers aged 71–75 can now pass KYC. The stricter cap still applies to all lending products.",
+      "author_id": "user-002",
+      "source": "ai_proposal",
+      "created_at": "2026-05-03T10:20:00Z"
+    },
+    {
+      "id": "scv-005",
+      "strategy_change_id": "sc-005",
+      "version_number": 1,
+      "sql_before": "    IF @v_tenure_months >= 36  SET @v_loyalty_discount = 0.0025;\n    IF @v_tenure_months >= 60  SET @v_loyalty_discount = 0.0050;",
+      "sql_after": "    IF @v_tenure_months >= 36  SET @v_loyalty_discount = 0.0025;\n    IF @v_tenure_months >= 48  SET @v_loyalty_discount = 0.00375;\n    IF @v_tenure_months >= 60  SET @v_loyalty_discount = 0.0050;",
+      "diff_summary": "Added 48-month loyalty tier at 0.375% discount between existing 36-month and 60-month tiers.",
+      "ai_rationale": "Intermediate tier reduces the 24-month gap in loyalty recognition, addressing the churn spike observed at month 40–47 in retention analytics.",
+      "author_id": "user-001",
+      "source": "ai_proposal",
+      "created_at": "2026-04-28T09:30:00Z"
+    },
+    {
+      "id": "scv-006",
+      "strategy_change_id": "sc-006",
+      "version_number": 1,
+      "sql_before": "    DECLARE @v_cap DECIMAL(5, 4) = 0.8500;  -- 85% utilization cap",
+      "sql_after": "    DECLARE @v_cap DECIMAL(5, 4) = 0.8000;  -- 80% utilization cap (tightened per Risk Committee 2026-04-20)",
+      "diff_summary": "Tightened retail utilization cap from 85% to 80%.",
+      "ai_rationale": "Single-variable change to the cap declaration. All downstream logic (post_drawdown comparison) automatically inherits the new threshold without further modifications.",
+      "author_id": "user-002",
+      "source": "ai_proposal",
+      "created_at": "2026-04-20T08:20:00Z"
+    }
+  ],
+  "uat_runs": [
+    {
+      "id": "uat-001",
+      "strategy_change_id": "sc-003",
+      "version_id": "scv-003b",
+      "status": "running",
+      "started_at": "2026-05-11T08:05:00Z",
+      "completed_at": null,
+      "ai_report_json": null,
+      "screenshot_refs": []
+    },
+    {
+      "id": "uat-002",
+      "strategy_change_id": "sc-004",
+      "version_id": "scv-004",
+      "status": "completed",
+      "started_at": "2026-05-08T09:00:00Z",
+      "completed_at": "2026-05-08T09:03:22Z",
+      "screenshot_refs": ["screenshot-kyc-before.png", "screenshot-kyc-after.png"],
+      "ai_report_json": {
+        "generated_at": "2026-05-08T09:03:22Z",
+        "screenshot_refs": ["screenshot-kyc-before.png", "screenshot-kyc-after.png"],
+        "summary": {
+          "total": 6,
+          "passed": 4,
+          "failed": 1,
+          "inconclusive": 1,
+          "frontend_ok": 5,
+          "frontend_not_ok": 1
+        },
+        "test_cases": [
+          {
+            "id": "tc-001",
+            "description": "Customer aged 72 applying for SAVINGS_LONG_TERM — should now pass",
+            "input": { "customer_id": 88421, "age": 72, "product_code": "SAVINGS_LONG_TERM", "kyc_status": "verified" },
+            "expected": { "is_eligible": true },
+            "actual": { "is_eligible": true },
+            "status": "passed",
+            "frontend_render_ok": true
+          },
+          {
+            "id": "tc-002",
+            "description": "Customer aged 76 applying for SAVINGS_LONG_TERM — should still fail",
+            "input": { "customer_id": 91203, "age": 76, "product_code": "SAVINGS_LONG_TERM", "kyc_status": "verified" },
+            "expected": { "is_eligible": false },
+            "actual": { "is_eligible": false },
+            "status": "passed",
+            "frontend_render_ok": true
+          },
+          {
+            "id": "tc-003",
+            "description": "Customer aged 72 applying for LONG_TERM_LOAN — should still fail (unchanged cap)",
+            "input": { "customer_id": 88421, "age": 72, "product_code": "LONG_TERM_LOAN", "kyc_status": "verified" },
+            "expected": { "is_eligible": false },
+            "actual": { "is_eligible": false },
+            "status": "passed",
+            "frontend_render_ok": true
+          },
+          {
+            "id": "tc-004",
+            "description": "Customer aged 68 applying for LONG_TERM_LOAN — should pass (under both caps)",
+            "input": { "customer_id": 77011, "age": 68, "product_code": "LONG_TERM_LOAN", "kyc_status": "verified" },
+            "expected": { "is_eligible": true },
+            "actual": { "is_eligible": true },
+            "status": "passed",
+            "frontend_render_ok": true
+          },
+          {
+            "id": "tc-005",
+            "description": "PEP-flagged customer aged 72 for SAVINGS_LONG_TERM — must still be blocked",
+            "input": { "customer_id": 55902, "age": 72, "product_code": "SAVINGS_LONG_TERM", "kyc_status": "verified", "is_pep": true },
+            "expected": { "is_eligible": false },
+            "actual": { "is_eligible": true },
+            "status": "failed",
+            "frontend_render_ok": false,
+            "annotation": "PEP gate appears to execute after age gate in the new branch ordering. Requires investigation."
+          },
+          {
+            "id": "tc-006",
+            "description": "Customer with enhanced_verified KYC aged 74 — edge of new cap",
+            "input": { "customer_id": 60314, "age": 74, "product_code": "SAVINGS_LONG_TERM", "kyc_status": "enhanced_verified" },
+            "expected": { "is_eligible": true },
+            "actual": { "is_eligible": true },
+            "status": "inconclusive",
+            "frontend_render_ok": true,
+            "annotation": "Result correct but the frontend eligibility badge did not update in real-time — may be a display cache issue unrelated to this change."
+          }
+        ]
+      }
+    },
+    {
+      "id": "uat-003",
+      "strategy_change_id": "sc-006",
+      "version_id": "scv-006",
+      "status": "completed",
+      "started_at": "2026-04-22T10:00:00Z",
+      "completed_at": "2026-04-22T10:02:44Z",
+      "screenshot_refs": ["screenshot-util-before.png", "screenshot-util-after.png"],
+      "ai_report_json": {
+        "generated_at": "2026-04-22T10:02:44Z",
+        "screenshot_refs": ["screenshot-util-before.png", "screenshot-util-after.png"],
+        "summary": {
+          "total": 5,
+          "passed": 5,
+          "failed": 0,
+          "inconclusive": 0,
+          "frontend_ok": 5,
+          "frontend_not_ok": 0
+        },
+        "test_cases": [
+          {
+            "id": "tc-u01",
+            "description": "Customer at 82% utilization — drawdown should be blocked (new cap 80%)",
+            "input": { "customer_id": 10021, "current_utilization": 0.82, "new_drawdown": 100000 },
+            "expected": { "is_allowed": false },
+            "actual": { "is_allowed": false },
+            "status": "passed",
+            "frontend_render_ok": true
+          },
+          {
+            "id": "tc-u02",
+            "description": "Customer at 78% utilization — small drawdown brings to 79%, should be allowed",
+            "input": { "customer_id": 10045, "current_utilization": 0.78, "new_drawdown": 50000 },
+            "expected": { "is_allowed": true },
+            "actual": { "is_allowed": true },
+            "status": "passed",
+            "frontend_render_ok": true
+          },
+          {
+            "id": "tc-u03",
+            "description": "Customer at 79% — drawdown would bring to 81%, should be blocked",
+            "input": { "customer_id": 10078, "current_utilization": 0.79, "new_drawdown": 200000 },
+            "expected": { "is_allowed": false },
+            "actual": { "is_allowed": false },
+            "status": "passed",
+            "frontend_render_ok": true
+          },
+          {
+            "id": "tc-u04",
+            "description": "Customer exactly at 80% — no additional drawdown allowed",
+            "input": { "customer_id": 10099, "current_utilization": 0.80, "new_drawdown": 1 },
+            "expected": { "is_allowed": false },
+            "actual": { "is_allowed": false },
+            "status": "passed",
+            "frontend_render_ok": true
+          },
+          {
+            "id": "tc-u05",
+            "description": "Customer at 75% — large drawdown brings to exactly 80%, should be allowed",
+            "input": { "customer_id": 10112, "current_utilization": 0.75, "new_drawdown": 500000 },
+            "expected": { "is_allowed": true },
+            "actual": { "is_allowed": true },
+            "status": "passed",
+            "frontend_render_ok": true
+          }
+        ]
+      }
+    }
+  ],
+  "uat_reviews": [
+    {
+      "id": "uatr-001",
+      "uat_run_id": "uat-002",
+      "reviewer_id": "user-003",
+      "annotations_json": {
+        "tc-005": "Confirmed PEP gate issue. Risk team to investigate branch ordering before re-submission.",
+        "tc-006": "Frontend display cache — logged as separate defect AEGIS-FE-044. Does not block approval of the SQL change itself."
+      },
+      "edits_to_report_json": {},
+      "final_verdict": "approved",
+      "decided_at": "2026-05-10T15:30:00Z"
+    },
+    {
+      "id": "uatr-002",
+      "uat_run_id": "uat-003",
+      "reviewer_id": "user-004",
+      "annotations_json": {},
+      "edits_to_report_json": {},
+      "final_verdict": "approved",
+      "decided_at": "2026-05-07T11:00:00Z"
+    }
+  ],
+  "it_handoff_packets": [
+    {
+      "id": "itp-001",
+      "strategy_change_id": "sc-005",
+      "version_id": "scv-005",
+      "risk_author_id": "user-001",
+      "qa_approver_id": "user-003",
+      "sent_at": "2026-05-09T16:05:00Z",
+      "sent_by": "user-003",
+      "packet_json": {
+        "summary": {
+          "change_title": "Add 3-year loyalty rate discount tier",
+          "target_module": "interest_rate_adjustment",
+          "risk_author": "Ahmad Rizaldi",
+          "qa_approver": "Budi Santoso",
+          "approved_at": "2026-05-09T16:00:00Z",
+          "diff_summary": "Added 48-month loyalty tier at 0.375% discount between existing 36-month and 60-month tiers.",
+          "test_cases_passed": 5,
+          "test_cases_total": 5
+        },
+        "diff": "- IF @v_tenure_months >= 36  SET @v_loyalty_discount = 0.0025;\n- IF @v_tenure_months >= 60  SET @v_loyalty_discount = 0.0050;\n+ IF @v_tenure_months >= 36  SET @v_loyalty_discount = 0.0025;\n+ IF @v_tenure_months >= 48  SET @v_loyalty_discount = 0.00375;\n+ IF @v_tenure_months >= 60  SET @v_loyalty_discount = 0.0050;",
+        "uat_report_ref": "uat-run for sc-005",
+        "deployment_notes": "Single stored function update. No schema migration required. Rollback: revert loyalty discount block to 2-tier version."
+      }
+    },
+    {
+      "id": "itp-002",
+      "strategy_change_id": "sc-006",
+      "version_id": "scv-006",
+      "risk_author_id": "user-002",
+      "qa_approver_id": "user-004",
+      "sent_at": "2026-05-07T12:00:00Z",
+      "sent_by": "user-004",
+      "packet_json": {
+        "summary": {
+          "change_title": "Lower credit utilization cap from 85% to 80%",
+          "target_module": "credit_utilization_cap",
+          "risk_author": "Siti Nurhaliza",
+          "qa_approver": "Dewi Rahayu",
+          "approved_at": "2026-05-07T11:00:00Z",
+          "diff_summary": "Tightened retail utilization cap from 85% to 80%.",
+          "test_cases_passed": 5,
+          "test_cases_total": 5
+        },
+        "diff": "- DECLARE @v_cap DECIMAL(5, 4) = 0.8500;  -- 85% utilization cap\n+ DECLARE @v_cap DECIMAL(5, 4) = 0.8000;  -- 80% utilization cap (tightened per Risk Committee 2026-04-20)",
+        "uat_report_ref": "uat-003",
+        "deployment_notes": "Single variable declaration change. No schema migration. Rollback: revert cap value to 0.8500."
+      }
+    }
+  ],
+  "audit_log": [
+    { "id": "al-001", "actor_id": "user-001", "action": "strategy_change.created", "entity_type": "strategy_change", "entity_id": "sc-001", "payload_json": { "stage": "draft" }, "created_at": "2026-05-10T09:00:00Z" },
+    { "id": "al-002", "actor_id": "user-001", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-001", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-05-10T09:15:00Z" },
+    { "id": "al-003", "actor_id": "user-002", "action": "strategy_change.created", "entity_type": "strategy_change", "entity_id": "sc-002", "payload_json": { "stage": "draft" }, "created_at": "2026-05-08T14:30:00Z" },
+    { "id": "al-004", "actor_id": "user-002", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-002", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-05-08T14:45:00Z" },
+    { "id": "al-005", "actor_id": "user-002", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-002", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-05-09T10:15:00Z" },
+    { "id": "al-006", "actor_id": "user-001", "action": "strategy_change.created", "entity_type": "strategy_change", "entity_id": "sc-003", "payload_json": { "stage": "draft" }, "created_at": "2026-05-06T11:00:00Z" },
+    { "id": "al-007", "actor_id": "user-001", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-003a", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-05-06T11:20:00Z" },
+    { "id": "al-008", "actor_id": "user-001", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-003b", "payload_json": { "version_number": 2, "source": "human_edit" }, "created_at": "2026-05-07T10:00:00Z" },
+    { "id": "al-009", "actor_id": "user-001", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-003", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-05-11T07:55:00Z" },
+    { "id": "al-010", "actor_id": "system", "action": "uat_run.started", "entity_type": "uat_run", "entity_id": "uat-001", "payload_json": { "strategy_change_id": "sc-003", "version_id": "scv-003b" }, "created_at": "2026-05-11T08:05:00Z" },
+    { "id": "al-011", "actor_id": "user-002", "action": "strategy_change.created", "entity_type": "strategy_change", "entity_id": "sc-004", "payload_json": { "stage": "draft" }, "created_at": "2026-05-03T10:00:00Z" },
+    { "id": "al-012", "actor_id": "user-002", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-004", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-05-03T10:20:00Z" },
+    { "id": "al-013", "actor_id": "user-002", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-004", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-05-06T09:00:00Z" },
+    { "id": "al-014", "actor_id": "system", "action": "uat_run.started", "entity_type": "uat_run", "entity_id": "uat-002", "payload_json": { "strategy_change_id": "sc-004", "version_id": "scv-004" }, "created_at": "2026-05-08T09:00:00Z" },
+    { "id": "al-015", "actor_id": "system", "action": "uat_run.completed", "entity_type": "uat_run", "entity_id": "uat-002", "payload_json": { "status": "completed", "cases_total": 6, "cases_passed": 4 }, "created_at": "2026-05-08T09:03:22Z" },
+    { "id": "al-016", "actor_id": "system", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-004", "payload_json": { "from": "uat_in_progress", "to": "qa_review" }, "created_at": "2026-05-08T09:03:22Z" },
+    { "id": "al-017", "actor_id": "user-003", "action": "uat_review.submitted", "entity_type": "uat_review", "entity_id": "uatr-001", "payload_json": { "verdict": "approved" }, "created_at": "2026-05-10T15:30:00Z" },
+    { "id": "al-018", "actor_id": "user-001", "action": "strategy_change.created", "entity_type": "strategy_change", "entity_id": "sc-005", "payload_json": { "stage": "draft" }, "created_at": "2026-04-28T09:00:00Z" },
+    { "id": "al-019", "actor_id": "user-001", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-005", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-04-28T09:30:00Z" },
+    { "id": "al-020", "actor_id": "user-001", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-005", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-04-30T10:00:00Z" },
+    { "id": "al-021", "actor_id": "system", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-005", "payload_json": { "from": "qa_review", "to": "approved_for_it" }, "created_at": "2026-05-09T16:00:00Z" },
+    { "id": "al-022", "actor_id": "user-003", "action": "it_handoff_packet.created", "entity_type": "it_handoff_packet", "entity_id": "itp-001", "payload_json": { "strategy_change_id": "sc-005" }, "created_at": "2026-05-09T16:05:00Z" },
+    { "id": "al-023", "actor_id": "user-002", "action": "strategy_change.created", "entity_type": "strategy_change", "entity_id": "sc-006", "payload_json": { "stage": "draft" }, "created_at": "2026-04-20T08:00:00Z" },
+    { "id": "al-024", "actor_id": "user-002", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-006", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-04-20T08:20:00Z" },
+    { "id": "al-025", "actor_id": "user-002", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-006", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-04-21T09:00:00Z" },
+    { "id": "al-026", "actor_id": "system", "action": "uat_run.completed", "entity_type": "uat_run", "entity_id": "uat-003", "payload_json": { "status": "completed", "cases_total": 5, "cases_passed": 5 }, "created_at": "2026-04-22T10:02:44Z" },
+    { "id": "al-027", "actor_id": "system", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-006", "payload_json": { "from": "uat_in_progress", "to": "qa_review" }, "created_at": "2026-04-22T10:02:44Z" },
+    { "id": "al-028", "actor_id": "user-004", "action": "uat_review.submitted", "entity_type": "uat_review", "entity_id": "uatr-002", "payload_json": { "verdict": "approved" }, "created_at": "2026-05-07T11:00:00Z" },
+    { "id": "al-029", "actor_id": "system", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-006", "payload_json": { "from": "qa_review", "to": "sent_to_it" }, "created_at": "2026-05-07T11:00:00Z" },
+    { "id": "al-030", "actor_id": "user-004", "action": "it_handoff_packet.created", "entity_type": "it_handoff_packet", "entity_id": "itp-002", "payload_json": { "strategy_change_id": "sc-006" }, "created_at": "2026-05-07T12:00:00Z" }
+  ]
+}

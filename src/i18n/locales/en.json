@@ -1,0 +1,90 @@
+{
+  "app_name": "AEGIS",
+  "app_tagline": "AI-Enabled Governance for Intelligent Strategy",
+  "nav": {
+    "home": "Home",
+    "engine_modules": "Engine Modules",
+    "strategy_changes": "Strategy Changes",
+    "preview_changelog": "Preview Changelog",
+    "confirmed_changelog": "Confirmed Changelog",
+    "it_handoff_log": "IT Handoff Log",
+    "audit_log": "Audit Log"
+  },
+  "auth": {
+    "sign_in_as": "Sign in as",
+    "sign_out": "Sign out",
+    "select_persona": "Select a persona to continue",
+    "role_risk_analyst": "Risk Analyst",
+    "role_tester": "Tester",
+    "role_admin": "Admin"
+  },
+  "stage": {
+    "draft": "Draft",
+    "ready_for_uat": "Ready for UAT",
+    "uat_in_progress": "UAT in Progress",
+    "qa_review": "QA Review",
+    "approved_for_it": "Approved for IT",
+    "sent_to_it": "Sent to IT",
+    "rejected": "Rejected"
+  },
+  "home": {
+    "welcome": "Welcome back, {{name}}",
+    "your_drafts": "Your Drafts",
+    "pending_revisions": "Pending Revisions",
+    "awaiting_review": "Awaiting UAT Review",
+    "recent_handoffs": "Recent Handoffs",
+    "no_items": "Nothing here yet."
+  },
+  "engine_modules": {
+    "title": "Engine Modules",
+    "description": "Browse the SQL modules that make up the risk engine. Editing happens via a Strategy Change.",
+    "last_updated": "Last updated",
+    "updated_by": "by {{name}}",
+    "open_change": "Create change request"
+  },
+  "strategy_changes": {
+    "title": "Strategy Changes",
+    "new_change": "New Change",
+    "filter_stage": "Filter by stage",
+    "filter_module": "Filter by module",
+    "all_stages": "All stages",
+    "all_modules": "All modules",
+    "no_results": "No strategy changes match the current filters.",
+    "created_by": "Created by",
+    "target_module": "Target module",
+    "stage": "Stage",
+    "created_at": "Created"
+  },
+  "change_detail": {
+    "tab_brief": "Brief & AI Chat",
+    "tab_sql": "SQL Editor",
+    "tab_uat": "UAT Report",
+    "tab_qa": "QA Review",
+    "tab_audit": "Audit Trail",
+    "send_for_uat": "Send for UAT",
+    "confirm_changes": "Confirm & Save Changes",
+    "brief_placeholder": "Describe the change in plain language…",
+    "chat_placeholder": "Ask the AI to refine, clarify, or revise…",
+    "version_history": "Version history",
+    "coming_soon": "Coming in a future round."
+  },
+  "admin": {
+    "reset_demo": "Reset Demo Data",
+    "reset_confirm": "This will clear all localStorage data and reseed from fixture. This cannot be undone.",
+    "reset_success": "Demo data reset successfully."
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "loading": "Loading…",
+    "error": "Something went wrong.",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "export_csv": "Export CSV",
+    "by": "by",
+    "at": "at",
+    "unknown_user": "Unknown user"
+  }
+}

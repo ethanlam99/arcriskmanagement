@@ -1,0 +1,193 @@
+export type UserRole = 'risk_analyst' | 'tester' | 'admin';
+
+export type StrategyChangeStage =
+  | 'draft'
+  | 'ready_for_uat'
+  | 'uat_in_progress'
+  | 'qa_review'
+  | 'approved_for_it'
+  | 'sent_to_it'
+  | 'rejected';
+
+export type VersionSource = 'ai_proposal' | 'human_edit';
+export type UatRunStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type UatVerdict = 'approved' | 'rejected' | 'changes_requested';
+export type TestCaseStatus = 'passed' | 'failed' | 'inconclusive';
+
+// ── Core entities ────────────────────────────────────────────────────────────
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar_seed: string;
+}
+
+export interface EngineModule {
+  id: string;
+  module_name: string;
+  description: string;
+  current_sql_code: string;
+  updated_at: string;
+  updated_by: string;
+}
+
+export interface StrategyChange {
+  id: string;
+  title: string;
+  natural_language_brief: string;
+  target_module_id: string;
+  current_stage: StrategyChangeStage;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StrategyChangeVersion {
+  id: string;
+  strategy_change_id: string;
+  version_number: number;
+  sql_before: string;
+  sql_after: string;
+  diff_summary: string;
+  ai_rationale: string;
+  author_id: string;
+  source: VersionSource;
+  created_at: string;
+}
+
+export interface TestCase {
+  id: string;
+  description: string;
+  input: Record<string, unknown>;
+  expected: Record<string, unknown>;
+  actual: Record<string, unknown>;
+  status: TestCaseStatus;
+  frontend_render_ok: boolean;
+  annotation?: string;
+}
+
+export interface UatReportSummary {
+  total: number;
+  passed: number;
+  failed: number;
+  inconclusive: number;
+  frontend_ok: number;
+  frontend_not_ok: number;
+}
+
+export interface UatReport {
+  test_cases: TestCase[];
+  summary: UatReportSummary;
+  screenshot_refs: string[];
+  generated_at: string;
+}
+
+export interface UatRun {
+  id: string;
+  strategy_change_id: string;
+  version_id: string;
+  status: UatRunStatus;
+  started_at: string;
+  completed_at: string | null;
+  ai_report_json: UatReport | null;
+  screenshot_refs: string[];
+}
+
+export interface UatReview {
+  id: string;
+  uat_run_id: string;
+  reviewer_id: string;
+  annotations_json: Record<string, unknown>;
+  edits_to_report_json: Partial<UatReport>;
+  final_verdict: UatVerdict;
+  decided_at: string;
+}
+
+export interface ITHandoffPacket {
+  id: string;
+  strategy_change_id: string;
+  version_id: string;
+  packet_json: Record<string, unknown>;
+  risk_author_id: string;
+  qa_approver_id: string;
+  sent_at: string;
+  sent_by: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  actor_id: string;
+  action: string;
+  entity_type: string;
+  entity_id: string;
+  payload_json: Record<string, unknown>;
+  created_at: string;
+}
+
+// ── AI chat types ─────────────────────────────────────────────────────────────
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  proposed_sql?: string;
+  diff_summary?: string;
+  rationale?: string;
+  created_at: string;
+}
+
+// ── LLM integration types (Phase 2: real schema passed as dbContext) ──────────
+
+export interface DatabaseColumn {
+  name: string;
+  type: string;
+  nullable: boolean;
+}
+
+export interface DatabaseTable {
+  schema: string;
+  name: string;
+  columns: DatabaseColumn[];
+}
+
+export interface DatabaseSchema {
+  tables: DatabaseTable[];
+  source_description: string;
+}
+
+export interface LlmEditRequest {
+  conversation: ChatMessage[];
+  moduleSql: string;
+  moduleContext: string;
+  dbContext?: DatabaseSchema; // populated in Phase 2 from live engine
+}
+
+export interface LlmEditResponse {
+  reply: string;
+  proposed_sql?: string;
+  diff_summary?: string;
+  rationale?: string;
+  location_hint?: string;
+}
+
+// ── UAT runner types ──────────────────────────────────────────────────────────
+
+export interface UatRunRequest {
+  versionId: string;
+  strategyChangeId: string;
+}
+
+// ── IT handoff types ──────────────────────────────────────────────────────────
+
+export interface HandoffSummary {
+  change_title: string;
+  target_module: string;
+  risk_author: string;
+  qa_approver: string;
+  approved_at: string;
+  diff_summary: string;
+  test_cases_passed: number;
+  test_cases_total: number;
+}
