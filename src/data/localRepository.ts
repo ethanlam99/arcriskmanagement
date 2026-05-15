@@ -1,4 +1,4 @@
-import type { Repository, EntityRepo, AuditLogRepo, UserRepo } from './repository';
+import type { Repository, EntityRepo, AuditLogRepo, UserRepo, ChatMessageRepo } from './repository';
 import type {
   User,
   EngineModule,
@@ -8,6 +8,7 @@ import type {
   UatReview,
   ITHandoffPacket,
   AuditLogEntry,
+  ChatMessageEntity,
 } from '@/types';
 import seedData from './seed.json';
 
@@ -22,6 +23,7 @@ const KEYS = {
   uatReviews:              'aegis:uat_reviews',
   itHandoffPackets:        'aegis:it_handoff_packets',
   auditLog:                'aegis:audit_log',
+  chatMessages:            'aegis:chat_messages',
   seeded:                  'aegis:seeded',
 } as const;
 
@@ -60,6 +62,7 @@ export function seedIfEmpty(): void {
   save(KEYS.uatReviews,             seedData.uat_reviews);
   save(KEYS.itHandoffPackets,       seedData.it_handoff_packets);
   save(KEYS.auditLog,               seedData.audit_log);
+  save(KEYS.chatMessages,           seedData.chat_messages);
   localStorage.setItem(KEYS.seeded, '1');
 }
 
@@ -143,6 +146,25 @@ function makeAuditLogRepo(): AuditLogRepo {
   };
 }
 
+// ── Chat message repo ─────────────────────────────────────────────────────────
+
+function makeChatMessageRepo(): ChatMessageRepo {
+  return {
+    async listByChange(strategyChangeId) {
+      return load<ChatMessageEntity>(KEYS.chatMessages)
+        .filter((m) => m.strategy_change_id === strategyChangeId)
+        .sort((a, b) => a.created_at.localeCompare(b.created_at));
+    },
+    async append(message) {
+      const rows = load<ChatMessageEntity>(KEYS.chatMessages);
+      const record: ChatMessageEntity = { ...message, id: uid() };
+      rows.push(record);
+      save(KEYS.chatMessages, rows);
+      return record;
+    },
+  };
+}
+
 // ── User repo (read-only) ─────────────────────────────────────────────────────
 
 function makeUserRepo(): UserRepo {
@@ -165,5 +187,6 @@ export function createLocalRepository(): Repository {
     uatReviews:             makeRepo<UatReview>(KEYS.uatReviews),
     itHandoffPackets:       makeRepo<ITHandoffPacket>(KEYS.itHandoffPackets),
     auditLog:               makeAuditLogRepo(),
+    chatMessages:           makeChatMessageRepo(),
   };
 }

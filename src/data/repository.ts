@@ -7,6 +7,7 @@ import type {
   UatReview,
   ITHandoffPacket,
   AuditLogEntry,
+  ChatMessageEntity,
 } from '@/types';
 
 // ── Generic repo shape ────────────────────────────────────────────────────────
@@ -39,6 +40,13 @@ export interface UserRepo {
   get(id: string): Promise<User | null>;
 }
 
+// ── Chat message repo ─────────────────────────────────────────────────────────
+
+export interface ChatMessageRepo {
+  listByChange(strategyChangeId: string): Promise<ChatMessageEntity[]>;
+  append(message: Omit<ChatMessageEntity, 'id'>): Promise<ChatMessageEntity>;
+}
+
 // ── The central Repository contract ──────────────────────────────────────────
 // Phase 2: write SupabaseRepository implementing this interface and swap
 // one line in RepositoryProvider.tsx.
@@ -52,4 +60,5 @@ export interface Repository {
   uatReviews: EntityRepo<UatReview>;
   itHandoffPackets: EntityRepo<ITHandoffPacket>;
   auditLog: AuditLogRepo;
+  chatMessages: ChatMessageRepo;
 }

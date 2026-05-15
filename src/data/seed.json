@@ -466,6 +466,140 @@
       }
     }
   ],
+  "chat_messages": [
+    {
+      "id": "cm-001",
+      "strategy_change_id": "sc-001",
+      "role": "assistant",
+      "content": "I've loaded **loan_limit_rules** (61 lines) and I'm ready to help.\n\nYour brief:\n\n*\"Customers with monthly income above 15M IDR are hitting the current multiplier ceiling too early. We want to increase the income factor for the 10M–20M bracket from 24x to 27x and add a new bracket at 15M+ with a 28x multiplier to better reflect their repayment capacity.\"\n\nShall I propose a SQL change based on this brief, or would you like to refine it first?",
+      "proposed_sql": null,
+      "diff_summary": null,
+      "rationale": null,
+      "author_id": null,
+      "created_at": "2026-05-10T09:00:30Z"
+    },
+    {
+      "id": "cm-002",
+      "strategy_change_id": "sc-001",
+      "role": "user",
+      "content": "Yes, go ahead and propose the change. Make sure the 15M+ bracket sits between the 10M and 20M cases so it's evaluated in the right order.",
+      "proposed_sql": null,
+      "diff_summary": null,
+      "rationale": null,
+      "author_id": "user-001",
+      "created_at": "2026-05-10T09:02:00Z"
+    },
+    {
+      "id": "cm-003",
+      "strategy_change_id": "sc-001",
+      "role": "assistant",
+      "content": "I've identified the income bracket lookup in the CASE expression inside usp_CalculateLoanLimit. I'm inserting a new branch at 15M+ (28x) and raising the 10M–20M bracket from 24x to 27x. The 15M+ case must appear before the 10M case — SQL Server evaluates CASE branches top-to-bottom, so ordering matters. The existing ceiling at 20M+ (30x) is unchanged.",
+      "proposed_sql": null,
+      "diff_summary": "Added 15M+ bracket at 28x; raised 10M–20M bracket from 24x to 27x",
+      "rationale": "The 15M+ branch must precede the 10M branch in the CASE expression to ensure correct top-down evaluation. The 20M+ branch remains at 30x.",
+      "author_id": null,
+      "created_at": "2026-05-10T09:02:45Z"
+    },
+    {
+      "id": "cm-004",
+      "strategy_change_id": "sc-001",
+      "role": "user",
+      "content": "Looks good. Confirm and save the change.",
+      "proposed_sql": null,
+      "diff_summary": null,
+      "rationale": null,
+      "author_id": "user-001",
+      "created_at": "2026-05-10T09:14:00Z"
+    },
+    {
+      "id": "cm-005",
+      "strategy_change_id": "sc-001",
+      "role": "assistant",
+      "content": "Changes saved as version 1. You can review the SQL in the editor and send for UAT when ready.",
+      "proposed_sql": null,
+      "diff_summary": null,
+      "rationale": null,
+      "author_id": null,
+      "created_at": "2026-05-10T09:15:10Z"
+    },
+    {
+      "id": "cm-006",
+      "strategy_change_id": "sc-003",
+      "role": "assistant",
+      "content": "I've loaded **repayment_behavior_score** (37 lines) and I'm ready to help.\n\nYour brief:\n\n*\"Data shows our early settlement bonus (currently 20 points per event) is under-weighted compared to industry benchmarks. Propose increasing to 35 points per event, capped at 5 events in the lookback window.\"\n\nShall I propose the change?",
+      "proposed_sql": null,
+      "diff_summary": null,
+      "rationale": null,
+      "author_id": null,
+      "created_at": "2026-05-06T11:00:30Z"
+    },
+    {
+      "id": "cm-007",
+      "strategy_change_id": "sc-003",
+      "role": "user",
+      "content": "Yes, increase to 35 points per event and cap the contribution at 5 settlement events.",
+      "proposed_sql": null,
+      "diff_summary": null,
+      "rationale": null,
+      "author_id": "user-001",
+      "created_at": "2026-05-06T11:05:00Z"
+    },
+    {
+      "id": "cm-008",
+      "strategy_change_id": "sc-003",
+      "role": "assistant",
+      "content": "I've located the early settlement weighting line in usp_ComputeRepaymentScore. I'm wrapping @v_early_settle in a LEAST(@v_early_settle, 5) call to enforce the 5-event cap, and raising the per-event weight from 20 to 35 points. The cap prevents gaming via micro-loan splitting.",
+      "proposed_sql": null,
+      "diff_summary": "Raised early settlement bonus from 20 to 35 pts/event; capped at 5 events",
+      "rationale": "Industry benchmark sits at 30–40 pts. The 5-event cap prevents artificial score inflation via split-and-prepay tactics.",
+      "author_id": null,
+      "created_at": "2026-05-06T11:05:55Z"
+    },
+    {
+      "id": "cm-009",
+      "strategy_change_id": "sc-003",
+      "role": "user",
+      "content": "I ran the back-test and 35 is over-elevating borderline customers. Reduce to 32 points per event.",
+      "proposed_sql": null,
+      "diff_summary": null,
+      "rationale": null,
+      "author_id": "user-001",
+      "created_at": "2026-05-07T09:55:00Z"
+    },
+    {
+      "id": "cm-010",
+      "strategy_change_id": "sc-003",
+      "role": "assistant",
+      "content": "Understood — reducing from 35 to 32 points per event. The 5-event cap stays. At 32 pts the maximum settlement contribution is 160 points out of 1000, which keeps the score improvement meaningful without pushing borderline customers over approval thresholds.",
+      "proposed_sql": null,
+      "diff_summary": "Reduced early settlement bonus from 35 to 32 pts/event (back-test calibration)",
+      "rationale": "Back-test showed 35 pts over-elevated borderline-score customers. 32 pts keeps improvement meaningful without breaching approval thresholds artificially.",
+      "author_id": null,
+      "created_at": "2026-05-07T10:00:30Z"
+    },
+    {
+      "id": "cm-011",
+      "strategy_change_id": "sc-003",
+      "role": "user",
+      "content": "Good. Save version 2 and send for UAT.",
+      "proposed_sql": null,
+      "diff_summary": null,
+      "rationale": null,
+      "author_id": "user-001",
+      "created_at": "2026-05-07T10:02:00Z"
+    },
+    {
+      "id": "cm-012",
+      "strategy_change_id": "sc-003",
+      "role": "assistant",
+      "content": "Version 2 saved (human edit). The change is now in Ready for UAT — a team lead will confirm it on the Changelog page to trigger the AI UAT run.",
+      "proposed_sql": null,
+      "diff_summary": null,
+      "rationale": null,
+      "author_id": null,
+      "created_at": "2026-05-11T07:56:00Z"
+    }
+  ],
   "audit_log": [
     { "id": "al-001", "actor_id": "user-001", "action": "strategy_change.created", "entity_type": "strategy_change", "entity_id": "sc-001", "payload_json": { "stage": "draft" }, "created_at": "2026-05-10T09:00:00Z" },
     { "id": "al-002", "actor_id": "user-001", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-001", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-05-10T09:15:00Z" },

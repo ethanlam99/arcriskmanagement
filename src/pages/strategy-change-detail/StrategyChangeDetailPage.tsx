@@ -9,8 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { StageBadge } from '@/components/shared/StageBadge';
 import { Stepper } from '@/components/ui/Stepper';
 import { Tabs, TabList, TabTrigger, TabPanel } from '@/components/ui/Tabs';
-import { BriefAndChatTab } from './tabs/BriefAndChatTab';
-import { SqlEditorTab } from './tabs/SqlEditorTab';
+import { EditTab } from './tabs/EditTab';
 import { UatReportTab } from './tabs/UatReportTab';
 import { QaReviewTab } from './tabs/QaReviewTab';
 import { AuditTrailTab } from './tabs/AuditTrailTab';
@@ -53,7 +52,6 @@ export function StrategyChangeDetailPage() {
   }
 
   const canSendForUat = (role === 'risk_analyst' || role === 'admin') && change.current_stage === 'draft';
-  const canTriggerUat = (role === 'risk_analyst' || role === 'admin') && change.current_stage === 'ready_for_uat';
 
   async function handleTransition(to: StrategyChangeStage) {
     if (!currentUser) return;
@@ -66,7 +64,6 @@ export function StrategyChangeDetailPage() {
     setShowConfirm(null);
   }
 
-  // Tab availability by stage
   const stage = change.current_stage;
   const uatAvailable = ['uat_in_progress', 'qa_review', 'approved_for_it', 'sent_to_it'].includes(stage);
   const qaAvailable  = ['qa_review', 'approved_for_it', 'sent_to_it'].includes(stage);
@@ -74,7 +71,6 @@ export function StrategyChangeDetailPage() {
   return (
     <>
       <div className="flex flex-col h-full overflow-hidden">
-        {/* Top bar */}
         <TopBar
           breadcrumb={
             <Breadcrumb
@@ -85,26 +81,15 @@ export function StrategyChangeDetailPage() {
             />
           }
           actions={
-            <div className="flex items-center gap-2">
-              {canSendForUat && (
-                <Button
-                  size="sm"
-                  onClick={() => setShowConfirm({ to: 'ready_for_uat', label: 'Send for UAT' })}
-                  loading={stageTransition.isPending}
-                >
-                  Send for UAT
-                </Button>
-              )}
-              {canTriggerUat && (
-                <Button
-                  size="sm"
-                  onClick={() => setShowConfirm({ to: 'uat_in_progress', label: 'Trigger UAT Run' })}
-                  loading={stageTransition.isPending}
-                >
-                  Trigger UAT Run
-                </Button>
-              )}
-            </div>
+            canSendForUat ? (
+              <Button
+                size="sm"
+                onClick={() => setShowConfirm({ to: 'ready_for_uat', label: 'Send for UAT' })}
+                loading={stageTransition.isPending}
+              >
+                Send for UAT
+              </Button>
+            ) : undefined
           }
         />
 
@@ -123,35 +108,28 @@ export function StrategyChangeDetailPage() {
             </div>
             <StageBadge stage={change.current_stage} />
           </div>
-
-          {/* Stage stepper */}
           <Stepper currentStage={change.current_stage} />
         </div>
 
-        {/* Tabbed body — fills remaining height */}
-        <Tabs defaultTab="brief" className="flex-1 min-h-0 overflow-hidden">
+        {/* Tabbed body */}
+        <Tabs defaultTab="edit" className="flex-1 min-h-0 overflow-hidden">
           <TabList className="px-6 bg-white shrink-0">
-            <TabTrigger id="brief">Brief & AI Chat</TabTrigger>
-            <TabTrigger id="sql">SQL Editor</TabTrigger>
+            <TabTrigger id="edit">Edit</TabTrigger>
             <TabTrigger id="uat" disabled={!uatAvailable}>UAT Report</TabTrigger>
             <TabTrigger id="qa"  disabled={!qaAvailable}>QA Review</TabTrigger>
             <TabTrigger id="audit">Audit Trail</TabTrigger>
           </TabList>
 
-          <TabPanel id="brief" className="overflow-hidden">
-            <BriefAndChatTab change={change} />
-          </TabPanel>
-
-          <TabPanel id="sql" className="overflow-hidden">
-            <SqlEditorTab change={change} />
+          <TabPanel id="edit" className="overflow-hidden">
+            <EditTab change={change} />
           </TabPanel>
 
           <TabPanel id="uat" className="overflow-hidden">
-            <UatReportTab />
+            <UatReportTab change={change} />
           </TabPanel>
 
           <TabPanel id="qa" className="overflow-hidden">
-            <QaReviewTab />
+            <QaReviewTab change={change} />
           </TabPanel>
 
           <TabPanel id="audit" className="overflow-hidden">
@@ -163,11 +141,7 @@ export function StrategyChangeDetailPage() {
       {showConfirm && (
         <ConfirmModal
           title={showConfirm.label}
-          description={
-            showConfirm.to === 'ready_for_uat'
-              ? 'This will move the change to "Ready for UAT" and lock further editing until QA is complete or the change is rejected.'
-              : 'This will start the AI UAT run against the current version. The process takes a few seconds.'
-          }
+          description={'This will move the change to “Ready for UAT” and queue it for team lead confirmation on the Changelog page.'}
           confirmLabel={showConfirm.label}
           loading={stageTransition.isPending}
           onConfirm={() => handleTransition(showConfirm.to)}

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEngineModules } from '@/hooks/useEngineModules';
 import { useRepository } from '@/data/RepositoryProvider';
@@ -6,9 +7,16 @@ import { useAuth } from '@/auth/AuthProvider';
 import { TopBar, Breadcrumb } from '@/components/layout/TopBar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { CreateStrategyChangeModal } from '@/pages/strategy-changes/CreateStrategyChangeModal';
 import type { EngineModule } from '@/types';
 
-function ModuleCard({ module, onCreateChange }: { module: EngineModule; onCreateChange: () => void }) {
+interface ModuleCardProps {
+  module: EngineModule;
+  onCreateChange: () => void;
+  onViewDetail: () => void;
+}
+
+function ModuleCard({ module, onCreateChange, onViewDetail }: ModuleCardProps) {
   const repo = useRepository();
   const { data: updatedByUser } = useQuery({
     queryKey: ['aegis', 'users', module.updated_by],
@@ -20,35 +28,41 @@ function ModuleCard({ module, onCreateChange }: { module: EngineModule; onCreate
 
   return (
     <Card padding="none" className="flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="px-5 py-4 border-b border-aegis-200">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-aegis-900 font-mono truncate">
-              {module.module_name}
-            </h3>
-            <p className="text-xs text-aegis-200 mt-0.5 line-clamp-2">{module.description}</p>
+      {/* Clickable card body → navigates to detail */}
+      <button
+        className="flex flex-col text-left flex-1 cursor-pointer group"
+        onClick={onViewDetail}
+      >
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-aegis-200 w-full group-hover:bg-aegis-50 transition-colors">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-aegis-900 font-mono truncate">
+                {module.module_name}
+              </h3>
+              <p className="text-xs text-aegis-200 mt-0.5 line-clamp-2">{module.description}</p>
+            </div>
+            <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-aegis-50 text-aegis-500 border border-aegis-200">
+              {lineCount} lines
+            </span>
           </div>
-          <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium bg-aegis-50 text-aegis-500 border border-aegis-200">
-            {lineCount} lines
-          </span>
         </div>
-      </div>
 
-      {/* SQL preview */}
-      <div className="flex-1 bg-aegis-900 px-4 py-3 overflow-hidden">
-        <pre className="text-xs text-aegis-100 font-mono leading-relaxed line-clamp-3 whitespace-pre-wrap">
-          {preview}
-        </pre>
-      </div>
+        {/* SQL preview */}
+        <div className="flex-1 bg-aegis-900 px-4 py-3 overflow-hidden w-full">
+          <pre className="text-xs text-aegis-100 font-mono leading-relaxed line-clamp-3 whitespace-pre-wrap">
+            {preview}
+          </pre>
+        </div>
+      </button>
 
-      {/* Footer */}
+      {/* Footer — not part of the card-click target */}
       <div className="px-5 py-3 flex items-center justify-between border-t border-aegis-200">
         <p className="text-xs text-aegis-200">
           Updated {new Date(module.updated_at).toLocaleDateString()}
           {updatedByUser ? ` · ${updatedByUser.name}` : ''}
         </p>
-        <Button size="sm" variant="secondary" onClick={onCreateChange}>
+        <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onCreateChange(); }}>
           New change
         </Button>
       </div>
@@ -60,10 +74,7 @@ export function EngineModulesPage() {
   const { data: modules = [], isLoading } = useEngineModules();
   const { role } = useAuth();
   const navigate = useNavigate();
-
-  function handleCreateChange(moduleId: string) {
-    navigate(`/strategy-changes/new?module=${moduleId}`);
-  }
+  const [creatingForModuleId, setCreatingForModuleId] = useState<string | null>(null);
 
   const canCreate = role === 'risk_analyst' || role === 'admin';
 
@@ -78,7 +89,7 @@ export function EngineModulesPage() {
           <div className="mb-5">
             <h1 className="text-xl font-semibold text-aegis-900">Engine Modules</h1>
             <p className="text-sm text-aegis-200 mt-0.5">
-              Browse the SQL modules that make up the risk engine. Editing happens through a Strategy Change.
+              Browse the SQL modules that make up the risk engine. Click a module to view its code, or start a change from the card footer.
             </p>
           </div>
 
@@ -92,13 +103,21 @@ export function EngineModulesPage() {
                 <ModuleCard
                   key={mod.id}
                   module={mod}
-                  onCreateChange={canCreate ? () => handleCreateChange(mod.id) : () => {}}
+                  onViewDetail={() => navigate(`/engine-modules/${mod.id}`)}
+                  onCreateChange={canCreate ? () => setCreatingForModuleId(mod.id) : () => {}}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {creatingForModuleId && (
+        <CreateStrategyChangeModal
+          defaultModuleId={creatingForModuleId}
+          onClose={() => setCreatingForModuleId(null)}
+        />
+      )}
     </div>
   );
 }

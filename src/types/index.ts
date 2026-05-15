@@ -128,6 +128,7 @@ export interface AuditLogEntry {
 
 // ── AI chat types ─────────────────────────────────────────────────────────────
 
+// In-memory UI shape — used inside components during a session
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -135,6 +136,19 @@ export interface ChatMessage {
   proposed_sql?: string;
   diff_summary?: string;
   rationale?: string;
+  created_at: string;
+}
+
+// Persisted shape — stored in the repository per strategy change
+export interface ChatMessageEntity {
+  id: string;
+  strategy_change_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  proposed_sql?: string;
+  diff_summary?: string;
+  rationale?: string;
+  author_id: string | null;
   created_at: string;
 }
 

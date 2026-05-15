@@ -3,17 +3,11 @@ import { AppShell } from '@/components/layout/AppShell';
 import { LoginPage } from '@/pages/login/LoginPage';
 import { HomePage } from '@/pages/home/HomePage';
 import { EngineModulesPage } from '@/pages/engine-modules/EngineModulesPage';
+import { EngineModuleDetailPage } from '@/pages/engine-modules/EngineModuleDetailPage';
 import { StrategyChangesPage } from '@/pages/strategy-changes/StrategyChangesPage';
 import { StrategyChangeDetailPage } from '@/pages/strategy-change-detail/StrategyChangeDetailPage';
-
-function ComingSoon({ name }: { name: string }) {
-  return (
-    <div className="flex flex-col h-full items-center justify-center gap-3 text-aegis-200">
-      <p className="text-sm font-medium text-aegis-900">{name}</p>
-      <p className="text-xs">Coming in the next build round.</p>
-    </div>
-  );
-}
+import { ChangelogPage } from '@/pages/changelog/ChangelogPage';
+import { ITHandoffLogPage } from '@/pages/it-handoff-log/ITHandoffLogPage';
 
 export const router = createBrowserRouter([
   {
@@ -24,15 +18,18 @@ export const router = createBrowserRouter([
     path: '/',
     element: <AppShell />,
     children: [
-      { index: true, element: <Navigate to="/home" replace /> },
-      { path: 'home',              element: <HomePage /> },
-      { path: 'engine-modules',   element: <EngineModulesPage /> },
-      { path: 'strategy-changes', element: <StrategyChangesPage /> },
-      { path: 'strategy-changes/:id', element: <StrategyChangeDetailPage /> },
-      { path: 'preview-changelog',    element: <ComingSoon name="Preview Changelog" /> },
-      { path: 'confirmed-changelog',  element: <ComingSoon name="Confirmed Changelog" /> },
-      { path: 'it-handoff-log',       element: <ComingSoon name="IT Handoff Log" /> },
-      { path: 'audit-log',            element: <ComingSoon name="Audit Log" /> },
+      { index: true,                    element: <Navigate to="/home" replace /> },
+      { path: 'home',                   element: <HomePage /> },
+      { path: 'engine-modules',         element: <EngineModulesPage /> },
+      { path: 'engine-modules/:id',     element: <EngineModuleDetailPage /> },
+      { path: 'strategy-changes',       element: <StrategyChangesPage /> },
+      { path: 'strategy-changes/:id',   element: <StrategyChangeDetailPage /> },
+      { path: 'changelog',              element: <ChangelogPage /> },
+      { path: 'it-handoff-log',         element: <ITHandoffLogPage /> },
+      // Legacy redirects for old sidebar links
+      { path: 'preview-changelog',      element: <Navigate to="/changelog" replace /> },
+      { path: 'confirmed-changelog',    element: <Navigate to="/changelog" replace /> },
+      { path: 'audit-log',              element: <Navigate to="/home" replace /> },
     ],
   },
   {
