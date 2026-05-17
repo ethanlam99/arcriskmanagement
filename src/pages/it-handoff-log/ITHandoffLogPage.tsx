@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import Editor from '@monaco-editor/react';
-import { useITHandoffPackets } from '@/hooks/useITHandoffPackets';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
-import { useQuery } from '@tanstack/react-query';
-import { buildPacketDownloadData } from '@/integrations/itHandoff';
+import { useRiskEdits } from '@/hooks/useRiskEdits';
+import { usePackets, useAllPacketEdits } from '@/hooks/useITHandoffPackets';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TopBar, Breadcrumb } from '@/components/layout/TopBar';
 import { Button } from '@/components/ui/Button';
-import { DataTable } from '@/components/ui/DataTable';
-import type { ITHandoffPacket, HandoffSummary } from '@/types';
+import { StageBadge } from '@/components/shared/StageBadge';
+import { ConfirmModal } from '@/components/shared/ConfirmModal';
+import type { Packet, RiskEdit } from '@/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -18,128 +20,132 @@ function fmt(dateStr: string) {
   });
 }
 
-function downloadJson(packet: ITHandoffPacket) {
-  const data = buildPacketDownloadData(packet);
-  const blob  = new Blob([data], { type: 'application/json' });
-  const url   = URL.createObjectURL(blob);
-  const a     = document.createElement('a');
-  a.href      = url;
-  a.download  = `arc-handoff-${packet.id}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+function fmtDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  });
 }
 
-// ── Detail drawer ─────────────────────────────────────────────────────────────
+function PacketStatusBadge({ status }: { status: Packet['status'] }) {
+  const styles: Record<Packet['status'], string> = {
+    proposed:  'bg-amber-50 text-amber-700 border-amber-200',
+    confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
+    rejected:  'bg-rose-50 text-rose-700 border-rose-200',
+    live:      'bg-teal-50 text-teal-700 border-teal-300 font-semibold',
+  };
+  const labels: Record<Packet['status'], string> = {
+    proposed:  'Proposed',
+    confirmed: 'Confirmed',
+    rejected:  'Rejected',
+    live:      'Live',
+  };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${styles[status]}`}>
+      {labels[status]}
+    </span>
+  );
+}
+
+// ── Packet drawer ─────────────────────────────────────────────────────────────
 
 function PacketDrawer({
   packet,
+  edits,
+  userMap,
+  canMarkLive,
+  onMarkLive,
   onClose,
 }: {
-  packet: ITHandoffPacket;
-  onClose: () => void;
+  packet:      Packet;
+  edits:       RiskEdit[];
+  userMap:     Record<string, string>;
+  canMarkLive: boolean;
+  onMarkLive:  () => void;
+  onClose:     () => void;
 }) {
-  const repo = useRepository();
-  const summary = packet.packet_json.summary as HandoffSummary | undefined;
-  const diff    = typeof packet.packet_json.diff === 'string' ? packet.packet_json.diff : '';
-  const notes   = typeof packet.packet_json.deployment_notes === 'string' ? packet.packet_json.deployment_notes : '';
-
-  const { data: author   } = useQuery({
-    queryKey: ['arc', 'users', packet.risk_author_id],
-    queryFn:  () => repo.users.get(packet.risk_author_id),
-  });
-  const { data: approver } = useQuery({
-    queryKey: ['arc', 'users', packet.qa_approver_id],
-    queryFn:  () => repo.users.get(packet.qa_approver_id),
-  });
-
   return (
     <>
-      {/* Backdrop */}
       <div className="fixed inset-0 z-40 bg-arc-900/20" onClick={onClose} />
-
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 bottom-0 z-50 w-[600px] bg-white border-l border-arc-200 flex flex-col shadow-xl">
+      <div className="fixed right-0 top-0 bottom-0 z-50 w-[560px] bg-white border-l border-arc-200 flex flex-col shadow-xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-arc-200 flex items-center justify-between shrink-0">
-          <div>
-            <p className="text-xs text-arc-200 font-mono mb-0.5">{packet.id}</p>
-            <h2 className="text-base font-semibold text-arc-900">
-              {summary?.change_title ?? 'IT Handoff Packet'}
-            </h2>
+        <div className="px-6 py-4 border-b border-arc-200 flex items-start justify-between shrink-0">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <PacketStatusBadge status={packet.status} />
+            </div>
+            <h2 className="text-base font-semibold text-arc-900">{packet.name}</h2>
+            {packet.description && (
+              <p className="text-xs text-arc-200 mt-0.5 leading-relaxed">{packet.description}</p>
+            )}
           </div>
-          <button onClick={onClose} className="text-arc-200 hover:text-arc-900 transition-colors">
+          <button onClick={onClose} className="text-arc-200 hover:text-arc-900 transition-colors ml-4 shrink-0">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
+        {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
-          {/* Summary block */}
-          {summary && (
-            <div>
-              <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">Summary</p>
-              <div className="rounded-xl border border-arc-200 bg-arc-50 divide-y divide-arc-200">
-                {[
-                  { label: 'Module',        value: summary.target_module },
-                  { label: 'Risk Author',   value: author?.name ?? summary.risk_author },
-                  { label: 'QA Approver',   value: approver?.name ?? summary.qa_approver },
-                  { label: 'Approved At',   value: fmt(summary.approved_at) },
-                  { label: 'Diff',          value: summary.diff_summary },
-                  { label: 'Test Cases',    value: `${summary.test_cases_passed} / ${summary.test_cases_total} passed` },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex items-start gap-3 px-4 py-2.5">
-                    <span className="text-xs text-arc-200 w-28 shrink-0 pt-0.5">{label}</span>
-                    <span className="text-xs text-arc-900 font-medium">{value}</span>
+          {/* Meta */}
+          <div className="rounded-xl border border-arc-200 bg-arc-50 divide-y divide-arc-200">
+            {[
+              { label: 'Created by',   value: userMap[packet.created_by] ?? packet.created_by },
+              { label: 'Created at',   value: fmtDate(packet.created_at) },
+              ...(packet.confirmed_by ? [
+                { label: 'Confirmed by', value: userMap[packet.confirmed_by] ?? packet.confirmed_by },
+                { label: 'Confirmed at', value: packet.confirmed_at ? fmt(packet.confirmed_at) : '—' },
+              ] : []),
+              ...(packet.lived_by ? [
+                { label: 'Marked live by', value: userMap[packet.lived_by] ?? packet.lived_by },
+                { label: 'Went live at',   value: packet.lived_at ? fmt(packet.lived_at) : '—' },
+              ] : []),
+            ].map(({ label, value }) => (
+              <div key={label} className="flex items-start gap-3 px-4 py-2.5">
+                <span className="text-xs text-arc-200 w-28 shrink-0 pt-0.5">{label}</span>
+                <span className="text-xs text-arc-900 font-medium">{value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Edits in packet */}
+          <div>
+            <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">
+              Risk Edits ({edits.length})
+            </p>
+            {edits.length === 0 ? (
+              <p className="text-xs text-arc-200">No edits in this packet.</p>
+            ) : (
+              <div className="rounded-xl border border-arc-200 overflow-hidden bg-white divide-y divide-arc-200">
+                {edits.map((e) => (
+                  <div key={e.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <Link to={`/risk-edits/${e.id}`} onClick={onClose}
+                        className="text-sm font-medium text-arc-900 hover:text-arc-500 transition-colors truncate block">
+                        {e.title}
+                      </Link>
+                      <span className="text-xs font-mono text-arc-200">{e.edit_id_display} · {e.target_module_id}</span>
+                    </div>
+                    <StageBadge stage={e.current_stage} />
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Diff */}
-          {diff && (
-            <div>
-              <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">SQL Diff</p>
-              <div className="rounded-xl overflow-hidden border border-arc-200" style={{ height: 220 }}>
-                <Editor
-                  height={220}
-                  language="sql"
-                  value={diff}
-                  options={{
-                    readOnly: true,
-                    minimap: { enabled: false },
-                    fontSize: 12,
-                    fontFamily: 'JetBrains Mono, Menlo, monospace',
-                    lineNumbers: 'off',
-                    scrollBeyondLastLine: false,
-                    wordWrap: 'on',
-                    theme: 'vs-dark',
-                    padding: { top: 8, bottom: 8 },
-                  }}
-                  theme="vs-dark"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Deployment notes */}
-          {notes && (
-            <div>
-              <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-2">Deployment Notes</p>
-              <p className="text-xs text-arc-900 leading-relaxed bg-arc-50 border border-arc-200 rounded-xl px-4 py-3">
-                {notes}
-              </p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-arc-200 shrink-0 flex items-center justify-between">
-          <p className="text-xs text-arc-200">Sent {fmt(packet.sent_at)}</p>
-          <Button size="sm" onClick={() => downloadJson(packet)}>
-            Download as JSON
-          </Button>
+        <div className="px-6 py-4 border-t border-arc-200 shrink-0 flex items-center justify-end">
+          {canMarkLive && packet.status === 'confirmed' ? (
+            <Button size="sm" onClick={onMarkLive}>
+              Mark as Live
+            </Button>
+          ) : packet.status === 'live' ? (
+            <span className="text-xs text-teal-700 font-medium flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-teal-500" />
+              Live in risk engine
+            </span>
+          ) : null}
         </div>
       </div>
     </>
@@ -149,76 +155,72 @@ function PacketDrawer({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function ITHandoffLogPage() {
+  const { currentUser, role } = useAuth();
   const repo = useRepository();
-  const { data: packets = [], isLoading } = useITHandoffPackets();
-  const [selected, setSelected] = useState<ITHandoffPacket | null>(null);
+  const qc   = useQueryClient();
 
-  const authorIds   = [...new Set(packets.map((p) => p.risk_author_id))];
-  const approverIds = [...new Set(packets.map((p) => p.qa_approver_id))];
+  const { data: allPackets = [], isLoading } = usePackets();
+  const { data: allEdits = [] } = useRiskEdits();
+  const { data: allPacketEdits = [] } = useAllPacketEdits();
+
   const { data: userMap = {} } = useQuery({
-    queryKey: ['arc', 'users', 'batch', [...authorIds, ...approverIds].sort().join(',')],
-    queryFn: async () => {
+    queryKey: ['arc', 'users', 'batch', 'all'],
+    queryFn:  async () => {
       const users = await repo.users.list();
       return Object.fromEntries(users.map((u) => [u.id, u.name]));
     },
-    enabled: packets.length > 0,
   });
 
-  const columns = [
-    {
-      key: 'id',
-      header: 'Packet ID',
-      render: (p: ITHandoffPacket) => (
-        <span className="font-mono text-xs text-arc-500">{p.id.slice(0, 12)}…</span>
-      ),
-    },
-    {
-      key: 'change',
-      header: 'Change',
-      render: (p: ITHandoffPacket) => {
-        const summary = p.packet_json.summary as { change_title?: string } | undefined;
-        return <span className="font-medium text-arc-900">{summary?.change_title ?? p.risk_edit_id}</span>;
-      },
-    },
-    {
-      key: 'module',
-      header: 'Module',
-      render: (p: ITHandoffPacket) => {
-        const summary = p.packet_json.summary as { target_module?: string } | undefined;
-        return <span className="font-mono text-xs text-arc-500">{summary?.target_module ?? p.version_id}</span>;
-      },
-    },
-    {
-      key: 'author',
-      header: 'Risk Author',
-      render: (p: ITHandoffPacket) => (
-        <span className="text-xs text-arc-200">{userMap[p.risk_author_id] ?? p.risk_author_id}</span>
-      ),
-    },
-    {
-      key: 'approver',
-      header: 'QA Approver',
-      render: (p: ITHandoffPacket) => (
-        <span className="text-xs text-arc-200">{userMap[p.qa_approver_id] ?? p.qa_approver_id}</span>
-      ),
-    },
-    {
-      key: 'sent_at',
-      header: 'Sent At',
-      render: (p: ITHandoffPacket) => (
-        <span className="text-xs text-arc-200">{fmt(p.sent_at)}</span>
-      ),
-    },
-    {
-      key: 'actions',
-      header: '',
-      render: (p: ITHandoffPacket) => (
-        <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); setSelected(p); }}>
-          View
-        </Button>
-      ),
-    },
-  ];
+  // Only show confirmed + live packets (the IT-relevant ones)
+  const packets = [...allPackets]
+    .filter((p) => p.status === 'confirmed' || p.status === 'live')
+    .sort((a, b) => {
+      const aDate = a.confirmed_at ?? a.created_at;
+      const bDate = b.confirmed_at ?? b.created_at;
+      return bDate.localeCompare(aDate);
+    });
+
+  const canAct = role === 'it_team' || role === 'admin';
+
+  const [selected,     setSelected]     = useState<Packet | null>(null);
+  const [showConfirm,  setShowConfirm]  = useState(false);
+  const [markingLive,  setMarkingLive]  = useState(false);
+
+  function getPacketEdits(packetId: string): RiskEdit[] {
+    const pes = allPacketEdits.filter((pe) => pe.packet_id === packetId);
+    return pes.map((pe) => allEdits.find((e) => e.id === pe.risk_edit_id)).filter(Boolean) as RiskEdit[];
+  }
+
+  async function handleMarkLive() {
+    if (!currentUser || !selected) return;
+    const edits = getPacketEdits(selected.id);
+    setMarkingLive(true);
+    try {
+      await repo.packets.update(selected.id, {
+        status:   'live',
+        lived_by: currentUser.id,
+        lived_at: new Date().toISOString(),
+      } as Partial<Packet>);
+      await Promise.all(edits.map((e) =>
+        repo.riskEdits.update(e.id, { current_stage: 'live', updated_at: new Date().toISOString() })
+      ));
+      await repo.auditLog.append({
+        actor_id:     currentUser.id,
+        action:       'packet.live',
+        entity_type:  'packet',
+        entity_id:    selected.id,
+        payload_json: { risk_edit_ids: edits.map((e) => e.id) },
+      });
+      qc.invalidateQueries({ queryKey: ['arc', 'packets'] });
+      qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
+      setShowConfirm(false);
+      setSelected(null);
+    } finally {
+      setMarkingLive(false);
+    }
+  }
+
+  const selectedEdits = selected ? getPacketEdits(selected.id) : [];
 
   return (
     <>
@@ -237,21 +239,68 @@ export function ITHandoffLogPage() {
             <div className="mb-5">
               <h1 className="text-xl font-semibold text-arc-900">IT Handoff Log</h1>
               <p className="text-sm text-arc-200 mt-0.5">
-                Approved changes packaged and handed off to the IT team for deployment to the live risk engine.
+                Confirmed packets awaiting deployment, and live packets already in the risk engine.
               </p>
             </div>
 
             {isLoading ? (
               <div className="flex items-center justify-center py-24 text-arc-200 text-sm">Loading…</div>
+            ) : packets.length === 0 ? (
+              <div className="flex items-center justify-center py-24 flex-col gap-2 text-arc-200">
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
+                </svg>
+                <p className="text-sm">No packets have been confirmed yet.</p>
+              </div>
             ) : (
               <div className="rounded-xl border border-arc-200 overflow-hidden bg-white">
-                <DataTable
-                  columns={columns}
-                  rows={packets}
-                  getRowKey={(p) => p.id}
-                  onRowClick={setSelected}
-                  emptyMessage="No handoff packets have been generated yet."
-                />
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-arc-200 bg-arc-50">
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Packet</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Status</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Edits</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Confirmed by</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Confirmed at</th>
+                      <th className="px-4 py-2.5 w-20" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {packets.map((pkt) => {
+                      const edits = getPacketEdits(pkt.id);
+                      return (
+                        <tr key={pkt.id}
+                          className="border-b border-arc-200 last:border-0 hover:bg-arc-50 transition-colors cursor-pointer"
+                          onClick={() => setSelected(pkt)}>
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-arc-900">{pkt.name}</p>
+                            {pkt.description && (
+                              <p className="text-xs text-arc-200 mt-0.5 truncate max-w-xs">{pkt.description}</p>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <PacketStatusBadge status={pkt.status} />
+                          </td>
+                          <td className="px-4 py-3 text-xs text-arc-500">
+                            {edits.length} edit{edits.length !== 1 ? 's' : ''}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-arc-200">
+                            {pkt.confirmed_by ? (userMap[pkt.confirmed_by] ?? pkt.confirmed_by) : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-arc-200">
+                            {pkt.confirmed_at ? fmt(pkt.confirmed_at) : '—'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Button size="sm" variant="secondary"
+                              onClick={(e) => { e.stopPropagation(); setSelected(pkt); }}>
+                              View
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
@@ -259,7 +308,25 @@ export function ITHandoffLogPage() {
       </div>
 
       {selected && (
-        <PacketDrawer packet={selected} onClose={() => setSelected(null)} />
+        <PacketDrawer
+          packet={selected}
+          edits={selectedEdits}
+          userMap={userMap}
+          canMarkLive={canAct}
+          onMarkLive={() => setShowConfirm(true)}
+          onClose={() => setSelected(null)}
+        />
+      )}
+
+      {showConfirm && selected && (
+        <ConfirmModal
+          title="Mark packet as Live"
+          description={`"${selected.name}" contains ${selectedEdits.length} edit${selectedEdits.length !== 1 ? 's' : ''}. Marking as live will update their stage to Live and cannot be undone.`}
+          confirmLabel="Mark as Live"
+          loading={markingLive}
+          onConfirm={handleMarkLive}
+          onCancel={() => setShowConfirm(false)}
+        />
       )}
     </>
   );
