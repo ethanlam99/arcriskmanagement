@@ -28,11 +28,11 @@ export function DataTable<T>({
     <div className={`w-full overflow-x-auto ${className}`}>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-aegis-200">
+          <tr className="border-b border-arc-200">
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`px-4 py-2.5 text-left text-xs font-semibold text-aegis-500 uppercase tracking-wide ${col.className ?? ''}`}
+                className={`px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide ${col.className ?? ''}`}
               >
                 {col.header}
               </th>
@@ -44,7 +44,7 @@ export function DataTable<T>({
             <tr>
               <td
                 colSpan={columns.length}
-                className="px-4 py-8 text-center text-aegis-200 text-sm"
+                className="px-4 py-8 text-center text-arc-200 text-sm"
               >
                 {emptyMessage}
               </td>
@@ -54,14 +54,14 @@ export function DataTable<T>({
               <tr
                 key={getRowKey(row)}
                 onClick={() => onRowClick?.(row)}
-                className={`border-b border-aegis-200 last:border-0 transition-colors ${
-                  onRowClick ? 'cursor-pointer hover:bg-aegis-50' : ''
+                className={`border-b border-arc-200 last:border-0 transition-colors ${
+                  onRowClick ? 'cursor-pointer hover:bg-arc-50' : ''
                 }`}
               >
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className={`px-4 py-3 text-aegis-900 ${col.className ?? ''}`}
+                    className={`px-4 py-3 text-arc-900 ${col.className ?? ''}`}
                   >
                     {col.render(row)}
                   </td>

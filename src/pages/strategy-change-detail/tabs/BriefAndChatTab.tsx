@@ -1,16 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useEngineModule } from '@/hooks/useEngineModules';
-import { useStrategyChangeVersions, useCreateVersion } from '@/hooks/useStrategyChanges';
+import { useRiskEditVersions, useCreateVersion } from '@/hooks/useRiskEdits';
 import { proposeSqlEdit } from '@/integrations/llm';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import { useQueryClient } from '@tanstack/react-query';
-import type { StrategyChange, ChatMessage } from '@/types';
+import type { RiskEdit, ChatMessage } from '@/types';
 
 interface BriefAndChatTabProps {
-  change: StrategyChange;
+  change: RiskEdit;
 }
 
 function MessageBubble({ msg, userSeed, userName }: { msg: ChatMessage; userSeed?: string; userName?: string }) {
@@ -21,7 +21,7 @@ function MessageBubble({ msg, userSeed, userName }: { msg: ChatMessage; userSeed
       {isUser ? (
         <UserAvatar seed={userSeed ?? 'U'} name={userName} size="sm" className="mt-0.5 shrink-0" />
       ) : (
-        <div className="w-6 h-6 mt-0.5 shrink-0 bg-aegis-500 rounded-full flex items-center justify-center">
+        <div className="w-6 h-6 mt-0.5 shrink-0 bg-arc-500 rounded-full flex items-center justify-center">
           <span className="text-white text-xs font-bold">AI</span>
         </div>
       )}
@@ -31,8 +31,8 @@ function MessageBubble({ msg, userSeed, userName }: { msg: ChatMessage; userSeed
         <div
           className={`px-4 py-3 rounded-xl text-sm leading-relaxed whitespace-pre-wrap ${
             isUser
-              ? 'bg-aegis-500 text-white rounded-tr-sm'
-              : 'bg-white border border-aegis-200 text-aegis-900 rounded-tl-sm'
+              ? 'bg-arc-500 text-white rounded-tr-sm'
+              : 'bg-white border border-arc-200 text-arc-900 rounded-tl-sm'
           }`}
         >
           {msg.content}
@@ -40,20 +40,20 @@ function MessageBubble({ msg, userSeed, userName }: { msg: ChatMessage; userSeed
 
         {/* Proposed SQL block */}
         {msg.proposed_sql && (
-          <div className="w-full bg-aegis-900 rounded-xl overflow-hidden border border-aegis-700">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-aegis-700">
-              <span className="text-xs font-medium text-aegis-200">Proposed SQL change</span>
+          <div className="w-full bg-arc-900 rounded-xl overflow-hidden border border-arc-700">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-arc-700">
+              <span className="text-xs font-medium text-arc-200">Proposed SQL change</span>
               {msg.diff_summary && (
-                <span className="text-xs text-aegis-200 italic">{msg.diff_summary}</span>
+                <span className="text-xs text-arc-200 italic">{msg.diff_summary}</span>
               )}
             </div>
-            <pre className="px-4 py-3 text-xs font-mono text-aegis-100 overflow-x-auto whitespace-pre-wrap leading-relaxed">
+            <pre className="px-4 py-3 text-xs font-mono text-arc-100 overflow-x-auto whitespace-pre-wrap leading-relaxed">
               {msg.proposed_sql}
             </pre>
           </div>
         )}
 
-        <span className="text-xs text-aegis-200">
+        <span className="text-xs text-arc-200">
           {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>
@@ -64,7 +64,7 @@ function MessageBubble({ msg, userSeed, userName }: { msg: ChatMessage; userSeed
 export function BriefAndChatTab({ change }: BriefAndChatTabProps) {
   const { currentUser } = useAuth();
   const { data: module } = useEngineModule(change.target_module_id);
-  const { data: versions = [] } = useStrategyChangeVersions(change.id);
+  const { data: versions = [] } = useRiskEditVersions(change.id);
   const createVersion = useCreateVersion();
   const qc = useQueryClient();
 
@@ -156,7 +156,7 @@ export function BriefAndChatTab({ change }: BriefAndChatTabProps) {
     try {
       const nextVersionNumber = (latestVersion?.version_number ?? 0) + 1;
       await createVersion.mutateAsync({
-        strategy_change_id: change.id,
+        risk_edit_id: change.id,
         version_number:     nextVersionNumber,
         sql_before:         currentSql,
         sql_after:          pendingProposedSql,
@@ -185,9 +185,9 @@ export function BriefAndChatTab({ change }: BriefAndChatTabProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Brief banner */}
-      <div className="px-6 py-3 border-b border-aegis-200 bg-aegis-50 shrink-0">
-        <p className="text-xs font-medium text-aegis-500 mb-0.5">Natural Language Brief</p>
-        <p className="text-sm text-aegis-900 leading-relaxed">{change.natural_language_brief}</p>
+      <div className="px-6 py-3 border-b border-arc-200 bg-arc-50 shrink-0">
+        <p className="text-xs font-medium text-arc-500 mb-0.5">Natural Language Brief</p>
+        <p className="text-sm text-arc-900 leading-relaxed">{change.natural_language_brief}</p>
       </div>
 
       {/* Chat thread */}
@@ -203,15 +203,15 @@ export function BriefAndChatTab({ change }: BriefAndChatTabProps) {
 
         {isLoading && (
           <div className="flex gap-3">
-            <div className="w-6 h-6 bg-aegis-500 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-6 h-6 bg-arc-500 rounded-full flex items-center justify-center shrink-0 mt-0.5">
               <span className="text-white text-xs font-bold">AI</span>
             </div>
-            <div className="bg-white border border-aegis-200 rounded-xl rounded-tl-sm px-4 py-3">
+            <div className="bg-white border border-arc-200 rounded-xl rounded-tl-sm px-4 py-3">
               <div className="flex gap-1.5 items-center h-4">
                 {[0, 150, 300].map((delay) => (
                   <div
                     key={delay}
-                    className="w-1.5 h-1.5 bg-aegis-300 rounded-full animate-bounce"
+                    className="w-1.5 h-1.5 bg-arc-300 rounded-full animate-bounce"
                     style={{ animationDelay: `${delay}ms` }}
                   />
                 ))}
@@ -242,7 +242,7 @@ export function BriefAndChatTab({ change }: BriefAndChatTabProps) {
 
       {/* Input */}
       {canEdit && (
-        <div className="px-6 py-4 border-t border-aegis-200 bg-white shrink-0">
+        <div className="px-6 py-4 border-t border-arc-200 bg-white shrink-0">
           <div className="flex gap-3 items-end">
             <Textarea
               ref={inputRef}
@@ -263,14 +263,14 @@ export function BriefAndChatTab({ change }: BriefAndChatTabProps) {
               Send
             </Button>
           </div>
-          <p className="text-xs text-aegis-200 mt-1.5">
+          <p className="text-xs text-arc-200 mt-1.5">
             Phase 1 — AI responses are mocked. Phase 2 will connect to the real LLM provider.
           </p>
         </div>
       )}
 
       {!canEdit && (
-        <div className="px-6 py-3 border-t border-aegis-200 bg-zinc-50 shrink-0">
+        <div className="px-6 py-3 border-t border-arc-200 bg-zinc-50 shrink-0">
           <p className="text-sm text-zinc-500 text-center">
             This change is in <strong>{change.current_stage.replace(/_/g, ' ')}</strong> — editing is locked.
           </p>

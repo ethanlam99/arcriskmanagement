@@ -3,8 +3,8 @@ import { useRepository } from '@/data/RepositoryProvider';
 import type { EngineModule } from '@/types';
 
 const KEYS = {
-  all:    () => ['aegis', 'engine_modules'] as const,
-  detail: (id: string) => ['aegis', 'engine_modules', id] as const,
+  all:    () => ['arc', 'engine_modules'] as const,
+  detail: (id: string) => ['arc', 'engine_modules', id] as const,
 };
 
 export function useEngineModules() {

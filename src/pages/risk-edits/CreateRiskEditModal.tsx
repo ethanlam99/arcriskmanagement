@@ -1,21 +1,21 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthProvider';
-import { useCreateStrategyChange } from '@/hooks/useStrategyChanges';
+import { useCreateRiskEdit } from '@/hooks/useRiskEdits';
 import { useEngineModules } from '@/hooks/useEngineModules';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea, FormField } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 
-interface CreateStrategyChangeModalProps {
+interface CreateRiskEditModalProps {
   defaultModuleId?: string;
   onClose: () => void;
 }
 
-export function CreateStrategyChangeModal({ defaultModuleId, onClose }: CreateStrategyChangeModalProps) {
+export function CreateRiskEditModal({ defaultModuleId, onClose }: CreateRiskEditModalProps) {
   const { currentUser } = useAuth();
   const { data: modules = [] } = useEngineModules();
-  const createMutation = useCreateStrategyChange();
+  const createMutation = useCreateRiskEdit();
   const navigate = useNavigate();
 
   const [title, setTitle] = useState('');
@@ -26,7 +26,7 @@ export function CreateStrategyChangeModal({ defaultModuleId, onClose }: CreateSt
     e.preventDefault();
     if (!currentUser) return;
 
-    const sc = await createMutation.mutateAsync({
+    const edit = await createMutation.mutateAsync({
       title,
       natural_language_brief: brief,
       target_module_id: moduleId,
@@ -36,16 +36,16 @@ export function CreateStrategyChangeModal({ defaultModuleId, onClose }: CreateSt
     });
 
     onClose();
-    navigate(`/strategy-changes/${sc.id}`);
+    navigate(`/risk-edits/${edit.id}`);
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-aegis-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-xl border border-aegis-200 w-full max-w-lg mx-4 p-6 shadow-lg">
+      <div className="absolute inset-0 bg-arc-900/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-xl border border-arc-200 w-full max-w-lg mx-4 p-6 shadow-lg">
         <div className="mb-5">
-          <h2 className="text-base font-semibold text-aegis-900">New Strategy Change</h2>
-          <p className="text-xs text-aegis-200 mt-0.5">
+          <h2 className="text-base font-semibold text-arc-900">New Risk Edit</h2>
+          <p className="text-xs text-arc-200 mt-0.5">
             Describe what you want to change — the AI will help you translate this into SQL.
           </p>
         </div>
@@ -72,7 +72,7 @@ export function CreateStrategyChangeModal({ defaultModuleId, onClose }: CreateSt
             </Select>
           </FormField>
 
-          <FormField label="Natural Language Brief">
+          <FormField label="Edit Brief">
             <Textarea
               required
               rows={5}

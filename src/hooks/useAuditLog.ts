@@ -2,8 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useRepository } from '@/data/RepositoryProvider';
 
 const KEYS = {
-  all:      () => ['aegis', 'audit_log'] as const,
-  byEntity: (type: string, id: string) => ['aegis', 'audit_log', type, id] as const,
+  all:      () => ['arc', 'audit_log'] as const,
+  byEntity: (type: string, id: string) => ['arc', 'audit_log', type, id] as const,
 };
 
 export function useAuditLog(filters?: {

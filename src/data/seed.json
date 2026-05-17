@@ -34,6 +34,34 @@
       "email": "k.lim@webank.id",
       "role": "admin",
       "avatar_seed": "KL"
+    },
+    {
+      "id": "user-006",
+      "name": "Reza Pramana",
+      "email": "r.pramana@webank.id",
+      "role": "risk_lead",
+      "avatar_seed": "RP"
+    },
+    {
+      "id": "user-007",
+      "name": "Maya Kusuma",
+      "email": "m.kusuma@webank.id",
+      "role": "testing_lead",
+      "avatar_seed": "MK"
+    },
+    {
+      "id": "user-008",
+      "name": "Dito Nugroho",
+      "email": "d.nugroho@webank.id",
+      "role": "it_team",
+      "avatar_seed": "DN"
+    },
+    {
+      "id": "user-009",
+      "name": "Ika Widiastuti",
+      "email": "i.widiastuti@webank.id",
+      "role": "it_team",
+      "avatar_seed": "IW"
     }
   ],
   "engine_modules": [
@@ -86,9 +114,10 @@
       "current_sql_code": "-- SCHEMATIC PLACEHOLDER — Phase 2 will sync with live risk engine on SQL Server\n-- Module: credit_utilization_cap\n\nCREATE OR ALTER PROCEDURE [risk].[usp_EnforceCreditUtilizationCap]\n    @p_customer_id   BIGINT,\n    @p_new_drawdown  DECIMAL(18, 2)\nAS\nBEGIN\n    SET NOCOUNT ON;\n\n    DECLARE @v_total_limit      DECIMAL(18, 2);\n    DECLARE @v_total_used       DECIMAL(18, 2);\n    DECLARE @v_current_util     DECIMAL(5, 4);\n    DECLARE @v_cap              DECIMAL(5, 4) = 0.8500;  -- 85% utilization cap\n    DECLARE @v_post_drawdown    DECIMAL(5, 4);\n    DECLARE @v_is_allowed       BIT = 1;\n\n    -- Aggregate all active facilities\n    SELECT\n        @v_total_limit = SUM(cf.credit_limit),\n        @v_total_used  = SUM(cf.outstanding_balance)\n    FROM risk.credit_facilities AS cf\n    WHERE cf.customer_id = @p_customer_id\n      AND cf.status = 'active';\n\n    IF @v_total_limit IS NULL OR @v_total_limit = 0\n    BEGIN\n        SELECT 0 AS is_allowed, NULL AS current_utilization, NULL AS projected_utilization;\n        RETURN;\n    END;\n\n    SET @v_current_util  = @v_total_used / @v_total_limit;\n    SET @v_post_drawdown = (@v_total_used + @p_new_drawdown) / @v_total_limit;\n\n    IF @v_post_drawdown > @v_cap\n        SET @v_is_allowed = 0;\n\n    SELECT\n        @v_is_allowed    AS is_allowed,\n        @v_current_util  AS current_utilization,\n        @v_post_drawdown AS projected_utilization;\nEND;"
     }
   ],
-  "strategy_changes": [
+  "risk_edits": [
     {
-      "id": "sc-001",
+      "id": "re-001",
+      "edit_id_display": "RE-2026-0001",
       "title": "Increase loan limit for high-income customers",
       "natural_language_brief": "Customers with monthly income above 15M IDR are hitting the current multiplier ceiling too early. We want to increase the income factor for the 10M–20M bracket from 24x to 27x and add a new bracket at 15M+ with a 28x multiplier to better reflect their repayment capacity.",
       "target_module_id": "module-001",
@@ -98,7 +127,8 @@
       "updated_at": "2026-05-10T09:00:00Z"
     },
     {
-      "id": "sc-002",
+      "id": "re-002",
+      "edit_id_display": "RE-2026-0002",
       "title": "Adjust leverage ratio cap for SME segment",
       "natural_language_brief": "The SME segment leverage ratio is currently capped at 35%. Following the new OJK circular on SME credit expansion, we need to raise this to 40% for verified SME customers with > 24 months tenure and debt-to-income below 20%.",
       "target_module_id": "module-002",
@@ -108,7 +138,8 @@
       "updated_at": "2026-05-09T10:15:00Z"
     },
     {
-      "id": "sc-003",
+      "id": "re-003",
+      "edit_id_display": "RE-2026-0003",
       "title": "Reweight early settlement bonus in repayment score",
       "natural_language_brief": "Data shows our early settlement bonus (currently 20 points per event) is under-weighted compared to industry benchmarks. Propose increasing to 35 points per event, capped at 5 events in the lookback window.",
       "target_module_id": "module-003",
@@ -118,7 +149,8 @@
       "updated_at": "2026-05-11T08:00:00Z"
     },
     {
-      "id": "sc-004",
+      "id": "re-004",
+      "edit_id_display": "RE-2026-0004",
       "title": "Extend KYC eligibility to age 75 for savings products",
       "natural_language_brief": "The current hard age cap of 70 blocks senior customers from accessing long-term savings products. Risk appetite review approved raising the cap to 75 for products classified as SAVINGS_LONG_TERM. PEP and sanctions checks remain unchanged.",
       "target_module_id": "module-004",
@@ -128,17 +160,19 @@
       "updated_at": "2026-05-10T15:30:00Z"
     },
     {
-      "id": "sc-005",
+      "id": "re-005",
+      "edit_id_display": "RE-2026-0005",
       "title": "Add 3-year loyalty rate discount tier",
       "natural_language_brief": "We currently offer a 0.25% loyalty discount at 36 months and 0.50% at 60 months. Risk and commercial have agreed to add an intermediate tier at 48 months with a 0.375% discount to reduce churn at the 4-year mark.",
       "target_module_id": "module-005",
-      "current_stage": "approved_for_it",
+      "current_stage": "approved",
       "created_by": "user-001",
       "created_at": "2026-04-28T09:00:00Z",
       "updated_at": "2026-05-09T16:00:00Z"
     },
     {
-      "id": "sc-006",
+      "id": "re-006",
+      "edit_id_display": "RE-2026-0006",
       "title": "Lower credit utilization cap from 85% to 80%",
       "natural_language_brief": "Following Q1 arrears data showing elevated risk in the 80–85% utilization band, Risk Committee approved tightening the utilization cap from 85% to 80% for all retail customers. Corporate and SME segments are unaffected.",
       "target_module_id": "module-006",
@@ -146,12 +180,23 @@
       "created_by": "user-002",
       "created_at": "2026-04-20T08:00:00Z",
       "updated_at": "2026-05-07T12:00:00Z"
+    },
+    {
+      "id": "re-007",
+      "edit_id_display": "RE-2026-0007",
+      "title": "Reduce tenure haircut thresholds for high-income customers",
+      "natural_language_brief": "High-income customers (monthly income ≥ 10M IDR) with strong credit scores (≥ 750) are being unfairly penalised by the same tenure haircut as standard customers. Propose reducing the <6-month haircut from 50% to 25% and the <12-month haircut from 75% to 90% for this segment, reflecting their lower default risk.",
+      "target_module_id": "module-001",
+      "current_stage": "live",
+      "created_by": "user-006",
+      "created_at": "2026-04-01T09:00:00Z",
+      "updated_at": "2026-05-01T11:00:00Z"
     }
   ],
-  "strategy_change_versions": [
+  "risk_edit_versions": [
     {
-      "id": "scv-001",
-      "strategy_change_id": "sc-001",
+      "id": "rev-001",
+      "risk_edit_id": "re-001",
       "version_number": 1,
       "sql_before": "            WHEN @p_monthly_income >= 10000000 THEN 24.0",
       "sql_after": "            WHEN @p_monthly_income >= 15000000 THEN 28.0\n            WHEN @p_monthly_income >= 10000000 THEN 27.0",
@@ -162,8 +207,8 @@
       "created_at": "2026-05-10T09:15:00Z"
     },
     {
-      "id": "scv-002",
-      "strategy_change_id": "sc-002",
+      "id": "rev-002",
+      "risk_edit_id": "re-002",
       "version_number": 1,
       "sql_before": "            WHEN 'sme'       THEN 0.3500",
       "sql_after": "            WHEN 'sme'       THEN 0.4000  -- raised per OJK circular 2026/04",
@@ -174,8 +219,8 @@
       "created_at": "2026-05-08T14:45:00Z"
     },
     {
-      "id": "scv-003a",
-      "strategy_change_id": "sc-003",
+      "id": "rev-003a",
+      "risk_edit_id": "re-003",
       "version_number": 1,
       "sql_before": "+ (@v_early_settle * 20.0)",
       "sql_after": "+ (LEAST(@v_early_settle, 5) * 35.0)",
@@ -186,8 +231,8 @@
       "created_at": "2026-05-06T11:20:00Z"
     },
     {
-      "id": "scv-003b",
-      "strategy_change_id": "sc-003",
+      "id": "rev-003b",
+      "risk_edit_id": "re-003",
       "version_number": 2,
       "sql_before": "+ (LEAST(@v_early_settle, 5) * 35.0)",
       "sql_after": "+ (LEAST(@v_early_settle, 5) * 32.0)",
@@ -198,8 +243,8 @@
       "created_at": "2026-05-07T10:00:00Z"
     },
     {
-      "id": "scv-004",
-      "strategy_change_id": "sc-004",
+      "id": "rev-004",
+      "risk_edit_id": "re-004",
       "version_number": 1,
       "sql_before": "    IF @v_age > 70 AND @p_product_code = 'LONG_TERM_LOAN' RETURN 0;",
       "sql_after": "    IF @v_age > 75 AND @p_product_code IN ('LONG_TERM_LOAN', 'SAVINGS_LONG_TERM') RETURN 0;\n    IF @v_age > 70 AND @p_product_code NOT IN ('LONG_TERM_LOAN', 'SAVINGS_LONG_TERM') RETURN 0;",
@@ -210,8 +255,8 @@
       "created_at": "2026-05-03T10:20:00Z"
     },
     {
-      "id": "scv-005",
-      "strategy_change_id": "sc-005",
+      "id": "rev-005",
+      "risk_edit_id": "re-005",
       "version_number": 1,
       "sql_before": "    IF @v_tenure_months >= 36  SET @v_loyalty_discount = 0.0025;\n    IF @v_tenure_months >= 60  SET @v_loyalty_discount = 0.0050;",
       "sql_after": "    IF @v_tenure_months >= 36  SET @v_loyalty_discount = 0.0025;\n    IF @v_tenure_months >= 48  SET @v_loyalty_discount = 0.00375;\n    IF @v_tenure_months >= 60  SET @v_loyalty_discount = 0.0050;",
@@ -222,8 +267,8 @@
       "created_at": "2026-04-28T09:30:00Z"
     },
     {
-      "id": "scv-006",
-      "strategy_change_id": "sc-006",
+      "id": "rev-006",
+      "risk_edit_id": "re-006",
       "version_number": 1,
       "sql_before": "    DECLARE @v_cap DECIMAL(5, 4) = 0.8500;  -- 85% utilization cap",
       "sql_after": "    DECLARE @v_cap DECIMAL(5, 4) = 0.8000;  -- 80% utilization cap (tightened per Risk Committee 2026-04-20)",
@@ -232,13 +277,25 @@
       "author_id": "user-002",
       "source": "ai_proposal",
       "created_at": "2026-04-20T08:20:00Z"
+    },
+    {
+      "id": "rev-007",
+      "risk_edit_id": "re-007",
+      "version_number": 1,
+      "sql_before": "    -- Tenure haircut for new customers\n    IF @p_tenure_months < 6\n        SET @v_base_limit = @v_base_limit * 0.50;\n    ELSE IF @p_tenure_months < 12\n        SET @v_base_limit = @v_base_limit * 0.75;",
+      "sql_after": "    -- Tenure haircut — reduced thresholds for high-income / high-score customers\n    IF @p_monthly_income >= 10000000 AND @p_credit_score >= 750\n    BEGIN\n        IF @p_tenure_months < 6\n            SET @v_base_limit = @v_base_limit * 0.75;\n    END\n    ELSE\n    BEGIN\n        IF @p_tenure_months < 6\n            SET @v_base_limit = @v_base_limit * 0.50;\n        ELSE IF @p_tenure_months < 12\n            SET @v_base_limit = @v_base_limit * 0.75;\n    END",
+      "diff_summary": "Premium customers (income ≥ 10M IDR, score ≥ 750) receive 75% haircut for <6-month tenure instead of 50%; <12-month haircut removed for this segment.",
+      "ai_rationale": "High-income, high-score customers have substantially lower observed default rates even at short tenure. Applying the same 50% haircut overly restricts a low-risk cohort and drives them to competitor products.",
+      "author_id": "user-006",
+      "source": "ai_proposal",
+      "created_at": "2026-04-01T09:30:00Z"
     }
   ],
   "uat_runs": [
     {
       "id": "uat-001",
-      "strategy_change_id": "sc-003",
-      "version_id": "scv-003b",
+      "risk_edit_id": "re-003",
+      "version_id": "rev-003b",
       "status": "running",
       "started_at": "2026-05-11T08:05:00Z",
       "completed_at": null,
@@ -247,8 +304,8 @@
     },
     {
       "id": "uat-002",
-      "strategy_change_id": "sc-004",
-      "version_id": "scv-004",
+      "risk_edit_id": "re-004",
+      "version_id": "rev-004",
       "status": "completed",
       "started_at": "2026-05-08T09:00:00Z",
       "completed_at": "2026-05-08T09:03:22Z",
@@ -326,8 +383,8 @@
     },
     {
       "id": "uat-003",
-      "strategy_change_id": "sc-006",
-      "version_id": "scv-006",
+      "risk_edit_id": "re-006",
+      "version_id": "rev-006",
       "status": "completed",
       "started_at": "2026-04-22T10:00:00Z",
       "completed_at": "2026-04-22T10:02:44Z",
@@ -391,6 +448,65 @@
           }
         ]
       }
+    },
+    {
+      "id": "uat-004",
+      "risk_edit_id": "re-007",
+      "version_id": "rev-007",
+      "status": "completed",
+      "started_at": "2026-04-03T09:00:00Z",
+      "completed_at": "2026-04-03T09:02:15Z",
+      "screenshot_refs": ["screenshot-tenure-before.png", "screenshot-tenure-after.png"],
+      "ai_report_json": {
+        "generated_at": "2026-04-03T09:02:15Z",
+        "screenshot_refs": ["screenshot-tenure-before.png", "screenshot-tenure-after.png"],
+        "summary": {
+          "total": 4,
+          "passed": 4,
+          "failed": 0,
+          "inconclusive": 0,
+          "frontend_ok": 4,
+          "frontend_not_ok": 0
+        },
+        "test_cases": [
+          {
+            "id": "tc-t01",
+            "description": "Premium customer, 4-month tenure — haircut should be 75% (not 50%)",
+            "input": { "customer_id": 20011, "monthly_income": 12000000, "credit_score": 780, "tenure_months": 4 },
+            "expected": { "haircut_pct": 0.75 },
+            "actual": { "haircut_pct": 0.75 },
+            "status": "passed",
+            "frontend_render_ok": true
+          },
+          {
+            "id": "tc-t02",
+            "description": "Premium customer, 8-month tenure — no haircut (previous 75% haircut removed for this band)",
+            "input": { "customer_id": 20012, "monthly_income": 15000000, "credit_score": 800, "tenure_months": 8 },
+            "expected": { "haircut_pct": 1.0 },
+            "actual": { "haircut_pct": 1.0 },
+            "status": "passed",
+            "frontend_render_ok": true
+          },
+          {
+            "id": "tc-t03",
+            "description": "Standard customer, 4-month tenure — haircut should remain 50%",
+            "input": { "customer_id": 20013, "monthly_income": 5000000, "credit_score": 620, "tenure_months": 4 },
+            "expected": { "haircut_pct": 0.50 },
+            "actual": { "haircut_pct": 0.50 },
+            "status": "passed",
+            "frontend_render_ok": true
+          },
+          {
+            "id": "tc-t04",
+            "description": "High-income but low score customer — standard haircut applies",
+            "input": { "customer_id": 20014, "monthly_income": 12000000, "credit_score": 600, "tenure_months": 4 },
+            "expected": { "haircut_pct": 0.50 },
+            "actual": { "haircut_pct": 0.50 },
+            "status": "passed",
+            "frontend_render_ok": true
+          }
+        ]
+      }
     }
   ],
   "uat_reviews": [
@@ -400,7 +516,7 @@
       "reviewer_id": "user-003",
       "annotations_json": {
         "tc-005": "Confirmed PEP gate issue. Risk team to investigate branch ordering before re-submission.",
-        "tc-006": "Frontend display cache — logged as separate defect AEGIS-FE-044. Does not block approval of the SQL change itself."
+        "tc-006": "Frontend display cache — logged as separate defect ARC-FE-044. Does not block approval of the SQL change itself."
       },
       "edits_to_report_json": {},
       "final_verdict": "approved",
@@ -414,62 +530,77 @@
       "edits_to_report_json": {},
       "final_verdict": "approved",
       "decided_at": "2026-05-07T11:00:00Z"
-    }
-  ],
-  "it_handoff_packets": [
-    {
-      "id": "itp-001",
-      "strategy_change_id": "sc-005",
-      "version_id": "scv-005",
-      "risk_author_id": "user-001",
-      "qa_approver_id": "user-003",
-      "sent_at": "2026-05-09T16:05:00Z",
-      "sent_by": "user-003",
-      "packet_json": {
-        "summary": {
-          "change_title": "Add 3-year loyalty rate discount tier",
-          "target_module": "interest_rate_adjustment",
-          "risk_author": "Ahmad Rizaldi",
-          "qa_approver": "Budi Santoso",
-          "approved_at": "2026-05-09T16:00:00Z",
-          "diff_summary": "Added 48-month loyalty tier at 0.375% discount between existing 36-month and 60-month tiers.",
-          "test_cases_passed": 5,
-          "test_cases_total": 5
-        },
-        "diff": "- IF @v_tenure_months >= 36  SET @v_loyalty_discount = 0.0025;\n- IF @v_tenure_months >= 60  SET @v_loyalty_discount = 0.0050;\n+ IF @v_tenure_months >= 36  SET @v_loyalty_discount = 0.0025;\n+ IF @v_tenure_months >= 48  SET @v_loyalty_discount = 0.00375;\n+ IF @v_tenure_months >= 60  SET @v_loyalty_discount = 0.0050;",
-        "uat_report_ref": "uat-run for sc-005",
-        "deployment_notes": "Single stored function update. No schema migration required. Rollback: revert loyalty discount block to 2-tier version."
-      }
     },
     {
-      "id": "itp-002",
-      "strategy_change_id": "sc-006",
-      "version_id": "scv-006",
-      "risk_author_id": "user-002",
-      "qa_approver_id": "user-004",
-      "sent_at": "2026-05-07T12:00:00Z",
-      "sent_by": "user-004",
-      "packet_json": {
-        "summary": {
-          "change_title": "Lower credit utilization cap from 85% to 80%",
-          "target_module": "credit_utilization_cap",
-          "risk_author": "Siti Nurhaliza",
-          "qa_approver": "Dewi Rahayu",
-          "approved_at": "2026-05-07T11:00:00Z",
-          "diff_summary": "Tightened retail utilization cap from 85% to 80%.",
-          "test_cases_passed": 5,
-          "test_cases_total": 5
-        },
-        "diff": "- DECLARE @v_cap DECIMAL(5, 4) = 0.8500;  -- 85% utilization cap\n+ DECLARE @v_cap DECIMAL(5, 4) = 0.8000;  -- 80% utilization cap (tightened per Risk Committee 2026-04-20)",
-        "uat_report_ref": "uat-003",
-        "deployment_notes": "Single variable declaration change. No schema migration. Rollback: revert cap value to 0.8500."
-      }
+      "id": "uatr-003",
+      "uat_run_id": "uat-004",
+      "reviewer_id": "user-007",
+      "annotations_json": {},
+      "edits_to_report_json": {},
+      "final_verdict": "approved",
+      "decided_at": "2026-04-05T10:00:00Z"
+    }
+  ],
+  "it_handoff_packets": [],
+  "packets": [
+    {
+      "id": "packet-001",
+      "name": "May 2026 Batch A",
+      "description": "Loyalty rate tier addition — low-risk single-variable change, cleared all UAT gates.",
+      "status": "proposed",
+      "created_by": "user-007",
+      "created_at": "2026-05-12T09:00:00Z"
+    },
+    {
+      "id": "packet-002",
+      "name": "April 2026 Batch B",
+      "description": "Credit utilization cap tightening — Risk Committee directive, all 5 UAT cases passed.",
+      "status": "confirmed",
+      "created_by": "user-007",
+      "created_at": "2026-05-07T12:30:00Z",
+      "confirmed_by": "user-008",
+      "confirmed_at": "2026-05-08T10:00:00Z"
+    },
+    {
+      "id": "packet-003",
+      "name": "April 2026 Batch A",
+      "description": "Tenure haircut adjustment for premium segment — deployed and live.",
+      "status": "live",
+      "created_by": "user-007",
+      "created_at": "2026-04-07T09:00:00Z",
+      "confirmed_by": "user-009",
+      "confirmed_at": "2026-04-10T11:00:00Z",
+      "lived_by": "user-008",
+      "lived_at": "2026-05-01T11:00:00Z"
+    }
+  ],
+  "packet_edits": [
+    {
+      "id": "pe-001",
+      "packet_id": "packet-001",
+      "risk_edit_id": "re-005",
+      "added_by": "user-007",
+      "added_at": "2026-05-12T09:05:00Z"
+    },
+    {
+      "id": "pe-002",
+      "packet_id": "packet-002",
+      "risk_edit_id": "re-006",
+      "added_by": "user-007",
+      "added_at": "2026-05-07T12:35:00Z"
+    },
+    {
+      "id": "pe-003",
+      "packet_id": "packet-003",
+      "risk_edit_id": "re-007",
+      "added_by": "user-007",
+      "added_at": "2026-04-07T09:10:00Z"
     }
   ],
   "chat_messages": [
     {
       "id": "cm-001",
-      "strategy_change_id": "sc-001",
+      "risk_edit_id": "re-001",
       "role": "assistant",
       "content": "I've loaded **loan_limit_rules** (61 lines) and I'm ready to help.\n\nYour brief:\n\n*\"Customers with monthly income above 15M IDR are hitting the current multiplier ceiling too early. We want to increase the income factor for the 10M–20M bracket from 24x to 27x and add a new bracket at 15M+ with a 28x multiplier to better reflect their repayment capacity.\"\n\nShall I propose a SQL change based on this brief, or would you like to refine it first?",
       "proposed_sql": null,
@@ -480,7 +611,7 @@
     },
     {
       "id": "cm-002",
-      "strategy_change_id": "sc-001",
+      "risk_edit_id": "re-001",
       "role": "user",
       "content": "Yes, go ahead and propose the change. Make sure the 15M+ bracket sits between the 10M and 20M cases so it's evaluated in the right order.",
       "proposed_sql": null,
@@ -491,7 +622,7 @@
     },
     {
       "id": "cm-003",
-      "strategy_change_id": "sc-001",
+      "risk_edit_id": "re-001",
       "role": "assistant",
       "content": "I've identified the income bracket lookup in the CASE expression inside usp_CalculateLoanLimit. I'm inserting a new branch at 15M+ (28x) and raising the 10M–20M bracket from 24x to 27x. The 15M+ case must appear before the 10M case — SQL Server evaluates CASE branches top-to-bottom, so ordering matters. The existing ceiling at 20M+ (30x) is unchanged.",
       "proposed_sql": null,
@@ -502,7 +633,7 @@
     },
     {
       "id": "cm-004",
-      "strategy_change_id": "sc-001",
+      "risk_edit_id": "re-001",
       "role": "user",
       "content": "Looks good. Confirm and save the change.",
       "proposed_sql": null,
@@ -513,7 +644,7 @@
     },
     {
       "id": "cm-005",
-      "strategy_change_id": "sc-001",
+      "risk_edit_id": "re-001",
       "role": "assistant",
       "content": "Changes saved as version 1. You can review the SQL in the editor and send for UAT when ready.",
       "proposed_sql": null,
@@ -524,7 +655,7 @@
     },
     {
       "id": "cm-006",
-      "strategy_change_id": "sc-003",
+      "risk_edit_id": "re-003",
       "role": "assistant",
       "content": "I've loaded **repayment_behavior_score** (37 lines) and I'm ready to help.\n\nYour brief:\n\n*\"Data shows our early settlement bonus (currently 20 points per event) is under-weighted compared to industry benchmarks. Propose increasing to 35 points per event, capped at 5 events in the lookback window.\"\n\nShall I propose the change?",
       "proposed_sql": null,
@@ -535,7 +666,7 @@
     },
     {
       "id": "cm-007",
-      "strategy_change_id": "sc-003",
+      "risk_edit_id": "re-003",
       "role": "user",
       "content": "Yes, increase to 35 points per event and cap the contribution at 5 settlement events.",
       "proposed_sql": null,
@@ -546,7 +677,7 @@
     },
     {
       "id": "cm-008",
-      "strategy_change_id": "sc-003",
+      "risk_edit_id": "re-003",
       "role": "assistant",
       "content": "I've located the early settlement weighting line in usp_ComputeRepaymentScore. I'm wrapping @v_early_settle in a LEAST(@v_early_settle, 5) call to enforce the 5-event cap, and raising the per-event weight from 20 to 35 points. The cap prevents gaming via micro-loan splitting.",
       "proposed_sql": null,
@@ -557,7 +688,7 @@
     },
     {
       "id": "cm-009",
-      "strategy_change_id": "sc-003",
+      "risk_edit_id": "re-003",
       "role": "user",
       "content": "I ran the back-test and 35 is over-elevating borderline customers. Reduce to 32 points per event.",
       "proposed_sql": null,
@@ -568,7 +699,7 @@
     },
     {
       "id": "cm-010",
-      "strategy_change_id": "sc-003",
+      "risk_edit_id": "re-003",
       "role": "assistant",
       "content": "Understood — reducing from 35 to 32 points per event. The 5-event cap stays. At 32 pts the maximum settlement contribution is 160 points out of 1000, which keeps the score improvement meaningful without pushing borderline customers over approval thresholds.",
       "proposed_sql": null,
@@ -579,7 +710,7 @@
     },
     {
       "id": "cm-011",
-      "strategy_change_id": "sc-003",
+      "risk_edit_id": "re-003",
       "role": "user",
       "content": "Good. Save version 2 and send for UAT.",
       "proposed_sql": null,
@@ -590,7 +721,7 @@
     },
     {
       "id": "cm-012",
-      "strategy_change_id": "sc-003",
+      "risk_edit_id": "re-003",
       "role": "assistant",
       "content": "Version 2 saved (human edit). The change is now in Ready for UAT — a team lead will confirm it on the Changelog page to trigger the AI UAT run.",
       "proposed_sql": null,
@@ -601,35 +732,45 @@
     }
   ],
   "audit_log": [
-    { "id": "al-001", "actor_id": "user-001", "action": "strategy_change.created", "entity_type": "strategy_change", "entity_id": "sc-001", "payload_json": { "stage": "draft" }, "created_at": "2026-05-10T09:00:00Z" },
-    { "id": "al-002", "actor_id": "user-001", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-001", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-05-10T09:15:00Z" },
-    { "id": "al-003", "actor_id": "user-002", "action": "strategy_change.created", "entity_type": "strategy_change", "entity_id": "sc-002", "payload_json": { "stage": "draft" }, "created_at": "2026-05-08T14:30:00Z" },
-    { "id": "al-004", "actor_id": "user-002", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-002", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-05-08T14:45:00Z" },
-    { "id": "al-005", "actor_id": "user-002", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-002", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-05-09T10:15:00Z" },
-    { "id": "al-006", "actor_id": "user-001", "action": "strategy_change.created", "entity_type": "strategy_change", "entity_id": "sc-003", "payload_json": { "stage": "draft" }, "created_at": "2026-05-06T11:00:00Z" },
-    { "id": "al-007", "actor_id": "user-001", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-003a", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-05-06T11:20:00Z" },
-    { "id": "al-008", "actor_id": "user-001", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-003b", "payload_json": { "version_number": 2, "source": "human_edit" }, "created_at": "2026-05-07T10:00:00Z" },
-    { "id": "al-009", "actor_id": "user-001", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-003", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-05-11T07:55:00Z" },
-    { "id": "al-010", "actor_id": "system", "action": "uat_run.started", "entity_type": "uat_run", "entity_id": "uat-001", "payload_json": { "strategy_change_id": "sc-003", "version_id": "scv-003b" }, "created_at": "2026-05-11T08:05:00Z" },
-    { "id": "al-011", "actor_id": "user-002", "action": "strategy_change.created", "entity_type": "strategy_change", "entity_id": "sc-004", "payload_json": { "stage": "draft" }, "created_at": "2026-05-03T10:00:00Z" },
-    { "id": "al-012", "actor_id": "user-002", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-004", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-05-03T10:20:00Z" },
-    { "id": "al-013", "actor_id": "user-002", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-004", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-05-06T09:00:00Z" },
-    { "id": "al-014", "actor_id": "system", "action": "uat_run.started", "entity_type": "uat_run", "entity_id": "uat-002", "payload_json": { "strategy_change_id": "sc-004", "version_id": "scv-004" }, "created_at": "2026-05-08T09:00:00Z" },
+    { "id": "al-001", "actor_id": "user-001", "action": "risk_edit.created", "entity_type": "risk_edit", "entity_id": "re-001", "payload_json": { "stage": "draft" }, "created_at": "2026-05-10T09:00:00Z" },
+    { "id": "al-002", "actor_id": "user-001", "action": "risk_edit_version.created", "entity_type": "risk_edit_version", "entity_id": "rev-001", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-05-10T09:15:00Z" },
+    { "id": "al-003", "actor_id": "user-002", "action": "risk_edit.created", "entity_type": "risk_edit", "entity_id": "re-002", "payload_json": { "stage": "draft" }, "created_at": "2026-05-08T14:30:00Z" },
+    { "id": "al-004", "actor_id": "user-002", "action": "risk_edit_version.created", "entity_type": "risk_edit_version", "entity_id": "rev-002", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-05-08T14:45:00Z" },
+    { "id": "al-005", "actor_id": "user-002", "action": "risk_edit.stage_transition", "entity_type": "risk_edit", "entity_id": "re-002", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-05-09T10:15:00Z" },
+    { "id": "al-006", "actor_id": "user-001", "action": "risk_edit.created", "entity_type": "risk_edit", "entity_id": "re-003", "payload_json": { "stage": "draft" }, "created_at": "2026-05-06T11:00:00Z" },
+    { "id": "al-007", "actor_id": "user-001", "action": "risk_edit_version.created", "entity_type": "risk_edit_version", "entity_id": "rev-003a", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-05-06T11:20:00Z" },
+    { "id": "al-008", "actor_id": "user-001", "action": "risk_edit_version.created", "entity_type": "risk_edit_version", "entity_id": "rev-003b", "payload_json": { "version_number": 2, "source": "human_edit" }, "created_at": "2026-05-07T10:00:00Z" },
+    { "id": "al-009", "actor_id": "user-001", "action": "risk_edit.stage_transition", "entity_type": "risk_edit", "entity_id": "re-003", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-05-11T07:55:00Z" },
+    { "id": "al-010", "actor_id": "system", "action": "uat_run.started", "entity_type": "uat_run", "entity_id": "uat-001", "payload_json": { "risk_edit_id": "re-003", "version_id": "rev-003b" }, "created_at": "2026-05-11T08:05:00Z" },
+    { "id": "al-011", "actor_id": "user-002", "action": "risk_edit.created", "entity_type": "risk_edit", "entity_id": "re-004", "payload_json": { "stage": "draft" }, "created_at": "2026-05-03T10:00:00Z" },
+    { "id": "al-012", "actor_id": "user-002", "action": "risk_edit_version.created", "entity_type": "risk_edit_version", "entity_id": "rev-004", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-05-03T10:20:00Z" },
+    { "id": "al-013", "actor_id": "user-002", "action": "risk_edit.stage_transition", "entity_type": "risk_edit", "entity_id": "re-004", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-05-06T09:00:00Z" },
+    { "id": "al-014", "actor_id": "system", "action": "uat_run.started", "entity_type": "uat_run", "entity_id": "uat-002", "payload_json": { "risk_edit_id": "re-004", "version_id": "rev-004" }, "created_at": "2026-05-08T09:00:00Z" },
     { "id": "al-015", "actor_id": "system", "action": "uat_run.completed", "entity_type": "uat_run", "entity_id": "uat-002", "payload_json": { "status": "completed", "cases_total": 6, "cases_passed": 4 }, "created_at": "2026-05-08T09:03:22Z" },
-    { "id": "al-016", "actor_id": "system", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-004", "payload_json": { "from": "uat_in_progress", "to": "qa_review" }, "created_at": "2026-05-08T09:03:22Z" },
+    { "id": "al-016", "actor_id": "system", "action": "risk_edit.stage_transition", "entity_type": "risk_edit", "entity_id": "re-004", "payload_json": { "from": "uat_in_progress", "to": "qa_review" }, "created_at": "2026-05-08T09:03:22Z" },
     { "id": "al-017", "actor_id": "user-003", "action": "uat_review.submitted", "entity_type": "uat_review", "entity_id": "uatr-001", "payload_json": { "verdict": "approved" }, "created_at": "2026-05-10T15:30:00Z" },
-    { "id": "al-018", "actor_id": "user-001", "action": "strategy_change.created", "entity_type": "strategy_change", "entity_id": "sc-005", "payload_json": { "stage": "draft" }, "created_at": "2026-04-28T09:00:00Z" },
-    { "id": "al-019", "actor_id": "user-001", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-005", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-04-28T09:30:00Z" },
-    { "id": "al-020", "actor_id": "user-001", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-005", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-04-30T10:00:00Z" },
-    { "id": "al-021", "actor_id": "system", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-005", "payload_json": { "from": "qa_review", "to": "approved_for_it" }, "created_at": "2026-05-09T16:00:00Z" },
-    { "id": "al-022", "actor_id": "user-003", "action": "it_handoff_packet.created", "entity_type": "it_handoff_packet", "entity_id": "itp-001", "payload_json": { "strategy_change_id": "sc-005" }, "created_at": "2026-05-09T16:05:00Z" },
-    { "id": "al-023", "actor_id": "user-002", "action": "strategy_change.created", "entity_type": "strategy_change", "entity_id": "sc-006", "payload_json": { "stage": "draft" }, "created_at": "2026-04-20T08:00:00Z" },
-    { "id": "al-024", "actor_id": "user-002", "action": "strategy_change_version.created", "entity_type": "strategy_change_version", "entity_id": "scv-006", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-04-20T08:20:00Z" },
-    { "id": "al-025", "actor_id": "user-002", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-006", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-04-21T09:00:00Z" },
+    { "id": "al-018", "actor_id": "user-001", "action": "risk_edit.created", "entity_type": "risk_edit", "entity_id": "re-005", "payload_json": { "stage": "draft" }, "created_at": "2026-04-28T09:00:00Z" },
+    { "id": "al-019", "actor_id": "user-001", "action": "risk_edit_version.created", "entity_type": "risk_edit_version", "entity_id": "rev-005", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-04-28T09:30:00Z" },
+    { "id": "al-020", "actor_id": "user-001", "action": "risk_edit.stage_transition", "entity_type": "risk_edit", "entity_id": "re-005", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-04-30T10:00:00Z" },
+    { "id": "al-021", "actor_id": "system", "action": "risk_edit.stage_transition", "entity_type": "risk_edit", "entity_id": "re-005", "payload_json": { "from": "qa_review", "to": "approved" }, "created_at": "2026-05-09T16:00:00Z" },
+    { "id": "al-022", "actor_id": "user-007", "action": "packet.created", "entity_type": "packet", "entity_id": "packet-001", "payload_json": { "risk_edit_ids": ["re-005"] }, "created_at": "2026-05-12T09:00:00Z" },
+    { "id": "al-023", "actor_id": "user-002", "action": "risk_edit.created", "entity_type": "risk_edit", "entity_id": "re-006", "payload_json": { "stage": "draft" }, "created_at": "2026-04-20T08:00:00Z" },
+    { "id": "al-024", "actor_id": "user-002", "action": "risk_edit_version.created", "entity_type": "risk_edit_version", "entity_id": "rev-006", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-04-20T08:20:00Z" },
+    { "id": "al-025", "actor_id": "user-002", "action": "risk_edit.stage_transition", "entity_type": "risk_edit", "entity_id": "re-006", "payload_json": { "from": "draft", "to": "ready_for_uat" }, "created_at": "2026-04-21T09:00:00Z" },
     { "id": "al-026", "actor_id": "system", "action": "uat_run.completed", "entity_type": "uat_run", "entity_id": "uat-003", "payload_json": { "status": "completed", "cases_total": 5, "cases_passed": 5 }, "created_at": "2026-04-22T10:02:44Z" },
-    { "id": "al-027", "actor_id": "system", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-006", "payload_json": { "from": "uat_in_progress", "to": "qa_review" }, "created_at": "2026-04-22T10:02:44Z" },
+    { "id": "al-027", "actor_id": "system", "action": "risk_edit.stage_transition", "entity_type": "risk_edit", "entity_id": "re-006", "payload_json": { "from": "uat_in_progress", "to": "qa_review" }, "created_at": "2026-04-22T10:02:44Z" },
     { "id": "al-028", "actor_id": "user-004", "action": "uat_review.submitted", "entity_type": "uat_review", "entity_id": "uatr-002", "payload_json": { "verdict": "approved" }, "created_at": "2026-05-07T11:00:00Z" },
-    { "id": "al-029", "actor_id": "system", "action": "strategy_change.stage_transition", "entity_type": "strategy_change", "entity_id": "sc-006", "payload_json": { "from": "qa_review", "to": "sent_to_it" }, "created_at": "2026-05-07T11:00:00Z" },
-    { "id": "al-030", "actor_id": "user-004", "action": "it_handoff_packet.created", "entity_type": "it_handoff_packet", "entity_id": "itp-002", "payload_json": { "strategy_change_id": "sc-006" }, "created_at": "2026-05-07T12:00:00Z" }
+    { "id": "al-029", "actor_id": "system", "action": "risk_edit.stage_transition", "entity_type": "risk_edit", "entity_id": "re-006", "payload_json": { "from": "qa_review", "to": "sent_to_it" }, "created_at": "2026-05-07T11:00:00Z" },
+    { "id": "al-030", "actor_id": "user-007", "action": "packet.created", "entity_type": "packet", "entity_id": "packet-002", "payload_json": { "risk_edit_ids": ["re-006"] }, "created_at": "2026-05-07T12:30:00Z" },
+    { "id": "al-031", "actor_id": "user-006", "action": "risk_edit.created", "entity_type": "risk_edit", "entity_id": "re-007", "payload_json": { "stage": "draft" }, "created_at": "2026-04-01T09:00:00Z" },
+    { "id": "al-032", "actor_id": "user-006", "action": "risk_edit_version.created", "entity_type": "risk_edit_version", "entity_id": "rev-007", "payload_json": { "version_number": 1, "source": "ai_proposal" }, "created_at": "2026-04-01T09:30:00Z" },
+    { "id": "al-033", "actor_id": "system", "action": "uat_run.completed", "entity_type": "uat_run", "entity_id": "uat-004", "payload_json": { "status": "completed", "cases_total": 4, "cases_passed": 4 }, "created_at": "2026-04-03T09:02:15Z" },
+    { "id": "al-034", "actor_id": "user-007", "action": "uat_review.submitted", "entity_type": "uat_review", "entity_id": "uatr-003", "payload_json": { "verdict": "approved" }, "created_at": "2026-04-05T10:00:00Z" },
+    { "id": "al-035", "actor_id": "system", "action": "risk_edit.stage_transition", "entity_type": "risk_edit", "entity_id": "re-007", "payload_json": { "from": "qa_review", "to": "approved" }, "created_at": "2026-04-06T11:00:00Z" },
+    { "id": "al-036", "actor_id": "user-007", "action": "packet.created", "entity_type": "packet", "entity_id": "packet-003", "payload_json": { "risk_edit_ids": ["re-007"] }, "created_at": "2026-04-07T09:00:00Z" },
+    { "id": "al-037", "actor_id": "user-009", "action": "packet.confirmed", "entity_type": "packet", "entity_id": "packet-003", "payload_json": { "status": "confirmed" }, "created_at": "2026-04-10T11:00:00Z" },
+    { "id": "al-038", "actor_id": "system", "action": "risk_edit.stage_transition", "entity_type": "risk_edit", "entity_id": "re-007", "payload_json": { "from": "approved", "to": "sent_to_it" }, "created_at": "2026-04-10T11:00:00Z" },
+    { "id": "al-039", "actor_id": "user-008", "action": "packet.live", "entity_type": "packet", "entity_id": "packet-003", "payload_json": { "status": "live" }, "created_at": "2026-05-01T11:00:00Z" },
+    { "id": "al-040", "actor_id": "system", "action": "risk_edit.stage_transition", "entity_type": "risk_edit", "entity_id": "re-007", "payload_json": { "from": "sent_to_it", "to": "live" }, "created_at": "2026-05-01T11:00:00Z" }
   ]
 }

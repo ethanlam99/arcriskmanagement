@@ -1,11 +1,13 @@
 import type {
   User,
   EngineModule,
-  StrategyChange,
-  StrategyChangeVersion,
+  RiskEdit,
+  RiskEditVersion,
   UatRun,
   UatReview,
   ITHandoffPacket,
+  Packet,
+  PacketEdit,
   AuditLogEntry,
   ChatMessageEntity,
 } from '@/types';
@@ -43,8 +45,19 @@ export interface UserRepo {
 // ── Chat message repo ─────────────────────────────────────────────────────────
 
 export interface ChatMessageRepo {
-  listByChange(strategyChangeId: string): Promise<ChatMessageEntity[]>;
+  listByChange(riskEditId: string): Promise<ChatMessageEntity[]>;
   append(message: Omit<ChatMessageEntity, 'id'>): Promise<ChatMessageEntity>;
+}
+
+// ── Packet repo — enforces the one-active-packet-per-edit business rule ───────
+
+export interface PacketRepo extends EntityRepo<Packet> {
+  // Business rule: a risk_edit_id may appear in at most one packet with status
+  // 'proposed' or 'confirmed'. Enforced in the localStorage implementation;
+  // Phase 2 enforces via DB unique partial index.
+  addEditsToPacket(packetId: string, riskEditIds: string[], addedBy: string): Promise<PacketEdit[]>;
+  getEditsForPacket(packetId: string): Promise<PacketEdit[]>;
+  releaseEditsFromPacket(packetId: string): Promise<void>;
 }
 
 // ── The central Repository contract ──────────────────────────────────────────
@@ -54,11 +67,13 @@ export interface ChatMessageRepo {
 export interface Repository {
   users: UserRepo;
   engineModules: EntityRepo<EngineModule>;
-  strategyChanges: EntityRepo<StrategyChange>;
-  strategyChangeVersions: EntityRepo<StrategyChangeVersion>;
+  riskEdits: EntityRepo<RiskEdit>;
+  riskEditVersions: EntityRepo<RiskEditVersion>;
   uatRuns: EntityRepo<UatRun>;
   uatReviews: EntityRepo<UatReview>;
   itHandoffPackets: EntityRepo<ITHandoffPacket>;
+  packets: PacketRepo;
+  packetEdits: EntityRepo<PacketEdit>;
   auditLog: AuditLogRepo;
   chatMessages: ChatMessageRepo;
 }

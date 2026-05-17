@@ -1,23 +1,24 @@
-import type { StrategyChangeStage } from '@/types';
+import type { RiskEditStage } from '@/types';
 
-const STAGES: { key: StrategyChangeStage; label: string }[] = [
-  { key: 'draft',          label: 'Author' },
-  { key: 'ready_for_uat',  label: 'Queued' },
-  { key: 'uat_in_progress',label: 'UAT' },
-  { key: 'qa_review',      label: 'QA Review' },
-  { key: 'approved_for_it',label: 'Approved' },
-  { key: 'sent_to_it',     label: 'Sent to IT' },
+const STAGES: { key: RiskEditStage; label: string }[] = [
+  { key: 'draft',           label: 'Author'     },
+  { key: 'ready_for_uat',   label: 'Queued'     },
+  { key: 'uat_in_progress', label: 'UAT'        },
+  { key: 'qa_review',       label: 'QA Review'  },
+  { key: 'approved',        label: 'Approved'   },
+  { key: 'sent_to_it',      label: 'Sent to IT' },
+  { key: 'live',            label: 'Live'       },
 ];
 
 const STAGE_ORDER = STAGES.map((s) => s.key);
 
-function stageIndex(stage: StrategyChangeStage): number {
+function stageIndex(stage: RiskEditStage): number {
   if (stage === 'rejected') return -1;
   return STAGE_ORDER.indexOf(stage);
 }
 
 interface StepperProps {
-  currentStage: StrategyChangeStage;
+  currentStage: RiskEditStage;
 }
 
 export function Stepper({ currentStage }: StepperProps) {
@@ -37,9 +38,9 @@ export function Stepper({ currentStage }: StepperProps) {
             <div className="flex flex-col items-center">
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 transition-colors
-                  ${done   ? 'bg-aegis-500 border-aegis-500 text-white' : ''}
-                  ${active ? 'bg-white border-aegis-500 text-aegis-500' : ''}
-                  ${pending && !isRejected ? 'bg-white border-aegis-200 text-aegis-200' : ''}
+                  ${done   ? 'bg-arc-500 border-arc-500 text-white' : ''}
+                  ${active ? 'bg-white border-arc-500 text-arc-500' : ''}
+                  ${pending && !isRejected ? 'bg-white border-arc-200 text-arc-200' : ''}
                   ${isRejected ? 'bg-rose-50 border-rose-300 text-rose-400' : ''}
                 `}
               >
@@ -53,9 +54,9 @@ export function Stepper({ currentStage }: StepperProps) {
               </div>
               <span
                 className={`mt-1 text-xs whitespace-nowrap
-                  ${active  ? 'text-aegis-700 font-semibold' : ''}
-                  ${done    ? 'text-aegis-500' : ''}
-                  ${pending ? 'text-aegis-200' : ''}
+                  ${active  ? 'text-arc-700 font-semibold' : ''}
+                  ${done    ? 'text-arc-500' : ''}
+                  ${pending ? 'text-arc-200' : ''}
                   ${isRejected ? 'text-rose-400' : ''}
                 `}
               >
@@ -67,7 +68,7 @@ export function Stepper({ currentStage }: StepperProps) {
             {i < STAGES.length - 1 && (
               <div
                 className={`h-0.5 w-10 mx-1 mb-4 transition-colors
-                  ${done ? 'bg-aegis-500' : 'bg-aegis-200'}
+                  ${done ? 'bg-arc-500' : 'bg-arc-200'}
                 `}
               />
             )}

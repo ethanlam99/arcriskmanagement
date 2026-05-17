@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/auth/AuthProvider';
 import { TopBar, Breadcrumb } from '@/components/layout/TopBar';
 import { Button } from '@/components/ui/Button';
-import { CreateStrategyChangeModal } from '@/pages/strategy-changes/CreateStrategyChangeModal';
+import { CreateRiskEditModal } from '@/pages/risk-edits/CreateRiskEditModal';
 
 export function EngineModuleDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,7 +17,7 @@ export function EngineModuleDetailPage() {
 
   const { data: module, isLoading } = useEngineModule(id ?? '');
   const { data: updatedByUser } = useQuery({
-    queryKey: ['aegis', 'users', module?.updated_by],
+    queryKey: ['arc', 'users', module?.updated_by],
     queryFn: () => repo.users.get(module!.updated_by),
     enabled: !!module?.updated_by,
   });
@@ -28,14 +28,14 @@ export function EngineModuleDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center text-aegis-200 text-sm">Loading…</div>
+      <div className="flex h-full items-center justify-center text-arc-200 text-sm">Loading…</div>
     );
   }
 
   if (!module) {
     return (
       <div className="flex h-full items-center justify-center flex-col gap-3">
-        <p className="text-aegis-900 font-medium">Module not found</p>
+        <p className="text-arc-900 font-medium">Module not found</p>
         <Button variant="secondary" size="sm" onClick={() => navigate('/engine-modules')}>
           Back to modules
         </Button>
@@ -67,21 +67,21 @@ export function EngineModuleDetailPage() {
         />
 
         {/* Metadata strip */}
-        <div className="px-6 py-4 border-b border-aegis-200 bg-white shrink-0">
+        <div className="px-6 py-4 border-b border-arc-200 bg-white shrink-0">
           <div className="flex items-start justify-between gap-6">
             <div className="min-w-0">
-              <h1 className="text-base font-semibold text-aegis-900 font-mono">
+              <h1 className="text-base font-semibold text-arc-900 font-mono">
                 {module.module_name}.sql
               </h1>
-              <p className="text-sm text-aegis-200 mt-0.5 leading-relaxed">{module.description}</p>
+              <p className="text-sm text-arc-200 mt-0.5 leading-relaxed">{module.description}</p>
             </div>
-            <div className="shrink-0 flex items-center gap-6 text-xs text-aegis-200">
+            <div className="shrink-0 flex items-center gap-6 text-xs text-arc-200">
               <div className="text-right">
-                <p className="text-aegis-500 font-medium">{lineCount}</p>
+                <p className="text-arc-500 font-medium">{lineCount}</p>
                 <p>lines</p>
               </div>
               <div className="text-right">
-                <p className="text-aegis-500 font-medium">
+                <p className="text-arc-500 font-medium">
                   {new Date(module.updated_at).toLocaleDateString('en-GB', {
                     day: 'numeric',
                     month: 'short',
@@ -92,7 +92,7 @@ export function EngineModuleDetailPage() {
               </div>
               {updatedByUser && (
                 <div className="text-right">
-                  <p className="text-aegis-500 font-medium">{updatedByUser.name}</p>
+                  <p className="text-arc-500 font-medium">{updatedByUser.name}</p>
                   <p>updated by</p>
                 </div>
               )}
@@ -101,7 +101,7 @@ export function EngineModuleDetailPage() {
         </div>
 
         {/* Read-only Monaco editor */}
-        <div className="flex-1 min-h-0 bg-aegis-900">
+        <div className="flex-1 min-h-0 bg-arc-900">
           <Editor
             height="100%"
             language="sql"
@@ -124,7 +124,7 @@ export function EngineModuleDetailPage() {
       </div>
 
       {showModal && (
-        <CreateStrategyChangeModal
+        <CreateRiskEditModal
           defaultModuleId={module.id}
           onClose={() => setShowModal(false)}
         />

@@ -17,7 +17,7 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-aegis-200 last:border-0">
+    <div className="flex items-start gap-3 py-3 border-b border-arc-200 last:border-0">
       {actor ? (
         <UserAvatar seed={actor.avatar_seed} name={actor.name} size="sm" className="mt-0.5 shrink-0" />
       ) : (
@@ -25,18 +25,18 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-sm font-medium text-aegis-900">
+          <span className="text-sm font-medium text-arc-900">
             {actor?.name ?? entry.actor_id}
           </span>
-          <span className="text-sm text-aegis-500">{actionLabel}</span>
+          <span className="text-sm text-arc-500">{actionLabel}</span>
         </div>
         {Object.keys(entry.payload_json).length > 0 && (
-          <p className="text-xs text-aegis-200 mt-0.5 font-mono truncate">
+          <p className="text-xs text-arc-200 mt-0.5 font-mono truncate">
             {JSON.stringify(entry.payload_json)}
           </p>
         )}
       </div>
-      <time className="text-xs text-aegis-200 font-mono shrink-0 mt-0.5">
+      <time className="text-xs text-arc-200 font-mono shrink-0 mt-0.5">
         {new Date(entry.created_at).toLocaleString([], {
           month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
         })}
@@ -56,7 +56,7 @@ export function AuditTrailTab({ changeId }: { changeId: string }) {
   });
 
   const relevantVersionEntries = versionEntries.filter(
-    (e) => (e.payload_json as Record<string, unknown>).strategy_change_id === changeId
+    (e) => (e.payload_json as Record<string, unknown>).risk_edit_id === changeId
   );
 
   const allEntries = [...entries, ...relevantVersionEntries]
@@ -64,17 +64,17 @@ export function AuditTrailTab({ changeId }: { changeId: string }) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="px-6 py-3 border-b border-aegis-200 bg-aegis-50 shrink-0 flex items-center justify-between">
-        <p className="text-xs font-medium text-aegis-500">
+      <div className="px-6 py-3 border-b border-arc-200 bg-arc-50 shrink-0 flex items-center justify-between">
+        <p className="text-xs font-medium text-arc-500">
           {allEntries.length} audit event{allEntries.length !== 1 ? 's' : ''}
         </p>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-2">
         {isLoading ? (
-          <p className="text-sm text-aegis-200 py-8 text-center">Loading…</p>
+          <p className="text-sm text-arc-200 py-8 text-center">Loading…</p>
         ) : allEntries.length === 0 ? (
-          <p className="text-sm text-aegis-200 py-8 text-center">No audit events yet.</p>
+          <p className="text-sm text-arc-200 py-8 text-center">No audit events yet.</p>
         ) : (
           allEntries.map((entry) => <AuditRow key={entry.id} entry={entry} />)
         )}

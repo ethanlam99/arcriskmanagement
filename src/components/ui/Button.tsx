@@ -10,12 +10,12 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const base =
-  'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aegis-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
+  'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-arc-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
 
 const variants: Record<Variant, string> = {
-  primary:     'bg-aegis-500 text-white hover:bg-aegis-700 active:bg-aegis-800',
-  secondary:   'border border-aegis-500 text-aegis-500 bg-white hover:bg-aegis-50 active:bg-aegis-100',
-  ghost:       'text-aegis-700 hover:bg-aegis-100 active:bg-aegis-200',
+  primary:     'bg-arc-500 text-white hover:bg-arc-700 active:bg-arc-800',
+  secondary:   'border border-arc-500 text-arc-500 bg-white hover:bg-arc-50 active:bg-arc-100',
+  ghost:       'text-arc-700 hover:bg-arc-100 active:bg-arc-200',
   destructive: 'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800',
 };
 

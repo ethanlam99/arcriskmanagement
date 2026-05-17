@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useEngineModule } from '@/hooks/useEngineModules';
-import { useStrategyChangeVersions, useCreateVersion } from '@/hooks/useStrategyChanges';
+import { useRiskEditVersions, useCreateVersion } from '@/hooks/useRiskEdits';
 import { useChatMessages, useAppendChatMessage } from '@/hooks/useChatMessages';
 import { useLatestRejectedReview } from '@/hooks/useUatRuns';
 import { useRepository } from '@/data/RepositoryProvider';
@@ -11,10 +11,10 @@ import { proposeSqlEdit } from '@/integrations/llm';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { UserAvatar } from '@/components/shared/UserAvatar';
-import type { StrategyChange, ChatMessage } from '@/types';
+import type { RiskEdit, ChatMessage } from '@/types';
 
 interface EditTabProps {
-  change: StrategyChange;
+  change: RiskEdit;
 }
 
 // ── Brief panel ───────────────────────────────────────────────────────────────
@@ -24,14 +24,14 @@ function BriefPanel({
   rejectedReview,
   rejectorName,
 }: {
-  change: StrategyChange;
+  change: RiskEdit;
   rejectedReview: { annotations_json: Record<string, unknown>; decided_at: string } | null;
   rejectorName?: string;
 }) {
   const [expanded, setExpanded] = useState(change.current_stage === 'draft');
 
   return (
-    <div className="shrink-0 border-b border-aegis-200">
+    <div className="shrink-0 border-b border-arc-200">
       {/* Rejection banner */}
       {rejectedReview && change.current_stage === 'draft' && (
         <div className="px-5 py-2.5 bg-rose-50 border-b border-rose-200 flex items-start gap-2">
@@ -54,14 +54,14 @@ function BriefPanel({
 
       {/* Brief header — always visible */}
       <button
-        className="w-full px-5 py-3 flex items-center justify-between bg-aegis-50 hover:bg-aegis-100 transition-colors text-left"
+        className="w-full px-5 py-3 flex items-center justify-between bg-arc-50 hover:bg-arc-100 transition-colors text-left"
         onClick={() => setExpanded((e) => !e)}
       >
-        <span className="text-xs font-semibold text-aegis-500 uppercase tracking-wide">
+        <span className="text-xs font-semibold text-arc-500 uppercase tracking-wide">
           Natural Language Brief
         </span>
         <svg
-          className={`w-4 h-4 text-aegis-200 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-arc-200 transition-transform ${expanded ? 'rotate-180' : ''}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -70,8 +70,8 @@ function BriefPanel({
 
       {/* Brief body — collapsible */}
       {expanded && (
-        <div className="px-5 py-3 bg-aegis-50 border-t border-aegis-200">
-          <p className="text-sm text-aegis-900 leading-relaxed">{change.natural_language_brief}</p>
+        <div className="px-5 py-3 bg-arc-50 border-t border-arc-200">
+          <p className="text-sm text-arc-900 leading-relaxed">{change.natural_language_brief}</p>
         </div>
       )}
     </div>
@@ -87,7 +87,7 @@ function MiniChatMessage({ msg, userSeed }: { msg: ChatMessage; userSeed?: strin
       {isUser ? (
         <UserAvatar seed={userSeed ?? 'U'} size="sm" className="shrink-0 mt-0.5" />
       ) : (
-        <div className="w-6 h-6 shrink-0 mt-0.5 bg-aegis-500 rounded-full flex items-center justify-center">
+        <div className="w-6 h-6 shrink-0 mt-0.5 bg-arc-500 rounded-full flex items-center justify-center">
           <span className="text-white text-xs font-bold">AI</span>
         </div>
       )}
@@ -95,14 +95,14 @@ function MiniChatMessage({ msg, userSeed }: { msg: ChatMessage; userSeed?: strin
         <div
           className={`px-3 py-2 rounded-xl text-xs leading-relaxed whitespace-pre-wrap ${
             isUser
-              ? 'bg-aegis-500 text-white rounded-tr-sm'
-              : 'bg-white border border-aegis-200 text-aegis-900 rounded-tl-sm'
+              ? 'bg-arc-500 text-white rounded-tr-sm'
+              : 'bg-white border border-arc-200 text-arc-900 rounded-tl-sm'
           }`}
         >
           {msg.content}
         </div>
         {msg.diff_summary && (
-          <p className="text-xs text-aegis-200 italic px-1">{msg.diff_summary}</p>
+          <p className="text-xs text-arc-200 italic px-1">{msg.diff_summary}</p>
         )}
       </div>
     </div>
@@ -115,7 +115,7 @@ export function EditTab({ change }: EditTabProps) {
   const { currentUser } = useAuth();
   const repo = useRepository();
   const { data: module } = useEngineModule(change.target_module_id);
-  const { data: versions = [] } = useStrategyChangeVersions(change.id);
+  const { data: versions = [] } = useRiskEditVersions(change.id);
   const createVersion = useCreateVersion();
   const appendMessage = useAppendChatMessage();
   const qc = useQueryClient();
@@ -196,7 +196,7 @@ export function EditTab({ change }: EditTabProps) {
 
     // Persist user message
     await appendMessage.mutateAsync({
-      strategy_change_id: change.id,
+      risk_edit_id: change.id,
       role: 'user',
       content: userContent,
       author_id: currentUser.id,
@@ -219,7 +219,7 @@ export function EditTab({ change }: EditTabProps) {
 
       // Persist AI response
       await appendMessage.mutateAsync({
-        strategy_change_id: change.id,
+        risk_edit_id: change.id,
         role: 'assistant',
         content: response.reply,
         proposed_sql: response.proposed_sql ?? undefined,
@@ -256,7 +256,7 @@ export function EditTab({ change }: EditTabProps) {
       const lastAiMsg = [...uiMessages].reverse().find((m) => m.role === 'assistant' && m.diff_summary);
 
       await createVersion.mutateAsync({
-        strategy_change_id: change.id,
+        risk_edit_id: change.id,
         version_number:     nextVersionNumber,
         sql_before:         baseSQL,
         sql_after:          editorSQL,
@@ -268,7 +268,7 @@ export function EditTab({ change }: EditTabProps) {
 
       const confirmContent = `Version ${nextVersionNumber} saved (${source === 'human_edit' ? 'manual edit' : 'AI proposal'}). Ready to send for UAT.`;
       await appendMessage.mutateAsync({
-        strategy_change_id: change.id,
+        risk_edit_id: change.id,
         role: 'assistant',
         content: confirmContent,
         author_id: null,
@@ -297,13 +297,13 @@ export function EditTab({ change }: EditTabProps) {
         {/* Monaco editor — left pane */}
         <div className="flex-1 min-w-0 flex flex-col relative">
           {/* Editor toolbar */}
-          <div className="h-10 shrink-0 bg-aegis-900 border-b border-aegis-700 flex items-center justify-between px-4">
+          <div className="h-10 shrink-0 bg-arc-900 border-b border-arc-700 flex items-center justify-between px-4">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-aegis-200">
+              <span className="text-xs font-mono text-arc-200">
                 {module?.module_name ?? '…'}.sql
               </span>
               {latestVersion && (
-                <span className="text-xs text-aegis-200 font-mono">· v{latestVersion.version_number}</span>
+                <span className="text-xs text-arc-200 font-mono">· v{latestVersion.version_number}</span>
               )}
               {(hasManualEdits || pendingSql) && (
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Unsaved changes" />
@@ -312,7 +312,7 @@ export function EditTab({ change }: EditTabProps) {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowVersions(!showVersions)}
-                className="text-xs text-aegis-200 hover:text-white transition-colors"
+                className="text-xs text-arc-200 hover:text-white transition-colors"
               >
                 {showVersions ? 'Hide history' : 'History'}
               </button>
@@ -326,24 +326,24 @@ export function EditTab({ change }: EditTabProps) {
 
           {/* Version history side panel */}
           {showVersions && (
-            <div className="absolute right-80 top-10 bottom-0 w-64 bg-white border-l border-aegis-200 z-10 overflow-y-auto">
-              <div className="px-4 py-3 border-b border-aegis-200">
-                <p className="text-xs font-semibold text-aegis-900">Version history</p>
+            <div className="absolute right-80 top-10 bottom-0 w-64 bg-white border-l border-arc-200 z-10 overflow-y-auto">
+              <div className="px-4 py-3 border-b border-arc-200">
+                <p className="text-xs font-semibold text-arc-900">Version history</p>
               </div>
               {versions.map((v) => (
                 <button
                   key={v.id}
                   onClick={() => { setEditorSQL(v.sql_after); setShowVersions(false); }}
-                  className="w-full text-left px-4 py-3 border-b border-aegis-200 hover:bg-aegis-50 transition-colors"
+                  className="w-full text-left px-4 py-3 border-b border-arc-200 hover:bg-arc-50 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-xs font-semibold text-aegis-900">v{v.version_number}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${v.source === 'ai_proposal' ? 'bg-aegis-50 text-aegis-500' : 'bg-amber-50 text-amber-700'}`}>
+                    <span className="text-xs font-semibold text-arc-900">v{v.version_number}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${v.source === 'ai_proposal' ? 'bg-arc-50 text-arc-500' : 'bg-amber-50 text-amber-700'}`}>
                       {v.source === 'ai_proposal' ? 'AI' : 'Human'}
                     </span>
                   </div>
-                  <p className="text-xs text-aegis-200 truncate">{v.diff_summary}</p>
-                  <p className="text-xs text-aegis-200 mt-0.5 font-mono">
+                  <p className="text-xs text-arc-200 truncate">{v.diff_summary}</p>
+                  <p className="text-xs text-arc-200 mt-0.5 font-mono">
                     {new Date(v.created_at).toLocaleDateString()}
                   </p>
                 </button>
@@ -377,19 +377,19 @@ export function EditTab({ change }: EditTabProps) {
         </div>
 
         {/* AI chat panel — right pane */}
-        <div className="w-80 shrink-0 border-l border-aegis-200 flex flex-col bg-aegis-50">
-          <div className="h-10 shrink-0 px-4 flex items-center border-b border-aegis-200 bg-white">
+        <div className="w-80 shrink-0 border-l border-arc-200 flex flex-col bg-arc-50">
+          <div className="h-10 shrink-0 px-4 flex items-center border-b border-arc-200 bg-white">
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-aegis-500 rounded-full flex items-center justify-center">
+              <div className="w-5 h-5 bg-arc-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-xs font-bold">AI</span>
               </div>
-              <span className="text-xs font-semibold text-aegis-900">AI Assistant</span>
+              <span className="text-xs font-semibold text-arc-900">AI Assistant</span>
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
             {messagesLoading ? (
-              <div className="flex items-center justify-center py-8 text-aegis-200 text-xs">
+              <div className="flex items-center justify-center py-8 text-arc-200 text-xs">
                 Loading conversation…
               </div>
             ) : (
@@ -400,13 +400,13 @@ export function EditTab({ change }: EditTabProps) {
 
             {isAiLoading && (
               <div className="flex gap-2">
-                <div className="w-6 h-6 bg-aegis-500 rounded-full flex items-center justify-center shrink-0">
+                <div className="w-6 h-6 bg-arc-500 rounded-full flex items-center justify-center shrink-0">
                   <span className="text-white text-xs font-bold">AI</span>
                 </div>
-                <div className="bg-white border border-aegis-200 rounded-xl rounded-tl-sm px-3 py-2">
+                <div className="bg-white border border-arc-200 rounded-xl rounded-tl-sm px-3 py-2">
                   <div className="flex gap-1 items-center h-4">
                     {[0, 150, 300].map((d) => (
-                      <div key={d} className="w-1.5 h-1.5 bg-aegis-300 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                      <div key={d} className="w-1.5 h-1.5 bg-arc-300 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
                     ))}
                   </div>
                 </div>
@@ -416,7 +416,7 @@ export function EditTab({ change }: EditTabProps) {
           </div>
 
           {canEdit && (
-            <div className="p-3 border-t border-aegis-200 bg-white flex flex-col gap-2">
+            <div className="p-3 border-t border-arc-200 bg-white flex flex-col gap-2">
               <Textarea
                 rows={3}
                 placeholder="Ask the AI to propose or refine the SQL change… (Enter to send)"
@@ -435,17 +435,17 @@ export function EditTab({ change }: EditTabProps) {
               >
                 Send
               </Button>
-              <p className="text-xs text-aegis-200 text-center">
+              <p className="text-xs text-arc-200 text-center">
                 Phase 1 — AI responses are mocked.
               </p>
             </div>
           )}
 
           {!canEdit && (
-            <div className="px-4 py-3 border-t border-aegis-200 bg-white">
-              <p className="text-xs text-aegis-200 text-center">
+            <div className="px-4 py-3 border-t border-arc-200 bg-white">
+              <p className="text-xs text-arc-200 text-center">
                 Editing locked — stage is{' '}
-                <span className="font-medium text-aegis-500">
+                <span className="font-medium text-arc-500">
                   {change.current_stage.replace(/_/g, ' ')}
                 </span>
               </p>

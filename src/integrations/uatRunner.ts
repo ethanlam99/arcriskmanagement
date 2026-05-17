@@ -20,7 +20,7 @@ export async function runUat(request: UatRunRequest): Promise<UatReport> {
 
   // Return a seeded fixture if one exists for this strategy change
   const existingRun = seedData.uat_runs.find(
-    (r) => r.strategy_change_id === request.strategyChangeId && r.ai_report_json
+    (r) => r.risk_edit_id === request.riskEditId && r.ai_report_json
   );
 
   if (existingRun?.ai_report_json) {

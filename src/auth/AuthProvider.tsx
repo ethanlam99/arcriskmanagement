@@ -20,7 +20,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const STORAGE_KEY = 'aegis:current_user';
+const STORAGE_KEY = 'arc:current_user';
 
 function loadPersistedUser(): User | null {
   try {

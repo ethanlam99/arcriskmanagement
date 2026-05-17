@@ -5,7 +5,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        aegis: {
+        arc: {
           50:  '#EFF8F9',
           100: '#B8E3E9',
           200: '#93B1B5',

@@ -20,42 +20,40 @@ function assertRepo() {
 }
 
 export async function packageChangeForIT(
-  strategyChangeId: string,
+  riskEditId: string,
   actorId: string
 ): Promise<ITHandoffPacket> {
   const repo = assertRepo();
 
-  const sc = await repo.strategyChanges.get(strategyChangeId);
-  if (!sc) throw new Error(`StrategyChange ${strategyChangeId} not found`);
+  const edit = await repo.riskEdits.get(riskEditId);
+  if (!edit) throw new Error(`RiskEdit ${riskEditId} not found`);
 
-  // Find the latest approved UAT review for this change
   const allRuns = await repo.uatRuns.list();
   const run = allRuns
-    .filter((r) => r.strategy_change_id === strategyChangeId && r.status === 'completed')
+    .filter((r) => r.risk_edit_id === riskEditId && r.status === 'completed')
     .sort((a, b) => b.started_at.localeCompare(a.started_at))[0];
 
-  if (!run) throw new Error('No completed UAT run found for this change');
+  if (!run) throw new Error('No completed UAT run found for this edit');
 
   const reviews = await repo.uatReviews.list();
   const review = reviews.find((r) => r.uat_run_id === run.id && r.final_verdict === 'approved');
   if (!review) throw new Error('No approved UAT review found');
 
-  // Find latest version
-  const versions = await repo.strategyChangeVersions.list();
+  const versions = await repo.riskEditVersions.list();
   const version = versions
-    .filter((v) => v.strategy_change_id === strategyChangeId)
+    .filter((v) => v.risk_edit_id === riskEditId)
     .sort((a, b) => b.version_number - a.version_number)[0];
 
-  if (!version) throw new Error('No version found for this change');
+  if (!version) throw new Error('No version found for this edit');
 
-  const author = await repo.users.get(sc.created_by);
+  const author = await repo.users.get(edit.created_by);
   const approver = await repo.users.get(review.reviewer_id);
-  const module = await repo.engineModules.get(sc.target_module_id);
+  const module = await repo.engineModules.get(edit.target_module_id);
 
   const summary: HandoffSummary = {
-    change_title:       sc.title,
-    target_module:      module?.module_name ?? sc.target_module_id,
-    risk_author:        author?.name ?? sc.created_by,
+    change_title:       edit.title,
+    target_module:      module?.module_name ?? edit.target_module_id,
+    risk_author:        author?.name ?? edit.created_by,
     qa_approver:        approver?.name ?? review.reviewer_id,
     approved_at:        review.decided_at,
     diff_summary:       version.diff_summary,
@@ -64,12 +62,12 @@ export async function packageChangeForIT(
   };
 
   const packet = await repo.itHandoffPackets.create({
-    strategy_change_id: strategyChangeId,
-    version_id:         version.id,
-    risk_author_id:     sc.created_by,
-    qa_approver_id:     review.reviewer_id,
-    sent_at:            new Date().toISOString(),
-    sent_by:            actorId,
+    risk_edit_id:   riskEditId,
+    version_id:     version.id,
+    risk_author_id: edit.created_by,
+    qa_approver_id: review.reviewer_id,
+    sent_at:        new Date().toISOString(),
+    sent_by:        actorId,
     packet_json: {
       summary,
       diff: `- ${version.sql_before}\n+ ${version.sql_after}`,
@@ -84,7 +82,7 @@ export async function packageChangeForIT(
     action:       'it_handoff_packet.created',
     entity_type:  'it_handoff_packet',
     entity_id:    packet.id,
-    payload_json: { strategy_change_id: strategyChangeId },
+    payload_json: { risk_edit_id: riskEditId },
   });
 
   return packet;
@@ -93,7 +91,7 @@ export async function packageChangeForIT(
 // Phase 2: replace with real notification delivery
 export async function notifyIT(_packetId: string): Promise<void> {
   // no-op in Phase 1
-  console.info('[AEGIS] notifyIT called — no-op in Phase 1. Phase 2: wire email/Slack/ITSM.');
+  console.info('[ARC] notifyIT called — no-op in Phase 1. Phase 2: wire email/Slack/ITSM.');
 }
 
 export function buildPacketDownloadData(packet: ITHandoffPacket): string {

@@ -25,13 +25,13 @@ export function ConfirmModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-aegis-900/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-arc-900/40 backdrop-blur-sm"
         onClick={onCancel}
       />
       {/* Panel */}
-      <div className="relative bg-white rounded-xl border border-aegis-200 shadow-lg w-full max-w-md mx-4 p-6">
-        <h2 className="text-base font-semibold text-aegis-900 mb-2">{title}</h2>
-        <p className="text-sm text-aegis-500 mb-6">{description}</p>
+      <div className="relative bg-white rounded-xl border border-arc-200 shadow-lg w-full max-w-md mx-4 p-6">
+        <h2 className="text-base font-semibold text-arc-900 mb-2">{title}</h2>
+        <p className="text-sm text-arc-500 mb-6">{description}</p>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={onCancel} disabled={loading}>
             {cancelLabel}

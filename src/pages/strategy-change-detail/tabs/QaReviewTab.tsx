@@ -2,16 +2,16 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useLatestUatRun } from '@/hooks/useUatRuns';
-import { useUpdateStrategyChangeStage } from '@/hooks/useStrategyChanges';
+import { useUpdateRiskEditStage } from '@/hooks/useRiskEdits';
 import { useQueryClient } from '@tanstack/react-query';
 import { packageChangeForIT, notifyIT } from '@/integrations/itHandoff';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
-import type { StrategyChange, TestCase, TestCaseStatus } from '@/types';
+import type { RiskEdit, TestCase, TestCaseStatus } from '@/types';
 
 interface QaReviewTabProps {
-  change: StrategyChange;
+  change: RiskEdit;
 }
 
 const DRAFT_KEY = (changeId: string) => `aegis:qa_draft:${changeId}`;
@@ -51,10 +51,10 @@ function ReviewableTestCaseRow({
   return (
     <>
       <tr
-        className={`border-b border-aegis-200 transition-colors ${isReviewed ? 'bg-emerald-50/30' : ''} hover:bg-aegis-50`}
+        className={`border-b border-arc-200 transition-colors ${isReviewed ? 'bg-emerald-50/30' : ''} hover:bg-arc-50`}
       >
-        <td className="px-4 py-2.5 font-mono text-xs text-aegis-500">{tc.id}</td>
-        <td className="px-4 py-2.5 text-sm text-aegis-900 cursor-pointer" onClick={() => setExpanded((e) => !e)}>
+        <td className="px-4 py-2.5 font-mono text-xs text-arc-500">{tc.id}</td>
+        <td className="px-4 py-2.5 text-sm text-arc-900 cursor-pointer" onClick={() => setExpanded((e) => !e)}>
           {tc.description}
         </td>
         <td className="px-4 py-2.5">
@@ -66,7 +66,7 @@ function ReviewableTestCaseRow({
             <select
               value={displayStatus}
               onChange={(e) => onStatusOverride(e.target.value as TestCaseStatus)}
-              className="text-xs border border-aegis-200 rounded-lg px-2 py-1 bg-white text-aegis-900 focus:outline-none focus:ring-1 focus:ring-aegis-500"
+              className="text-xs border border-arc-200 rounded-lg px-2 py-1 bg-white text-arc-900 focus:outline-none focus:ring-1 focus:ring-arc-500"
             >
               <option value="passed">Passed</option>
               <option value="failed">Failed</option>
@@ -87,7 +87,7 @@ function ReviewableTestCaseRow({
               className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-lg border transition-colors ${
                 isReviewed
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                  : 'bg-white border-aegis-200 text-aegis-200 hover:border-aegis-500 hover:text-aegis-500'
+                  : 'bg-white border-arc-200 text-arc-200 hover:border-arc-500 hover:text-arc-500'
               }`}
             >
               {isReviewed ? '✓ Reviewed' : 'Mark reviewed'}
@@ -96,16 +96,16 @@ function ReviewableTestCaseRow({
         )}
       </tr>
       {expanded && (
-        <tr className="border-b border-aegis-200 bg-aegis-50">
+        <tr className="border-b border-arc-200 bg-arc-50">
           <td colSpan={readonly ? 4 : 5} className="px-6 py-4">
             <div className="grid grid-cols-3 gap-4 text-xs mb-3">
               {[
-                { label: 'Input',    data: tc.input,    cls: 'bg-white border-aegis-200 text-aegis-900' },
-                { label: 'Expected', data: tc.expected,  cls: 'bg-white border-aegis-200 text-aegis-900' },
-                { label: 'Actual',   data: tc.actual,    cls: tc.status === 'failed' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-white border-aegis-200 text-aegis-900' },
+                { label: 'Input',    data: tc.input,    cls: 'bg-white border-arc-200 text-arc-900' },
+                { label: 'Expected', data: tc.expected,  cls: 'bg-white border-arc-200 text-arc-900' },
+                { label: 'Actual',   data: tc.actual,    cls: tc.status === 'failed' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-white border-arc-200 text-arc-900' },
               ].map(({ label, data, cls }) => (
                 <div key={label}>
-                  <p className="font-semibold text-aegis-500 mb-1.5">{label}</p>
+                  <p className="font-semibold text-arc-500 mb-1.5">{label}</p>
                   <pre className={`border rounded-lg px-3 py-2 font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed ${cls}`}>
                     {JSON.stringify(data, null, 2)}
                   </pre>
@@ -113,16 +113,16 @@ function ReviewableTestCaseRow({
               ))}
             </div>
             <div>
-              <p className="text-xs font-semibold text-aegis-500 mb-1.5">
+              <p className="text-xs font-semibold text-arc-500 mb-1.5">
                 {readonly ? 'Annotation' : 'Annotation (optional)'}
               </p>
               {readonly ? (
                 annotation ? (
-                  <p className="text-xs text-aegis-900 bg-white border border-aegis-200 rounded-lg px-3 py-2 leading-relaxed">
+                  <p className="text-xs text-arc-900 bg-white border border-arc-200 rounded-lg px-3 py-2 leading-relaxed">
                     {annotation}
                   </p>
                 ) : (
-                  <p className="text-xs text-aegis-200 italic">No annotation added.</p>
+                  <p className="text-xs text-arc-200 italic">No annotation added.</p>
                 )
               ) : (
                 <Textarea
@@ -145,7 +145,7 @@ export function QaReviewTab({ change }: QaReviewTabProps) {
   const { currentUser, role } = useAuth();
   const repo = useRepository();
   const qc   = useQueryClient();
-  const stageTransition = useUpdateStrategyChangeStage();
+  const stageTransition = useUpdateRiskEditStage();
 
   const { data: run, isLoading: runLoading } = useLatestUatRun(change.id);
 
@@ -267,12 +267,12 @@ export function QaReviewTab({ change }: QaReviewTabProps) {
   }
 
   if (runLoading) {
-    return <div className="flex h-full items-center justify-center text-aegis-200 text-sm">Loading…</div>;
+    return <div className="flex h-full items-center justify-center text-arc-200 text-sm">Loading…</div>;
   }
 
   if (!run || !run.ai_report_json) {
     return (
-      <div className="flex h-full items-center justify-center flex-col gap-2 text-aegis-200">
+      <div className="flex h-full items-center justify-center flex-col gap-2 text-arc-200">
         <p className="text-sm">No completed UAT report to review.</p>
       </div>
     );
@@ -285,7 +285,7 @@ export function QaReviewTab({ change }: QaReviewTabProps) {
     <>
       <div className="flex flex-col h-full overflow-hidden">
         {/* Banner */}
-        <div className="px-6 py-3 border-b border-aegis-200 bg-amber-50 shrink-0">
+        <div className="px-6 py-3 border-b border-arc-200 bg-amber-50 shrink-0">
           <p className="text-xs text-amber-800 leading-relaxed">
             <span className="font-semibold">Reviewing AI-generated UAT report for "{change.title}".</span>
             {canAct && ' Edits here override the AI\'s findings — your final report is what gets sent to IT.'}
@@ -296,15 +296,15 @@ export function QaReviewTab({ change }: QaReviewTabProps) {
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-5xl mx-auto px-6 py-5">
-            <div className="rounded-xl border border-aegis-200 overflow-hidden bg-white">
+            <div className="rounded-xl border border-arc-200 overflow-hidden bg-white">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-aegis-200 bg-aegis-50">
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-aegis-500 uppercase tracking-wide">ID</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-aegis-500 uppercase tracking-wide">Description</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-aegis-500 uppercase tracking-wide">Status</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-aegis-500 uppercase tracking-wide">Frontend</th>
-                    {canAct && <th className="px-4 py-2.5 text-left text-xs font-semibold text-aegis-500 uppercase tracking-wide">Review</th>}
+                  <tr className="border-b border-arc-200 bg-arc-50">
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">ID</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Description</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Status</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Frontend</th>
+                    {canAct && <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Review</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -329,8 +329,8 @@ export function QaReviewTab({ change }: QaReviewTabProps) {
 
         {/* Sticky action footer — testers/admins only, only when in qa_review */}
         {canAct && (
-          <div className="shrink-0 border-t border-aegis-200 bg-white px-6 py-4 flex items-center justify-between gap-4">
-            <p className="text-xs text-aegis-200">
+          <div className="shrink-0 border-t border-arc-200 bg-white px-6 py-4 flex items-center justify-between gap-4">
+            <p className="text-xs text-arc-200">
               {reviewedCount} of {testCases.length} cases marked as reviewed
             </p>
             <div className="flex items-center gap-2">
@@ -360,7 +360,7 @@ export function QaReviewTab({ change }: QaReviewTabProps) {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-aegis-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">
+        <div className="fixed bottom-6 right-6 z-50 bg-arc-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">
           {toast}
         </div>
       )}
@@ -380,13 +380,13 @@ export function QaReviewTab({ change }: QaReviewTabProps) {
       {/* Reject modal */}
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-aegis-900/40 backdrop-blur-sm" onClick={() => setShowRejectModal(false)} />
-          <div className="relative bg-white rounded-xl border border-aegis-200 w-full max-w-md mx-4 p-6 shadow-lg">
-            <h2 className="text-base font-semibold text-aegis-900 mb-1">Reject — Return to Author</h2>
-            <p className="text-xs text-aegis-200 mb-4">
+          <div className="absolute inset-0 bg-arc-900/40 backdrop-blur-sm" onClick={() => setShowRejectModal(false)} />
+          <div className="relative bg-white rounded-xl border border-arc-200 w-full max-w-md mx-4 p-6 shadow-lg">
+            <h2 className="text-base font-semibold text-arc-900 mb-1">Reject — Return to Author</h2>
+            <p className="text-xs text-arc-200 mb-4">
               The change will be moved back to Draft. The risk analyst will see your notes when they re-open it.
             </p>
-            <label className="block text-xs font-medium text-aegis-900 mb-1.5">
+            <label className="block text-xs font-medium text-arc-900 mb-1.5">
               Rejection notes <span className="text-rose-500">*</span>
             </label>
             <Textarea

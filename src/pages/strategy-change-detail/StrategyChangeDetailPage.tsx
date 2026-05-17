@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthProvider';
-import { useStrategyChange, useUpdateStrategyChangeStage } from '@/hooks/useStrategyChanges';
+import { useRiskEdit, useUpdateRiskEditStage } from '@/hooks/useRiskEdits';
 import { useEngineModule } from '@/hooks/useEngineModules';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useQuery } from '@tanstack/react-query';
@@ -15,15 +15,15 @@ import { QaReviewTab } from './tabs/QaReviewTab';
 import { AuditTrailTab } from './tabs/AuditTrailTab';
 import { useState } from 'react';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
-import type { StrategyChangeStage } from '@/types';
+import type { RiskEditStage } from '@/types';
 
-export function StrategyChangeDetailPage() {
+export function RiskEditDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { currentUser, role } = useAuth();
   const navigate = useNavigate();
   const repo = useRepository();
 
-  const { data: change, isLoading } = useStrategyChange(id ?? '');
+  const { data: change, isLoading } = useRiskEdit(id ?? '');
   const { data: module } = useEngineModule(change?.target_module_id ?? '');
   const { data: author } = useQuery({
     queryKey: ['aegis', 'users', change?.created_by],
@@ -31,19 +31,19 @@ export function StrategyChangeDetailPage() {
     enabled: !!change?.created_by,
   });
 
-  const stageTransition = useUpdateStrategyChangeStage();
-  const [showConfirm, setShowConfirm] = useState<{ to: StrategyChangeStage; label: string } | null>(null);
+  const stageTransition = useUpdateRiskEditStage();
+  const [showConfirm, setShowConfirm] = useState<{ to: RiskEditStage; label: string } | null>(null);
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center text-aegis-200 text-sm">Loading…</div>
+      <div className="flex h-full items-center justify-center text-arc-200 text-sm">Loading…</div>
     );
   }
 
   if (!change) {
     return (
       <div className="flex h-full items-center justify-center flex-col gap-3">
-        <p className="text-aegis-900 font-medium">Change not found</p>
+        <p className="text-arc-900 font-medium">Change not found</p>
         <Button variant="secondary" size="sm" onClick={() => navigate('/strategy-changes')}>
           Back to list
         </Button>
@@ -53,7 +53,7 @@ export function StrategyChangeDetailPage() {
 
   const canSendForUat = (role === 'risk_analyst' || role === 'admin') && change.current_stage === 'draft';
 
-  async function handleTransition(to: StrategyChangeStage) {
+  async function handleTransition(to: RiskEditStage) {
     if (!currentUser) return;
     await stageTransition.mutateAsync({
       id: change!.id,
@@ -94,11 +94,11 @@ export function StrategyChangeDetailPage() {
         />
 
         {/* Change header */}
-        <div className="px-6 py-4 border-b border-aegis-200 bg-white shrink-0">
+        <div className="px-6 py-4 border-b border-arc-200 bg-white shrink-0">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="min-w-0">
-              <h1 className="text-lg font-semibold text-aegis-900 truncate">{change.title}</h1>
-              <div className="flex items-center gap-3 mt-1 text-xs text-aegis-200">
+              <h1 className="text-lg font-semibold text-arc-900 truncate">{change.title}</h1>
+              <div className="flex items-center gap-3 mt-1 text-xs text-arc-200">
                 <span className="font-mono">{module?.module_name ?? change.target_module_id}</span>
                 <span>·</span>
                 <span>by {author?.name ?? change.created_by}</span>

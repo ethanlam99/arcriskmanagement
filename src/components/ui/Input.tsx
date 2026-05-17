@@ -1,7 +1,7 @@
 import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 
 const inputBase =
-  'w-full rounded-lg border border-aegis-200 bg-white px-3 py-2 text-sm text-aegis-900 placeholder:text-aegis-200 focus:outline-none focus:ring-2 focus:ring-aegis-500 focus:border-transparent disabled:opacity-50 disabled:bg-aegis-50 transition-colors';
+  'w-full rounded-lg border border-arc-200 bg-white px-3 py-2 text-sm text-arc-900 placeholder:text-arc-200 focus:outline-none focus:ring-2 focus:ring-arc-500 focus:border-transparent disabled:opacity-50 disabled:bg-arc-50 transition-colors';
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   ({ className = '', ...props }, ref) => (
@@ -21,7 +21,7 @@ interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {}
 
 export function Label({ className = '', children, ...props }: LabelProps) {
   return (
-    <label className={`block text-xs font-medium text-aegis-700 mb-1 ${className}`} {...props}>
+    <label className={`block text-xs font-medium text-arc-700 mb-1 ${className}`} {...props}>
       {children}
     </label>
   );

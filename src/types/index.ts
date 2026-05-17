@@ -1,18 +1,20 @@
-export type UserRole = 'risk_analyst' | 'tester' | 'admin';
+export type UserRole = 'risk_analyst' | 'tester' | 'admin' | 'risk_lead' | 'testing_lead' | 'it_team';
 
-export type StrategyChangeStage =
+export type RiskEditStage =
   | 'draft'
   | 'ready_for_uat'
   | 'uat_in_progress'
   | 'qa_review'
-  | 'approved_for_it'
+  | 'approved'
   | 'sent_to_it'
+  | 'live'
   | 'rejected';
 
 export type VersionSource = 'ai_proposal' | 'human_edit';
 export type UatRunStatus = 'pending' | 'running' | 'completed' | 'failed';
 export type UatVerdict = 'approved' | 'rejected' | 'changes_requested';
 export type TestCaseStatus = 'passed' | 'failed' | 'inconclusive';
+export type PacketStatus = 'proposed' | 'confirmed' | 'rejected' | 'live';
 
 // ── Core entities ────────────────────────────────────────────────────────────
 
@@ -33,20 +35,22 @@ export interface EngineModule {
   updated_by: string;
 }
 
-export interface StrategyChange {
+export interface RiskEdit {
   id: string;
+  edit_id_display: string;
   title: string;
   natural_language_brief: string;
   target_module_id: string;
-  current_stage: StrategyChangeStage;
+  current_stage: RiskEditStage;
   created_by: string;
   created_at: string;
   updated_at: string;
+  rejection_notes?: string;
 }
 
-export interface StrategyChangeVersion {
+export interface RiskEditVersion {
   id: string;
-  strategy_change_id: string;
+  risk_edit_id: string;
   version_number: number;
   sql_before: string;
   sql_after: string;
@@ -86,7 +90,7 @@ export interface UatReport {
 
 export interface UatRun {
   id: string;
-  strategy_change_id: string;
+  risk_edit_id: string;
   version_id: string;
   status: UatRunStatus;
   started_at: string;
@@ -103,17 +107,44 @@ export interface UatReview {
   edits_to_report_json: Partial<UatReport>;
   final_verdict: UatVerdict;
   decided_at: string;
+  rejection_notes?: string;
 }
 
 export interface ITHandoffPacket {
   id: string;
-  strategy_change_id: string;
+  risk_edit_id: string;
   version_id: string;
   packet_json: Record<string, unknown>;
   risk_author_id: string;
   qa_approver_id: string;
   sent_at: string;
   sent_by: string;
+}
+
+// ── Packet entities (v0.3) ────────────────────────────────────────────────────
+
+export interface Packet {
+  id: string;
+  name: string;
+  description?: string;
+  status: PacketStatus;
+  created_by: string;
+  created_at: string;
+  confirmed_by?: string;
+  confirmed_at?: string;
+  rejected_by?: string;
+  rejected_at?: string;
+  rejection_notes?: string;
+  lived_by?: string;
+  lived_at?: string;
+}
+
+export interface PacketEdit {
+  id: string;
+  packet_id: string;
+  risk_edit_id: string;
+  added_by: string;
+  added_at: string;
 }
 
 export interface AuditLogEntry {
@@ -128,7 +159,6 @@ export interface AuditLogEntry {
 
 // ── AI chat types ─────────────────────────────────────────────────────────────
 
-// In-memory UI shape — used inside components during a session
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -139,10 +169,9 @@ export interface ChatMessage {
   created_at: string;
 }
 
-// Persisted shape — stored in the repository per strategy change
 export interface ChatMessageEntity {
   id: string;
-  strategy_change_id: string;
+  risk_edit_id: string;
   role: 'user' | 'assistant';
   content: string;
   proposed_sql?: string;
@@ -175,7 +204,7 @@ export interface LlmEditRequest {
   conversation: ChatMessage[];
   moduleSql: string;
   moduleContext: string;
-  dbContext?: DatabaseSchema; // populated in Phase 2 from live engine
+  dbContext?: DatabaseSchema;
 }
 
 export interface LlmEditResponse {
@@ -190,7 +219,7 @@ export interface LlmEditResponse {
 
 export interface UatRunRequest {
   versionId: string;
-  strategyChangeId: string;
+  riskEditId: string;
 }
 
 // ── IT handoff types ──────────────────────────────────────────────────────────
