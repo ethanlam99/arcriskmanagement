@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthProvider';
-import { useRiskEdit, useUpdateRiskEditStage } from '@/hooks/useRiskEdits';
+import { useRiskEdit, useRiskEdits, useUpdateRiskEditStage } from '@/hooks/useRiskEdits';
 import { useEngineModule } from '@/hooks/useEngineModules';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useQuery } from '@tanstack/react-query';
@@ -23,6 +23,11 @@ export function WorkspacePage() {
   const repo = useRepository();
 
   const { data: change, isLoading } = useRiskEdit(id ?? '');
+  const { data: allEdits = [] } = useRiskEdits();
+  const sortedEdits = [...allEdits].sort((a, b) => a.edit_id_display.localeCompare(b.edit_id_display));
+  const currentIndex = change ? sortedEdits.findIndex((e) => e.id === change.id) : -1;
+  const prevEdit = currentIndex > 0 ? sortedEdits[currentIndex - 1] : null;
+  const nextEdit = currentIndex < sortedEdits.length - 1 && currentIndex !== -1 ? sortedEdits[currentIndex + 1] : null;
   const { data: module } = useEngineModule(change?.target_module_id ?? '');
   const { data: author } = useQuery({
     queryKey: ['arc', 'users', change?.created_by],
@@ -84,21 +89,46 @@ export function WorkspacePage() {
             />
           }
           actions={
-            canSendForUat ? (
-              <Button
-                size="sm"
-                onClick={() =>
-                  setShowConfirm({
-                    to: 'ready_for_uat',
-                    label: 'Send for UAT',
-                    description: 'This will move the edit to "Ready for UAT" and queue it for team lead confirmation on the Changelog page.',
-                  })
-                }
-                loading={stageTransition.isPending}
-              >
-                Send for UAT
-              </Button>
-            ) : undefined
+            <div className="flex items-center gap-3">
+              {/* Sequential prev/next navigation */}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => prevEdit && navigate(`/risk-edits/${prevEdit.id}`)}
+                  disabled={!prevEdit}
+                  title={prevEdit ? `← ${prevEdit.edit_id_display}` : undefined}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg border border-arc-200 text-arc-500 hover:border-arc-500 hover:text-arc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
+                >
+                  ←
+                </button>
+                <span className="text-xs text-arc-200 tabular-nums w-12 text-center">
+                  {currentIndex >= 0 ? `${currentIndex + 1} / ${sortedEdits.length}` : ''}
+                </span>
+                <button
+                  onClick={() => nextEdit && navigate(`/risk-edits/${nextEdit.id}`)}
+                  disabled={!nextEdit}
+                  title={nextEdit ? `${nextEdit.edit_id_display} →` : undefined}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg border border-arc-200 text-arc-500 hover:border-arc-500 hover:text-arc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
+                >
+                  →
+                </button>
+              </div>
+
+              {canSendForUat && (
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    setShowConfirm({
+                      to: 'ready_for_uat',
+                      label: 'Send for UAT',
+                      description: 'This will move the edit to "Ready for UAT" and queue it for team lead confirmation on the Changelog page.',
+                    })
+                  }
+                  loading={stageTransition.isPending}
+                >
+                  Send for UAT
+                </Button>
+              )}
+            </div>
           }
         />
 
