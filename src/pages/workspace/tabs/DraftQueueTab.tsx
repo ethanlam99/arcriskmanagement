@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/Input';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import type { RiskEdit, ChatMessage } from '@/types';
 
-interface EditTabProps {
+interface DraftQueueTabProps {
   change: RiskEdit;
 }
 
@@ -32,7 +32,6 @@ function BriefPanel({
 
   return (
     <div className="shrink-0 border-b border-arc-200">
-      {/* Rejection banner */}
       {rejectedReview && change.current_stage === 'draft' && (
         <div className="px-5 py-2.5 bg-rose-50 border-b border-rose-200 flex items-start gap-2">
           <svg className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -52,7 +51,6 @@ function BriefPanel({
         </div>
       )}
 
-      {/* Brief header — always visible */}
       <button
         className="w-full px-5 py-3 flex items-center justify-between bg-arc-50 hover:bg-arc-100 transition-colors text-left"
         onClick={() => setExpanded((e) => !e)}
@@ -68,7 +66,6 @@ function BriefPanel({
         </svg>
       </button>
 
-      {/* Brief body — collapsible */}
       {expanded && (
         <div className="px-5 py-3 bg-arc-50 border-t border-arc-200">
           <p className="text-sm text-arc-900 leading-relaxed">{change.natural_language_brief}</p>
@@ -109,9 +106,9 @@ function MiniChatMessage({ msg, userSeed }: { msg: ChatMessage; userSeed?: strin
   );
 }
 
-// ── Main Edit tab ─────────────────────────────────────────────────────────────
+// ── Main tab ──────────────────────────────────────────────────────────────────
 
-export function EditTab({ change }: EditTabProps) {
+export function DraftQueueTab({ change }: DraftQueueTabProps) {
   const { currentUser } = useAuth();
   const repo = useRepository();
   const { data: module } = useEngineModule(change.target_module_id);
@@ -123,7 +120,7 @@ export function EditTab({ change }: EditTabProps) {
   const { data: persistedMessages = [], isLoading: messagesLoading } = useChatMessages(change.id);
   const { data: rejectedReview } = useLatestRejectedReview(change.id);
   const { data: rejectorUser } = useQuery({
-    queryKey: ['aegis', 'users', rejectedReview?.reviewer_id],
+    queryKey: ['arc', 'users', rejectedReview?.reviewer_id],
     queryFn: () => repo.users.get(rejectedReview!.reviewer_id),
     enabled: !!rejectedReview?.reviewer_id,
   });
@@ -140,13 +137,11 @@ export function EditTab({ change }: EditTabProps) {
   const [showVersions, setShowVersions] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Sync editor when module/versions load
   useEffect(() => {
     const sql = versions[0]?.sql_after ?? module?.current_sql_code ?? '';
     setEditorSQL(sql);
   }, [module?.id, versions[0]?.id]);
 
-  // Build the UI messages list: persisted messages or synthetic greeting
   const uiMessages: ChatMessage[] = messagesLoading
     ? []
     : persistedMessages.length > 0
@@ -194,7 +189,6 @@ export function EditTab({ change }: EditTabProps) {
     setChatInput('');
     setIsAiLoading(true);
 
-    // Persist user message
     await appendMessage.mutateAsync({
       risk_edit_id: change.id,
       role: 'user',
@@ -217,7 +211,6 @@ export function EditTab({ change }: EditTabProps) {
         moduleContext: module.description,
       });
 
-      // Persist AI response
       await appendMessage.mutateAsync({
         risk_edit_id: change.id,
         role: 'assistant',
@@ -256,13 +249,13 @@ export function EditTab({ change }: EditTabProps) {
       const lastAiMsg = [...uiMessages].reverse().find((m) => m.role === 'assistant' && m.diff_summary);
 
       await createVersion.mutateAsync({
-        risk_edit_id: change.id,
-        version_number:     nextVersionNumber,
-        sql_before:         baseSQL,
-        sql_after:          editorSQL,
-        diff_summary:       hasManualEdits ? 'Manual SQL edit' : (lastAiMsg?.diff_summary ?? 'SQL change'),
-        ai_rationale:       hasManualEdits ? '' : (lastAiMsg?.rationale ?? ''),
-        author_id:          currentUser.id,
+        risk_edit_id:   change.id,
+        version_number: nextVersionNumber,
+        sql_before:     baseSQL,
+        sql_after:      editorSQL,
+        diff_summary:   hasManualEdits ? 'Manual SQL edit' : (lastAiMsg?.diff_summary ?? 'SQL change'),
+        ai_rationale:   hasManualEdits ? '' : (lastAiMsg?.rationale ?? ''),
+        author_id:      currentUser.id,
         source,
       });
 
@@ -277,7 +270,7 @@ export function EditTab({ change }: EditTabProps) {
 
       setPendingSql(null);
       setHasManualEdits(false);
-      qc.invalidateQueries({ queryKey: ['aegis', 'strategy_change_versions', change.id] });
+      qc.invalidateQueries({ queryKey: ['arc', 'risk_edit_versions', change.id] });
     } finally {
       setIsSaving(false);
     }
@@ -285,18 +278,15 @@ export function EditTab({ change }: EditTabProps) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Brief panel */}
       <BriefPanel
         change={change}
         rejectedReview={rejectedReview ?? null}
         rejectorName={rejectorUser?.name}
       />
 
-      {/* Editor + chat split */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Monaco editor — left pane */}
+        {/* Monaco editor */}
         <div className="flex-1 min-w-0 flex flex-col relative">
-          {/* Editor toolbar */}
           <div className="h-10 shrink-0 bg-arc-900 border-b border-arc-700 flex items-center justify-between px-4">
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono text-arc-200">
@@ -324,7 +314,6 @@ export function EditTab({ change }: EditTabProps) {
             </div>
           </div>
 
-          {/* Version history side panel */}
           {showVersions && (
             <div className="absolute right-80 top-10 bottom-0 w-64 bg-white border-l border-arc-200 z-10 overflow-y-auto">
               <div className="px-4 py-3 border-b border-arc-200">
@@ -351,7 +340,6 @@ export function EditTab({ change }: EditTabProps) {
             </div>
           )}
 
-          {/* Monaco */}
           <div className="flex-1 min-h-0">
             <Editor
               height="100%"
@@ -376,7 +364,7 @@ export function EditTab({ change }: EditTabProps) {
           </div>
         </div>
 
-        {/* AI chat panel — right pane */}
+        {/* AI chat panel */}
         <div className="w-80 shrink-0 border-l border-arc-200 flex flex-col bg-arc-50">
           <div className="h-10 shrink-0 px-4 flex items-center border-b border-arc-200 bg-white">
             <div className="flex items-center gap-2">
@@ -415,7 +403,7 @@ export function EditTab({ change }: EditTabProps) {
             <div ref={bottomRef} />
           </div>
 
-          {canEdit && (
+          {canEdit ? (
             <div className="p-3 border-t border-arc-200 bg-white flex flex-col gap-2">
               <Textarea
                 rows={3}
@@ -439,9 +427,7 @@ export function EditTab({ change }: EditTabProps) {
                 Phase 1 — AI responses are mocked.
               </p>
             </div>
-          )}
-
-          {!canEdit && (
+          ) : (
             <div className="px-4 py-3 border-t border-arc-200 bg-white">
               <p className="text-xs text-arc-200 text-center">
                 Editing locked — stage is{' '}

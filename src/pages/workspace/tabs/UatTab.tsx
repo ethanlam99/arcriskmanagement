@@ -3,7 +3,7 @@ import { useLatestUatRun } from '@/hooks/useUatRuns';
 import { resolveScreenshotUrls } from '@/integrations/screenshots';
 import type { RiskEdit, TestCase, TestCaseStatus } from '@/types';
 
-interface UatReportTabProps {
+interface UatTabProps {
   change: RiskEdit;
 }
 
@@ -132,7 +132,7 @@ function ScreenshotGallery({ refs }: { refs: string[] }) {
   );
 }
 
-export function UatReportTab({ change }: UatReportTabProps) {
+export function UatTab({ change }: UatTabProps) {
   const { data: run, isLoading } = useLatestUatRun(change.id);
 
   if (isLoading) {
@@ -180,7 +180,6 @@ export function UatReportTab({ change }: UatReportTabProps) {
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="max-w-5xl mx-auto w-full px-6 py-5 flex flex-col gap-6">
-        {/* Summary strip */}
         <div>
           <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">Summary</p>
           <div className="flex gap-3 mb-3">
@@ -205,7 +204,6 @@ export function UatReportTab({ change }: UatReportTabProps) {
           </div>
         </div>
 
-        {/* Test case table */}
         <div>
           <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">Test Cases</p>
           <div className="rounded-xl border border-arc-200 overflow-hidden bg-white">
@@ -228,10 +226,8 @@ export function UatReportTab({ change }: UatReportTabProps) {
           </div>
         </div>
 
-        {/* Screenshots */}
         <ScreenshotGallery refs={screenshot_refs} />
 
-        {/* Metadata footer */}
         <div className="border-t border-arc-200 pt-4 flex items-center gap-6 text-xs text-arc-200">
           <span>Generated {new Date(report.generated_at).toLocaleString()}</span>
           <span>·</span>

@@ -1,4 +1,4 @@
-export type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+export type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'live';
 
 interface BadgeProps {
   variant?: BadgeVariant;
@@ -13,6 +13,7 @@ const styles: Record<BadgeVariant, string> = {
   danger:  'bg-rose-50 text-rose-700 border border-rose-200',
   info:    'bg-arc-50 text-arc-700 border border-arc-200',
   neutral: 'bg-zinc-100 text-zinc-600 border border-zinc-200',
+  live:    'bg-teal-50 text-teal-700 border border-teal-300 font-semibold',
 };
 
 export function Badge({ variant = 'default', children, className = '' }: BadgeProps) {

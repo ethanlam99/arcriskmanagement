@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/Badge';
 import type { RiskEditStage } from '@/types';
 
-type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'live';
 
 const STAGE_CONFIG: Record<RiskEditStage, { label: string; variant: BadgeVariant }> = {
   draft:           { label: 'Draft',          variant: 'neutral'  },
@@ -10,7 +10,7 @@ const STAGE_CONFIG: Record<RiskEditStage, { label: string; variant: BadgeVariant
   qa_review:       { label: 'QA Review',      variant: 'warning'  },
   approved:        { label: 'Approved',       variant: 'success'  },
   sent_to_it:      { label: 'Sent to IT',     variant: 'success'  },
-  live:            { label: 'Live',           variant: 'default'  },
+  live:            { label: 'Live',           variant: 'live'     },
   rejected:        { label: 'Rejected',       variant: 'danger'   },
 };
 

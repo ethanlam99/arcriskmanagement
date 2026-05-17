@@ -24,12 +24,14 @@ interface StepperProps {
 export function Stepper({ currentStage }: StepperProps) {
   const current = stageIndex(currentStage);
   const isRejected = currentStage === 'rejected';
+  const isLive     = currentStage === 'live';
 
   return (
     <div className="flex items-center gap-0">
       {STAGES.map((stage, i) => {
-        const done    = !isRejected && current > i;
-        const active  = !isRejected && current === i;
+        // At live, show every step (including the last) as completed.
+        const done    = !isRejected && (current > i || (isLive && current === i));
+        const active  = !isRejected && !isLive && current === i;
         const pending = !done && !active;
 
         return (
@@ -68,7 +70,7 @@ export function Stepper({ currentStage }: StepperProps) {
             {i < STAGES.length - 1 && (
               <div
                 className={`h-0.5 w-10 mx-1 mb-4 transition-colors
-                  ${done ? 'bg-arc-500' : 'bg-arc-200'}
+                  ${done || isLive ? 'bg-arc-500' : 'bg-arc-200'}
                 `}
               />
             )}

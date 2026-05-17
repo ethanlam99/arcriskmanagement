@@ -4,17 +4,16 @@ import { useRepository } from '@/data/RepositoryProvider';
 import { useLatestUatRun } from '@/hooks/useUatRuns';
 import { useUpdateRiskEditStage } from '@/hooks/useRiskEdits';
 import { useQueryClient } from '@tanstack/react-query';
-import { packageChangeForIT, notifyIT } from '@/integrations/itHandoff';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
 import type { RiskEdit, TestCase, TestCaseStatus } from '@/types';
 
-interface QaReviewTabProps {
+interface QaTabProps {
   change: RiskEdit;
 }
 
-const DRAFT_KEY = (changeId: string) => `aegis:qa_draft:${changeId}`;
+const DRAFT_KEY = (changeId: string) => `arc:qa_draft:${changeId}`;
 
 type StatusOverrides = Record<string, TestCaseStatus>;
 type Annotations     = Record<string, string>;
@@ -141,28 +140,26 @@ function ReviewableTestCaseRow({
   );
 }
 
-export function QaReviewTab({ change }: QaReviewTabProps) {
+export function QaTab({ change }: QaTabProps) {
   const { currentUser, role } = useAuth();
-  const repo = useRepository();
-  const qc   = useQueryClient();
+  const repo   = useRepository();
+  const qc     = useQueryClient();
   const stageTransition = useUpdateRiskEditStage();
 
   const { data: run, isLoading: runLoading } = useLatestUatRun(change.id);
 
-  const canAct = (role === 'tester' || role === 'admin') && change.current_stage === 'qa_review';
-  const isTerminal = ['approved_for_it', 'sent_to_it'].includes(change.current_stage);
+  const canAct   = (role === 'tester' || role === 'testing_lead' || role === 'admin') && change.current_stage === 'qa_review';
+  const isTerminal = ['approved', 'sent_to_it', 'live'].includes(change.current_stage);
 
-  // Local review state — persisted to localStorage as a draft
-  const [annotations, setAnnotations]       = useState<Annotations>({});
+  const [annotations,    setAnnotations]    = useState<Annotations>({});
   const [statusOverrides, setStatusOverrides] = useState<StatusOverrides>({});
-  const [reviewed, setReviewed]             = useState<Reviewed>({});
+  const [reviewed,       setReviewed]       = useState<Reviewed>({});
   const [rejectionNotes, setRejectionNotes] = useState('');
   const [showApproveModal, setShowApproveModal] = useState(false);
-  const [showRejectModal, setShowRejectModal]   = useState(false);
-  const [isSubmitting, setIsSubmitting]         = useState(false);
-  const [toast, setToast]                       = useState<string | null>(null);
+  const [showRejectModal,  setShowRejectModal]  = useState(false);
+  const [isSubmitting,     setIsSubmitting]     = useState(false);
+  const [toast,            setToast]            = useState<string | null>(null);
 
-  // Load draft from localStorage on mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem(DRAFT_KEY(change.id));
@@ -189,6 +186,7 @@ export function QaReviewTab({ change }: QaReviewTabProps) {
     if (!currentUser || !run) return;
     setIsSubmitting(true);
     try {
+      // Create a UAT review record
       await repo.uatReviews.create({
         uat_run_id:          run.id,
         reviewer_id:         currentUser.id,
@@ -202,29 +200,26 @@ export function QaReviewTab({ change }: QaReviewTabProps) {
         decided_at:          new Date().toISOString(),
       });
 
-      const packet = await packageChangeForIT(change.id, currentUser.id);
-      await notifyIT(packet.id);
-
+      // Transition edit to approved — testing lead will bundle it into a packet
       await stageTransition.mutateAsync({
         id:        change.id,
-        stage:     'sent_to_it',
+        stage:     'approved',
         actorId:   currentUser.id,
         fromStage: change.current_stage,
       });
 
       await repo.auditLog.append({
-        actor_id:    currentUser.id,
-        action:      'qa_review.approved',
-        entity_type: 'strategy_change',
-        entity_id:   change.id,
-        payload_json: { uat_run_id: run.id, packet_id: packet.id },
+        actor_id:     currentUser.id,
+        action:       'qa_review.approved',
+        entity_type:  'risk_edit',
+        entity_id:    change.id,
+        payload_json: { uat_run_id: run.id },
       });
 
-      // Clear the draft
       localStorage.removeItem(DRAFT_KEY(change.id));
-      qc.invalidateQueries({ queryKey: ['aegis', 'it_handoff_packets'] });
+      qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
       setShowApproveModal(false);
-      showToast('Handoff packet generated and queued for IT.');
+      showToast('Change approved — it is now in the Approved pool for packet bundling.');
     } finally {
       setIsSubmitting(false);
     }
@@ -251,15 +246,15 @@ export function QaReviewTab({ change }: QaReviewTabProps) {
       });
 
       await repo.auditLog.append({
-        actor_id:    currentUser.id,
-        action:      'qa_review.rejected',
-        entity_type: 'strategy_change',
-        entity_id:   change.id,
+        actor_id:     currentUser.id,
+        action:       'qa_review.rejected',
+        entity_type:  'risk_edit',
+        entity_id:    change.id,
         payload_json: { uat_run_id: run.id, notes: rejectionNotes.trim() },
       });
 
       localStorage.removeItem(DRAFT_KEY(change.id));
-      qc.invalidateQueries({ queryKey: ['aegis', 'uat_reviews', 'rejected', change.id] });
+      qc.invalidateQueries({ queryKey: ['arc', 'uat_reviews', 'rejected', change.id] });
       setShowRejectModal(false);
     } finally {
       setIsSubmitting(false);
@@ -284,16 +279,14 @@ export function QaReviewTab({ change }: QaReviewTabProps) {
   return (
     <>
       <div className="flex flex-col h-full overflow-hidden">
-        {/* Banner */}
         <div className="px-6 py-3 border-b border-arc-200 bg-amber-50 shrink-0">
           <p className="text-xs text-amber-800 leading-relaxed">
             <span className="font-semibold">Reviewing AI-generated UAT report for "{change.title}".</span>
-            {canAct && ' Edits here override the AI\'s findings — your final report is what gets sent to IT.'}
-            {isTerminal && ' This change has already been approved and sent to IT.'}
+            {canAct && ' Edits here override the AI\'s findings — your final verdict moves the edit to Approved.'}
+            {isTerminal && ' This change has already been approved and is awaiting IT deployment.'}
           </p>
         </div>
 
-        {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-5xl mx-auto px-6 py-5">
             <div className="rounded-xl border border-arc-200 overflow-hidden bg-white">
@@ -327,7 +320,6 @@ export function QaReviewTab({ change }: QaReviewTabProps) {
           </div>
         </div>
 
-        {/* Sticky action footer — testers/admins only, only when in qa_review */}
         {canAct && (
           <div className="shrink-0 border-t border-arc-200 bg-white px-6 py-4 flex items-center justify-between gap-4">
             <p className="text-xs text-arc-200">
@@ -351,33 +343,30 @@ export function QaReviewTab({ change }: QaReviewTabProps) {
                 disabled={reviewedCount === 0}
                 onClick={() => setShowApproveModal(true)}
               >
-                Approve &amp; Send to IT
+                Approve
               </Button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Toast */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 bg-arc-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">
           {toast}
         </div>
       )}
 
-      {/* Approve confirm modal */}
       {showApproveModal && (
         <ConfirmModal
-          title="Approve &amp; Send to IT"
-          description="This will automatically generate an IT handoff packet containing the diff, your annotated report, and your name as the QA approver. The change moves to Sent to IT and cannot be edited further."
-          confirmLabel="Approve &amp; Send to IT"
+          title="Approve change"
+          description="The change will move to Approved. A testing lead can then bundle it into a deployment packet for IT."
+          confirmLabel="Approve"
           loading={isSubmitting}
           onConfirm={handleApprove}
           onCancel={() => setShowApproveModal(false)}
         />
       )}
 
-      {/* Reject modal */}
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-arc-900/40 backdrop-blur-sm" onClick={() => setShowRejectModal(false)} />
