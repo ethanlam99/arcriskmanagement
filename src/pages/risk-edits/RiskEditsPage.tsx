@@ -63,7 +63,9 @@ export function RiskEditsPage() {
   const [moduleFilter, setModuleFilter] = useState('');
   const [showCreate,   setShowCreate]   = useState(false);
 
-  const { data: edits = [], isLoading } = useRiskEdits();
+  const { data: rawEdits = [], isLoading } = useRiskEdits();
+
+  const edits = [...rawEdits].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
 
   const filtered = edits.filter((e) => {
     if (stageFilter  && e.current_stage    !== stageFilter)  return false;
@@ -138,7 +140,7 @@ export function RiskEditsPage() {
             <div className="mb-5">
               <h1 className="text-xl font-semibold text-arc-900">Risk Edits</h1>
               <p className="text-sm text-arc-200 mt-0.5">
-                All in-flight and completed risk engine edits.
+                Complete history of every risk engine edit — sorted by most recent activity.
               </p>
             </div>
 
