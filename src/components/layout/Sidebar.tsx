@@ -37,6 +37,11 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Risk Edits',
     icon: <NavIcon d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />,
   },
+  {
+    to: '/workspace',
+    label: 'Workspace',
+    icon: <NavIcon d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />,
+  },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [

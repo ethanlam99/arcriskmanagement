@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
@@ -120,10 +119,7 @@ function PacketDrawer({
                 {edits.map((e) => (
                   <div key={e.id} className="px-4 py-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <Link to={`/risk-edits/${e.id}`} onClick={onClose}
-                        className="text-sm font-medium text-arc-900 hover:text-arc-500 transition-colors truncate block">
-                        {e.title}
-                      </Link>
+                      <span className="text-sm font-medium text-arc-900 truncate block">{e.title}</span>
                       <span className="text-xs font-mono text-arc-200">{e.edit_id_display} · {e.target_module_id}</span>
                     </div>
                     <StageBadge stage={e.current_stage} />

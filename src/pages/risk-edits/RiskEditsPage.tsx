@@ -14,6 +14,15 @@ import { UserAvatar } from '@/components/shared/UserAvatar';
 import { CreateRiskEditModal } from './CreateRiskEditModal';
 import type { AuditLogEntry, RiskEdit, RiskEditStage } from '@/types';
 
+function workspaceUrl(edit: RiskEdit): string {
+  if (edit.current_stage === 'uat_in_progress') return '/workspace/uat';
+  if (edit.current_stage === 'qa_review')       return `/workspace/qa?edit=${edit.id}`;
+  if (['draft', 'ready_for_uat'].includes(edit.current_stage)) {
+    return `/workspace/draft-queue?edit=${edit.id}`;
+  }
+  return '/workspace/draft-queue';
+}
+
 const STAGE_OPTIONS: { value: '' | RiskEditStage; label: string }[] = [
   { value: '',                label: 'All stages'      },
   { value: 'draft',           label: 'Draft'           },
@@ -166,7 +175,7 @@ function EditRow({ edit, userMap }: { edit: RiskEdit; userMap: Record<string, st
               {/* Actions */}
               <div className="shrink-0 flex flex-col items-end justify-between">
                 <Link
-                  to={`/risk-edits/${edit.id}`}
+                  to={workspaceUrl(edit)}
                   onClick={(e) => e.stopPropagation()}
                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-arc-900 text-white text-xs font-medium hover:bg-arc-700 transition-colors"
                 >

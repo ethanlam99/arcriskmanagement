@@ -226,7 +226,7 @@ function UatQueueTab() {
                       </td>
                     )}
                     <td className="px-4 py-3">
-                      <Link to={`/risk-edits/${c.id}`}
+                      <Link to={`/workspace/draft-queue?edit=${c.id}`}
                         className="text-arc-900 font-medium hover:text-arc-500 transition-colors">
                         {c.title}
                       </Link>
@@ -385,10 +385,7 @@ function ApprovedPoolTab() {
                         </td>
                       )}
                       <td className="px-4 py-3">
-                        <Link to={`/risk-edits/${c.id}`}
-                          className="text-arc-900 font-medium hover:text-arc-500 transition-colors">
-                          {c.title}
-                        </Link>
+                        <span className="text-arc-900 font-medium">{c.title}</span>
                         <p className="text-xs font-mono text-arc-200 mt-0.5">{c.edit_id_display}</p>
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-arc-500">{c.target_module_id}</td>
@@ -581,10 +578,9 @@ function ProposedPacketsTab() {
                           edits.map((e) => (
                             <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-4">
                               <div className="min-w-0">
-                                <Link to={`/risk-edits/${e.id}`}
-                                  className="text-sm font-medium text-arc-900 hover:text-arc-500 transition-colors truncate block">
+                                <span className="text-sm font-medium text-arc-900 truncate block">
                                   {e.title}
-                                </Link>
+                                </span>
                                 <span className="text-xs font-mono text-arc-200">{e.edit_id_display} · {e.target_module_id}</span>
                               </div>
                               <StageBadge stage={e.current_stage} />
@@ -685,10 +681,7 @@ function ConfirmedTab() {
               {filtered.map((c) => (
                 <tr key={c.id} className="border-b border-arc-200 last:border-0 hover:bg-arc-50 transition-colors">
                   <td className="px-4 py-3">
-                    <Link to={`/risk-edits/${c.id}`}
-                      className="text-arc-900 font-medium hover:text-arc-500 transition-colors">
-                      {c.title}
-                    </Link>
+                    <span className="text-arc-900 font-medium">{c.title}</span>
                     <p className="text-xs font-mono text-arc-200 mt-0.5">{c.edit_id_display}</p>
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-arc-500">{c.target_module_id}</td>
