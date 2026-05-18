@@ -60,7 +60,7 @@ export function EngineModuleDetailPage() {
           actions={
             canCreate ? (
               <Button size="sm" onClick={() => setShowModal(true)}>
-                New change on this module
+                New edit on this module
               </Button>
             ) : undefined
           }
