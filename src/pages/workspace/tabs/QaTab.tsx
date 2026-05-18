@@ -337,6 +337,23 @@ export function QaTab({ change }: QaTabProps) {
   const reviewedCount = Object.values(reviewed).filter(Boolean).length;
   const testCases = run.ai_report_json.test_cases;
 
+  const passedCount = testCases.filter(
+    (tc) => (statusOverrides[tc.id] ?? tc.status) === 'passed'
+  ).length;
+  const allPassed = passedCount === testCases.length;
+  const allReviewed = reviewedCount === testCases.length;
+  const canApprove = allPassed && allReviewed;
+
+  const failingCount = testCases.length - passedCount;
+  const unreviewedCount = testCases.length - reviewedCount;
+  const approveBlockedReason = canApprove
+    ? ''
+    : !allPassed && !allReviewed
+      ? 'All cases must be passing and reviewed before approval.'
+      : !allPassed
+        ? `${failingCount} case${failingCount !== 1 ? 's' : ''} still marked failed/inconclusive.`
+        : `${unreviewedCount} case${unreviewedCount !== 1 ? 's' : ''} still need to be marked reviewed.`;
+
   return (
     <>
       <div className="flex flex-col h-full overflow-hidden">
@@ -387,7 +404,7 @@ export function QaTab({ change }: QaTabProps) {
         {canAct && (
           <div className="shrink-0 border-t border-arc-200 bg-white px-6 py-4 flex items-center justify-between gap-4">
             <p className="text-xs text-arc-200">
-              {reviewedCount} of {testCases.length} cases marked as reviewed
+              {passedCount} of {testCases.length} passing · {reviewedCount} of {testCases.length} reviewed
             </p>
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={saveDraft}>
@@ -401,14 +418,16 @@ export function QaTab({ change }: QaTabProps) {
               >
                 Reject — return to author
               </Button>
-              <Button
-                size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700"
-                disabled={reviewedCount === 0}
-                onClick={() => setShowApproveModal(true)}
-              >
-                Approve
-              </Button>
+              <span title={approveBlockedReason || undefined} className="inline-block">
+                <Button
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                  disabled={!canApprove}
+                  onClick={() => setShowApproveModal(true)}
+                >
+                  Approve
+                </Button>
+              </span>
             </div>
           </div>
         )}
