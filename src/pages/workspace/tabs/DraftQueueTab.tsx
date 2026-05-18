@@ -109,7 +109,7 @@ function MiniChatMessage({ msg, userSeed }: { msg: ChatMessage; userSeed?: strin
 // ── Main tab ──────────────────────────────────────────────────────────────────
 
 export function DraftQueueTab({ change }: DraftQueueTabProps) {
-  const { currentUser } = useAuth();
+  const { currentUser, role } = useAuth();
   const repo = useRepository();
   const { data: module } = useEngineModule(change.target_module_id);
   const { data: versions = [] } = useRiskEditVersions(change.id);
@@ -171,7 +171,9 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [uiMessages.length, isAiLoading]);
 
-  const canEdit = change.current_stage === 'draft';
+  const canEdit =
+    change.current_stage === 'draft' &&
+    (role === 'risk_analyst' || role === 'risk_lead' || role === 'admin');
 
   const handleEditorChange = useCallback(
     (value: string | undefined) => {

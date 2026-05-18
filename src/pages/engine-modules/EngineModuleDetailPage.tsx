@@ -24,7 +24,7 @@ export function EngineModuleDetailPage() {
 
   const [showModal, setShowModal] = useState(false);
 
-  const canCreate = role === 'risk_analyst' || role === 'admin';
+  const canCreate = role === 'risk_analyst' || role === 'risk_lead' || role === 'admin';
 
   if (isLoading) {
     return (
