@@ -31,7 +31,7 @@ function PacketStatusBadge({ status }: { status: Packet['status'] }) {
     proposed:  'bg-amber-50 text-amber-700 border-amber-200',
     confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
     rejected:  'bg-rose-50 text-rose-700 border-rose-200',
-    live:      'bg-teal-50 text-teal-700 border-teal-300 font-semibold',
+    live:      'bg-forest-50 text-forest-700 border-forest-100 font-semibold',
   };
   const labels: Record<Packet['status'], string> = {
     proposed:  'Proposed',
@@ -138,8 +138,8 @@ function PacketDrawer({
               Mark as Live
             </Button>
           ) : packet.status === 'live' ? (
-            <span className="text-xs text-teal-700 font-medium flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-teal-500" />
+            <span className="text-xs text-forest-700 font-medium flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-forest-500" />
               Live in risk engine
             </span>
           ) : null}

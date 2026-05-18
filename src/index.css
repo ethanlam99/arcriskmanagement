@@ -15,8 +15,8 @@
 
   body {
     font-family: 'Inter', system-ui, sans-serif;
-    background-color: #EFF8F9;
-    color: #0B2E33;
+    background-color: #F5F1EA;
+    color: #15130E;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -25,7 +25,7 @@
     font-family: 'JetBrains Mono', Menlo, monospace;
   }
 
-  /* Thin scrollbars */
+  /* Thin scrollbars — neutral charcoal */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -34,10 +34,10 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #93B1B5;
+    background: #D4CFC5;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #4F7C82;
+    background: #A39C8D;
   }
 }

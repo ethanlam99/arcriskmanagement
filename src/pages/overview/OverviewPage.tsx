@@ -62,7 +62,7 @@ const STAGE_CARDS: { key: StageKey; label: string; color: string }[] = [
   { key: 'qa_review',       label: 'QA Review',  color: 'text-amber-600'  },
   { key: 'approved',        label: 'Approved',   color: 'text-emerald-600' },
   { key: 'sent_to_it',      label: 'Sent to IT', color: 'text-emerald-600' },
-  { key: 'live',            label: 'Live',       color: 'text-teal-600'    },
+  { key: 'live',            label: 'Live',       color: 'text-forest-600'    },
 ];
 
 function StatBox({

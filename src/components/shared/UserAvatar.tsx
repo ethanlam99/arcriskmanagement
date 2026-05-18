@@ -14,7 +14,7 @@ const sizes = {
 // Deterministic color from initials — keeps avatars visually distinct
 const PALETTE = [
   'bg-arc-700 text-white',
-  'bg-teal-600 text-white',
+  'bg-forest-600 text-white',
   'bg-cyan-700 text-white',
   'bg-slate-600 text-white',
   'bg-indigo-600 text-white',

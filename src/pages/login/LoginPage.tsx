@@ -19,7 +19,7 @@ const ROLE_COLORS: Record<UserRole, string> = {
   tester:        'bg-emerald-50 text-emerald-700 border border-emerald-200',
   admin:         'bg-amber-50 text-amber-700 border border-amber-200',
   risk_lead:     'bg-arc-100 text-arc-900 border border-arc-300',
-  testing_lead:  'bg-teal-50 text-teal-700 border border-teal-200',
+  testing_lead:  'bg-forest-50 text-forest-700 border border-forest-100',
   it_team:       'bg-slate-100 text-slate-700 border border-slate-300',
 };
 
