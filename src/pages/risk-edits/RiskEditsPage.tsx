@@ -330,17 +330,21 @@ interface RowProps {
   userMap:     Record<string, string>;
   nowMs:       number;
   showFinalTs: boolean;
+  index:       number;
 }
 
-function EditRow({ edit, userMap, nowMs, showFinalTs }: RowProps) {
+function EditRow({ edit, userMap, nowMs, showFinalTs, index }: RowProps) {
   const [open, setOpen] = useState(false);
   const colSpan = showFinalTs ? 9 : 8;
   const tAt = terminalAt(edit);
+  // Explicit zebra rather than CSS odd/even — each row optionally renders a
+  // second expansion <tr>, which would otherwise flip the alternation.
+  const zebra = index % 2 === 0 ? 'bg-white' : 'bg-arc-50/40';
 
   return (
     <>
       <tr
-        className="border-b border-arc-200 hover:bg-arc-50 transition-colors cursor-pointer"
+        className={`border-b border-arc-200 ${zebra} hover:bg-arc-50 transition-colors cursor-pointer`}
         onClick={() => setOpen((v) => !v)}
       >
         <td className="px-4 py-3 w-32">
@@ -511,8 +515,8 @@ function EditsTable({
           </tr>
         </thead>
         <tbody>
-          {edits.map((e) => (
-            <EditRow key={e.id} edit={e} userMap={userMap} nowMs={nowMs} showFinalTs={showFinalTs} />
+          {edits.map((e, i) => (
+            <EditRow key={e.id} edit={e} userMap={userMap} nowMs={nowMs} showFinalTs={showFinalTs} index={i} />
           ))}
         </tbody>
       </table>

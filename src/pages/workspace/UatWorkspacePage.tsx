@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Beaker } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
@@ -373,17 +374,15 @@ export function UatWorkspacePage() {
             </div>
 
             {queued.length === 0 ? (
-              <div className="rounded-xl border border-arc-200 bg-white flex items-center justify-center py-12 flex-col gap-2 text-arc-200">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                </svg>
+              <div className="rounded-xl border border-arc-200 shadow-sm bg-white flex items-center justify-center py-12 flex-col gap-3 text-arc-200">
+                <Beaker className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
                 <p className="text-sm">No edits queued for UAT.</p>
                 <p className="text-xs text-center max-w-xs text-arc-200">
                   Risk analysts send edits for UAT from the Draft &amp; Queue workspace.
                 </p>
               </div>
             ) : (
-              <div className="rounded-xl border border-arc-200 overflow-hidden bg-white">
+              <div className="rounded-xl border border-arc-200 shadow-sm overflow-hidden bg-white">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-arc-200 bg-arc-50">
@@ -482,14 +481,12 @@ export function UatWorkspacePage() {
             </div>
 
             {running.length === 0 ? (
-              <div className="rounded-xl border border-arc-200 bg-white flex items-center justify-center py-12 flex-col gap-2 text-arc-200">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
+              <div className="rounded-xl border border-arc-200 shadow-sm bg-white flex items-center justify-center py-12 flex-col gap-3 text-arc-200">
+                <Beaker className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
                 <p className="text-sm">No UAT runs in progress.</p>
               </div>
             ) : (
-              <div className="rounded-xl border border-arc-200 overflow-hidden bg-white">
+              <div className="rounded-xl border border-arc-200 shadow-sm overflow-hidden bg-white">
                 {running.map((edit) => {
                   const isOpen = openEditId === edit.id;
                   return (

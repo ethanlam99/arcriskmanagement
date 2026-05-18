@@ -71,14 +71,16 @@ function StatBox({
   return (
     <button
       onClick={onClick}
-      className={`rounded-xl border bg-white px-4 py-3 text-center transition-colors ${
+      className={`rounded-xl border bg-white shadow-sm p-1.5 text-center transition-colors ${
         isActive
           ? 'border-arc-500 ring-1 ring-arc-500'
           : 'border-arc-200 hover:border-arc-500'
       }`}
     >
-      <p className={`text-2xl font-bold tabular-nums ${color}`}>{value}</p>
-      <p className="text-xs text-arc-200 mt-0.5">{label}</p>
+      <div className="bg-arc-50 rounded-lg px-3 py-2">
+        <p className={`text-2xl font-bold tabular-nums ${color}`}>{value}</p>
+        <p className="text-xs text-arc-200 mt-0.5">{label}</p>
+      </div>
     </button>
   );
 }
@@ -96,7 +98,7 @@ function StageExpansionPanel({
   onClose: () => void;
 }) {
   return (
-    <div className="mt-3 rounded-xl border border-arc-200 bg-white overflow-hidden">
+    <div className="mt-3 rounded-xl border border-arc-200 bg-white shadow-sm overflow-hidden">
       <div className="px-4 py-2.5 border-b border-arc-200 flex items-center justify-between">
         <p className="text-sm font-semibold text-arc-900">
           {stageLabel} — {edits.length} edit{edits.length !== 1 ? 's' : ''}
@@ -196,7 +198,7 @@ function Panel({
   linkLabel?: string;
 }) {
   return (
-    <div className="rounded-xl border border-arc-200 bg-white overflow-hidden flex flex-col">
+    <div className="rounded-xl border border-arc-200 bg-white shadow-sm overflow-hidden flex flex-col">
       <div className="px-4 py-3 border-b border-arc-200 flex items-center justify-between">
         <p className="text-sm font-semibold text-arc-900">{title}</p>
         <span className="text-xs text-arc-200">{count} item{count !== 1 ? 's' : ''}</span>
@@ -225,16 +227,18 @@ function ModuleMiniCard({ module }: { module: EngineModule }) {
   return (
     <button
       onClick={() => navigate(`/engine-modules/${module.id}`)}
-      className="rounded-xl border border-arc-200 bg-white px-4 py-3 text-left hover:border-arc-500 transition-colors group"
+      className="rounded-xl border border-arc-200 bg-white shadow-sm p-1.5 text-left hover:border-arc-500 transition-colors group"
     >
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <p className="font-mono text-sm font-semibold text-arc-900 group-hover:text-arc-700 truncate">
-          {module.module_name}
-        </p>
-        <span className="shrink-0 text-xs text-arc-200 font-mono">{lines}L</span>
+      <div className="bg-arc-50 rounded-lg p-4">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <p className="font-mono text-sm font-semibold text-arc-900 group-hover:text-arc-700 truncate">
+            {module.module_name}
+          </p>
+          <span className="shrink-0 text-xs text-arc-200 font-mono">{lines}L</span>
+        </div>
+        <p className="text-xs text-arc-200 line-clamp-2 leading-relaxed">{module.description}</p>
+        <p className="text-xs text-arc-200 mt-2">Updated {fmtDate(module.updated_at)}</p>
       </div>
-      <p className="text-xs text-arc-200 line-clamp-2 leading-relaxed">{module.description}</p>
-      <p className="text-xs text-arc-200 mt-2">Updated {fmtDate(module.updated_at)}</p>
     </button>
   );
 }

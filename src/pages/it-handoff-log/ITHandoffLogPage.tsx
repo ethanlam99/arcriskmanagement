@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Send } from 'lucide-react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
@@ -242,14 +243,12 @@ export function ITHandoffLogPage() {
             {isLoading ? (
               <div className="flex items-center justify-center py-24 text-arc-200 text-sm">Loading…</div>
             ) : packets.length === 0 ? (
-              <div className="flex items-center justify-center py-24 flex-col gap-2 text-arc-200">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
-                </svg>
+              <div className="flex items-center justify-center py-24 flex-col gap-3 text-arc-200">
+                <Send className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
                 <p className="text-sm">No packets have been confirmed yet.</p>
               </div>
             ) : (
-              <div className="rounded-xl border border-arc-200 overflow-hidden bg-white">
+              <div className="rounded-xl border border-arc-200 shadow-sm overflow-hidden bg-white">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-arc-200 bg-arc-50">
@@ -266,7 +265,7 @@ export function ITHandoffLogPage() {
                       const edits = getPacketEdits(pkt.id);
                       return (
                         <tr key={pkt.id}
-                          className="border-b border-arc-200 last:border-0 hover:bg-arc-50 transition-colors cursor-pointer"
+                          className="border-b border-arc-200 last:border-0 odd:bg-white even:bg-arc-50/40 hover:bg-arc-50 transition-colors cursor-pointer"
                           onClick={() => setSelected(pkt)}>
                           <td className="px-4 py-3">
                             <p className="font-medium text-arc-900">{pkt.name}</p>

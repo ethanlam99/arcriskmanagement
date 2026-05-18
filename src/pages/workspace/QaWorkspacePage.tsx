@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
+import { CheckCircle2 } from 'lucide-react';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
 import { useAllUatRuns } from '@/hooks/useUatRuns';
 import { StageBadge } from '@/components/shared/StageBadge';
@@ -50,10 +51,8 @@ export function QaWorkspacePage() {
 
         <div className="flex-1 overflow-y-auto">
           {qaEdits.length === 0 ? (
-            <div className="flex items-center justify-center py-12 flex-col gap-2 text-arc-200 px-3">
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+            <div className="flex items-center justify-center py-12 flex-col gap-3 text-arc-200 px-3">
+              <CheckCircle2 className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
               <p className="text-sm text-center">No edits in QA Review.</p>
             </div>
           ) : (
@@ -95,10 +94,8 @@ export function QaWorkspacePage() {
       {/* ── Right pane ── */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {!selectedEdit ? (
-          <div className="flex h-full items-center justify-center flex-col gap-2 text-arc-200">
-            <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+          <div className="flex h-full items-center justify-center flex-col gap-3 text-arc-200">
+            <CheckCircle2 className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
             <p className="text-sm">Select an edit from the list to review.</p>
           </div>
         ) : (

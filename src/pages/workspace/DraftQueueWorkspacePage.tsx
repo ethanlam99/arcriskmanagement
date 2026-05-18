@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Inbox } from 'lucide-react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRiskEdits, useUpdateRiskEditStage } from '@/hooks/useRiskEdits';
 import { useRepository } from '@/data/RepositoryProvider';
@@ -172,10 +173,8 @@ export function DraftQueueWorkspacePage() {
       {/* ── Right pane ── */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {!selectedEdit ? (
-          <div className="flex h-full items-center justify-center flex-col gap-2 text-arc-200">
-            <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" />
-            </svg>
+          <div className="flex h-full items-center justify-center flex-col gap-3 text-arc-200">
+            <Inbox className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
             <p className="text-sm">Select an edit from the list to begin.</p>
           </div>
         ) : (

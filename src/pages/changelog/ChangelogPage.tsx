@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PackageOpen, Package, Send } from 'lucide-react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
@@ -189,10 +190,8 @@ function ApprovedPoolTab() {
           {isLoading ? (
             <div className="flex items-center justify-center py-16 text-arc-200 text-sm">Loading…</div>
           ) : unbundled.length === 0 ? (
-            <div className="flex items-center justify-center py-16 flex-col gap-2 text-arc-200 px-6 text-center">
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+            <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-200 px-6 text-center">
+              <PackageOpen className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
               <p className="text-sm max-w-sm">
                 No approved edits available to bundle. Edits will appear here after testers approve UAT reports.
               </p>
@@ -217,7 +216,7 @@ function ApprovedPoolTab() {
               </thead>
               <tbody>
                 {unbundled.map((c) => (
-                  <tr key={c.id} className="border-b border-arc-200 last:border-0 transition-colors hover:bg-arc-50">
+                  <tr key={c.id} className="border-b border-arc-200 last:border-0 transition-colors odd:bg-white even:bg-arc-50/40 hover:bg-arc-50">
                     {canAct && (
                       <td className="px-4 py-3">
                         <input type="checkbox" checked={selected.has(c.id)}
@@ -423,10 +422,8 @@ function ProposedPacketsTab() {
           {isLoading ? (
             <div className="flex items-center justify-center py-16 text-arc-200 text-sm">Loading…</div>
           ) : packets.length === 0 ? (
-            <div className="flex items-center justify-center py-16 flex-col gap-2 text-arc-200">
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
-              </svg>
+            <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-200">
+              <Package className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
               <p className="text-sm">No packets are proposed.</p>
               <p className="text-xs text-center max-w-xs">
                 Create a packet from approved edits in the Approved Pool tab.
@@ -438,7 +435,7 @@ function ProposedPacketsTab() {
                 const edits  = getPacketEdits(pkt.id);
                 const isOpen = expanded.has(pkt.id);
                 return (
-                  <div key={pkt.id} className="rounded-xl border border-arc-200 bg-white overflow-hidden">
+                  <div key={pkt.id} className="rounded-xl border border-arc-200 bg-white shadow-sm overflow-hidden">
                     <div className="px-5 py-4 flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
@@ -633,12 +630,12 @@ function PacketSection({
                 </div>
 
                 {isOpen && (
-                  <div className="border-t border-arc-200 divide-y divide-arc-200 bg-arc-50">
+                  <div className="border-t border-arc-200 divide-y divide-arc-200 bg-white">
                     {edits.length === 0 ? (
                       <p className="px-5 py-3 text-xs text-arc-200">No edits attached.</p>
                     ) : (
                       edits.map((e) => (
-                        <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-4">
+                        <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-4 odd:bg-white even:bg-arc-50/40">
                           <div className="min-w-0">
                             <span className="text-sm font-medium text-arc-900 truncate block">{e.title}</span>
                             <span className="text-xs font-mono text-arc-200">{e.edit_id_display} · {e.target_module_id}</span>
@@ -712,10 +709,8 @@ function ConfirmedTab() {
         {isLoading ? (
           <div className="flex items-center justify-center py-16 text-arc-200 text-sm">Loading…</div>
         ) : totalVisible === 0 ? (
-          <div className="flex items-center justify-center py-16 flex-col gap-2 text-arc-200 text-center">
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
+          <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-200 text-center">
+            <Send className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
             <p className="text-sm max-w-sm">
               No confirmed packets yet. Packets approved on the Proposed Packets tab will appear here.
             </p>
