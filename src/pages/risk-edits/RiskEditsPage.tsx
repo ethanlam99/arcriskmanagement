@@ -339,7 +339,7 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index }: RowProps) {
   const tAt = terminalAt(edit);
   // Explicit zebra rather than CSS odd/even — each row optionally renders a
   // second expansion <tr>, which would otherwise flip the alternation.
-  const zebra = index % 2 === 0 ? 'bg-white' : 'bg-arc-50/40';
+  const zebra = index % 2 === 0 ? 'bg-white' : 'bg-arc-50/60';
 
   return (
     <>
