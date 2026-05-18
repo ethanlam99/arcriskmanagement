@@ -331,10 +331,11 @@ interface RowProps {
   nowMs:       number;
   showFinalTs: boolean;
   index:       number;
+  isOpen:      boolean;
+  onToggle:    () => void;
 }
 
-function EditRow({ edit, userMap, nowMs, showFinalTs, index }: RowProps) {
-  const [open, setOpen] = useState(false);
+function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }: RowProps) {
   const colSpan = showFinalTs ? 9 : 8;
   const tAt = terminalAt(edit);
   // Explicit zebra rather than CSS odd/even — each row optionally renders a
@@ -345,7 +346,7 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index }: RowProps) {
     <>
       <tr
         className={`border-b border-arc-200 ${zebra} hover:bg-arc-50 transition-colors cursor-pointer`}
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle}
       >
         <td className="px-4 py-3 w-32">
           <span className="font-mono text-xs text-arc-500">{edit.edit_id_display}</span>
@@ -380,11 +381,11 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index }: RowProps) {
           </td>
         )}
         <td className="px-4 py-3 w-8 text-arc-300 text-xs text-right">
-          {open ? '▲' : '▼'}
+          {isOpen ? '▲' : '▼'}
         </td>
       </tr>
 
-      {open && (
+      {isOpen && (
         <tr className="border-b border-arc-200 bg-arc-50">
           <td colSpan={colSpan} className="px-6 py-4">
             <div className="flex flex-col gap-5">
@@ -496,6 +497,7 @@ function EditsTable({
   onSort:      (k: SortKey) => void;
   showFinalTs: boolean;
 }) {
+  const [expandedEditId, setExpandedEditId] = useState<string | null>(null);
   return (
     <div className="bg-white rounded-xl border border-arc-200 shadow-sm overflow-hidden">
       <table className="w-full text-sm">
@@ -516,7 +518,16 @@ function EditsTable({
         </thead>
         <tbody>
           {edits.map((e, i) => (
-            <EditRow key={e.id} edit={e} userMap={userMap} nowMs={nowMs} showFinalTs={showFinalTs} index={i} />
+            <EditRow
+              key={e.id}
+              edit={e}
+              userMap={userMap}
+              nowMs={nowMs}
+              showFinalTs={showFinalTs}
+              index={i}
+              isOpen={expandedEditId === e.id}
+              onToggle={() => setExpandedEditId((prev) => (prev === e.id ? null : e.id))}
+            />
           ))}
         </tbody>
       </table>
