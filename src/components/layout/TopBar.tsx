@@ -20,7 +20,7 @@ export function TopBar({ breadcrumb, actions }: TopBarProps) {
             disabled={!canGoBack}
             aria-label="Go back"
             title="Back"
-            className="w-7 h-7 flex items-center justify-center rounded-md text-arc-500 hover:bg-arc-50 hover:text-arc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-arc-500 hover:bg-arc-100 hover:text-arc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -30,7 +30,7 @@ export function TopBar({ breadcrumb, actions }: TopBarProps) {
             disabled={!canGoForward}
             aria-label="Go forward"
             title="Forward"
-            className="w-7 h-7 flex items-center justify-center rounded-md text-arc-500 hover:bg-arc-50 hover:text-arc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-arc-500 hover:bg-arc-100 hover:text-arc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronRight className="w-4 h-4" />
           </button>

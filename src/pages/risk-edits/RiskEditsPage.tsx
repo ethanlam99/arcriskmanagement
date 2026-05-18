@@ -251,7 +251,7 @@ function StageTimeline({ edit, nowMs }: { edit: RiskEdit; nowMs: number }) {
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex h-3 rounded-md overflow-hidden border border-arc-200 bg-arc-50">
+      <div className="flex h-3 rounded-md overflow-hidden border border-arc-200 bg-arc-100">
         {segments.map((seg, idx) => {
           const dur = Math.max(1, seg.endMs - seg.startMs);
           const widthPct = (dur / totalReachedMs) * reachedShare * 100;
@@ -340,12 +340,12 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
   const tAt = terminalAt(edit);
   // Explicit zebra rather than CSS odd/even — each row optionally renders a
   // second expansion <tr>, which would otherwise flip the alternation.
-  const zebra = index % 2 === 0 ? 'bg-white' : 'bg-arc-50/60';
+  const zebra = index % 2 === 0 ? 'bg-white' : 'bg-arc-100/60';
 
   return (
     <>
       <tr
-        className={`border-b border-arc-200 ${zebra} hover:bg-arc-50 transition-colors cursor-pointer`}
+        className={`border-b border-arc-200 ${zebra} hover:bg-arc-100 transition-colors cursor-pointer`}
         onClick={onToggle}
       >
         <td className="px-4 py-3 w-32">
@@ -386,7 +386,7 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
       </tr>
 
       {isOpen && (
-        <tr className="border-b border-arc-200 bg-arc-50">
+        <tr className="border-b border-arc-200 bg-arc-100">
           <td colSpan={colSpan} className="px-6 py-4">
             <div className="flex flex-col gap-5">
               <div className="flex gap-8">
@@ -502,7 +502,7 @@ function EditsTable({
     <div className="bg-white rounded-xl border border-arc-200 shadow-sm overflow-hidden">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-arc-200 bg-arc-50">
+          <tr className="border-b border-arc-200 bg-arc-100">
             <HeaderCell label="ID"            width="w-32" sortKey="id"            sort={sort} onSort={onSort} />
             <HeaderCell label="Title"                       sortKey="title"         sort={sort} onSort={onSort} />
             <HeaderCell label="Stage"         width="w-36" sortKey="stage"         sort={sort} onSort={onSort} />

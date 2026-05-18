@@ -199,7 +199,7 @@ function ApprovedPoolTab() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-arc-200 bg-arc-50 sticky top-0">
+                <tr className="border-b border-arc-200 bg-arc-100 sticky top-0">
                   {canAct && (
                     <th className="px-4 py-2.5 w-10">
                       <input type="checkbox"
@@ -216,7 +216,7 @@ function ApprovedPoolTab() {
               </thead>
               <tbody>
                 {unbundled.map((c) => (
-                  <tr key={c.id} className="border-b border-arc-200 last:border-0 transition-colors odd:bg-white even:bg-arc-50/40 hover:bg-arc-50">
+                  <tr key={c.id} className="border-b border-arc-200 last:border-0 transition-colors odd:bg-white even:bg-arc-100/40 hover:bg-arc-100">
                     {canAct && (
                       <td className="px-4 py-3">
                         <input type="checkbox" checked={selected.has(c.id)}
@@ -482,7 +482,7 @@ function ProposedPacketsTab() {
                     </div>
 
                     {isOpen && (
-                      <div className="border-t border-arc-200 divide-y divide-arc-200 bg-arc-50">
+                      <div className="border-t border-arc-200 divide-y divide-arc-200 bg-arc-100">
                         {edits.length === 0 ? (
                           <p className="px-5 py-3 text-xs text-arc-200">No edits attached.</p>
                         ) : (
@@ -635,7 +635,7 @@ function PacketSection({
                       <p className="px-5 py-3 text-xs text-arc-200">No edits attached.</p>
                     ) : (
                       edits.map((e) => (
-                        <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-4 odd:bg-white even:bg-arc-50/40">
+                        <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-4 odd:bg-white even:bg-arc-100/40">
                           <div className="min-w-0">
                             <span className="text-sm font-medium text-arc-900 truncate block">{e.title}</span>
                             <span className="text-xs font-mono text-arc-200">{e.edit_id_display} · {e.target_module_id}</span>
@@ -724,7 +724,7 @@ function ConfirmedTab() {
               getPacketEdits={getPacketEdits}
               expanded={expanded}
               onToggle={toggleExpand}
-              badge={{ label: 'Confirmed', className: 'bg-arc-50 text-arc-700 border-arc-200' }}
+              badge={{ label: 'Confirmed', className: 'bg-arc-100 text-arc-700 border-arc-200' }}
               emptyText="No packets currently with IT."
             />
             <PacketSection

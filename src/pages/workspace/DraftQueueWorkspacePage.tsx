@@ -41,8 +41,8 @@ function EditListItem({
       onClick={onClick}
       className={`w-full text-left px-3 py-3 border-b border-arc-200 transition-colors ${
         isSelected
-          ? 'bg-arc-50 border-l-2 border-l-arc-500'
-          : 'hover:bg-arc-50 border-l-2 border-l-transparent'
+          ? 'bg-arc-100 border-l-2 border-l-arc-500'
+          : 'hover:bg-arc-100 border-l-2 border-l-transparent'
       }`}
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -125,7 +125,7 @@ export function DraftQueueWorkspacePage() {
     <div className="flex h-full overflow-hidden">
       {/* ── Left pane ── */}
       <div className="w-72 shrink-0 border-r border-arc-200 bg-white flex flex-col overflow-hidden">
-        <div className="px-3 py-2.5 border-b border-arc-200 bg-arc-50 shrink-0">
+        <div className="px-3 py-2.5 border-b border-arc-200 bg-arc-100 shrink-0">
           <p className="text-xs font-semibold text-arc-500 uppercase tracking-wider">
             Drafts
             <span className="ml-1.5 font-mono font-normal text-arc-300">({drafts.length})</span>
@@ -147,7 +147,7 @@ export function DraftQueueWorkspacePage() {
             ))
           )}
 
-          <div className="px-3 py-2.5 border-b border-t border-arc-200 bg-arc-50 shrink-0">
+          <div className="px-3 py-2.5 border-b border-t border-arc-200 bg-arc-100 shrink-0">
             <p className="text-xs font-semibold text-arc-500 uppercase tracking-wider">
               Queued for UAT
               <span className="ml-1.5 font-mono font-normal text-arc-300">({queued.length})</span>

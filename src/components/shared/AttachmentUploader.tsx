@@ -145,9 +145,9 @@ export function AttachmentUploader({
           onDrop={onDrop}
           className={`rounded-lg border border-dashed transition-colors px-3 py-4 text-center ${
             isDragOver
-              ? 'border-arc-500 bg-arc-50'
+              ? 'border-arc-500 bg-arc-100'
               : limitReached
-              ? 'border-arc-200 bg-arc-50/40 opacity-60'
+              ? 'border-arc-200 bg-arc-100/40 opacity-60'
               : 'border-arc-200 bg-white hover:border-arc-300'
           }`}
         >

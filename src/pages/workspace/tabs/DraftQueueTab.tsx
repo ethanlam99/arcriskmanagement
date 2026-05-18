@@ -52,7 +52,7 @@ function BriefPanel({
       )}
 
       <button
-        className="w-full px-5 py-3 flex items-center justify-between bg-arc-50 hover:bg-arc-100 transition-colors text-left"
+        className="w-full px-5 py-3 flex items-center justify-between bg-arc-100 hover:bg-arc-100 transition-colors text-left"
         onClick={() => setExpanded((e) => !e)}
       >
         <span className="text-xs font-semibold text-arc-500 uppercase tracking-wide">
@@ -67,7 +67,7 @@ function BriefPanel({
       </button>
 
       {expanded && (
-        <div className="px-5 py-3 bg-arc-50 border-t border-arc-200">
+        <div className="px-5 py-3 bg-arc-100 border-t border-arc-200">
           <p className="text-sm text-arc-900 leading-relaxed">{change.natural_language_brief}</p>
         </div>
       )}
@@ -325,11 +325,11 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
                 <button
                   key={v.id}
                   onClick={() => { setEditorSQL(v.sql_after); setShowVersions(false); }}
-                  className="w-full text-left px-4 py-3 border-b border-arc-200 hover:bg-arc-50 transition-colors"
+                  className="w-full text-left px-4 py-3 border-b border-arc-200 hover:bg-arc-100 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-0.5">
                     <span className="text-xs font-semibold text-arc-900">v{v.version_number}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${v.source === 'ai_proposal' ? 'bg-arc-50 text-arc-500' : 'bg-amber-50 text-amber-700'}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${v.source === 'ai_proposal' ? 'bg-arc-100 text-arc-500' : 'bg-amber-50 text-amber-700'}`}>
                       {v.source === 'ai_proposal' ? 'AI' : 'Human'}
                     </span>
                   </div>
@@ -367,7 +367,7 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
         </div>
 
         {/* AI chat panel */}
-        <div className="w-80 shrink-0 border-l border-arc-200 flex flex-col bg-arc-50">
+        <div className="w-80 shrink-0 border-l border-arc-200 flex flex-col bg-arc-100">
           <div className="h-10 shrink-0 px-4 flex items-center border-b border-arc-200 bg-white">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 bg-arc-500 rounded-full flex items-center justify-center">

@@ -79,7 +79,7 @@ function StatBox({
           : 'border-arc-200 hover:border-arc-500'
       }`}
     >
-      <div className="bg-arc-50 rounded-lg px-3 py-2">
+      <div className="bg-arc-100 rounded-lg px-3 py-2">
         <p className={`text-2xl font-bold tabular-nums ${color}`}>{value}</p>
         <p className="text-xs text-arc-200 mt-0.5">{label}</p>
       </div>
@@ -120,7 +120,7 @@ function StageExpansionPanel({
         <p className="px-4 py-6 text-center text-sm text-arc-200">No edits in this stage.</p>
       ) : (
         <table className="w-full text-sm">
-          <thead className="bg-arc-50 text-xs text-arc-500 uppercase tracking-wide">
+          <thead className="bg-arc-100 text-xs text-arc-500 uppercase tracking-wide">
             <tr>
               <th className="text-left font-medium px-4 py-2 w-28">Edit ID</th>
               <th className="text-left font-medium px-4 py-2">Title</th>
@@ -133,7 +133,7 @@ function StageExpansionPanel({
             {edits.map((e) => {
               const author = userMap[e.created_by];
               return (
-                <tr key={e.id} className="hover:bg-arc-50">
+                <tr key={e.id} className="hover:bg-arc-100">
                   <td className="px-4 py-2 font-mono text-xs text-arc-900">{e.edit_id_display}</td>
                   <td className="px-4 py-2 text-arc-900 truncate">{e.title}</td>
                   <td className="px-4 py-2">
@@ -176,7 +176,7 @@ function EditRow({ change, onClick }: { change: RiskEdit; onClick: () => void })
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-between py-2.5 px-1 hover:bg-arc-50 rounded-lg transition-colors text-left group"
+      className="w-full flex items-center justify-between py-2.5 px-1 hover:bg-arc-100 rounded-lg transition-colors text-left group"
     >
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-arc-900 truncate group-hover:text-arc-700">{change.title}</p>
@@ -239,7 +239,7 @@ function ModuleMiniCard({
       onClick={() => navigate(`/engine-modules/${module.id}`)}
       className="rounded-xl border border-arc-200 bg-white shadow-sm p-1.5 text-left hover:border-arc-500 transition-colors group cursor-pointer"
     >
-      <div className="bg-arc-50 rounded-lg p-5 flex flex-col gap-3 min-h-[160px]">
+      <div className="bg-arc-100 rounded-lg p-5 flex flex-col gap-3 min-h-[160px]">
         <div className="flex items-start justify-between gap-3">
           <p className="font-mono text-sm font-semibold text-arc-900 group-hover:text-arc-700 truncate">
             {module.module_name}
@@ -381,7 +381,7 @@ export function OverviewPage() {
                 <button
                   onClick={handleRefresh}
                   title="Refresh now"
-                  className="text-arc-500 hover:text-arc-900 transition-colors p-1 rounded hover:bg-arc-50"
+                  className="text-arc-500 hover:text-arc-900 transition-colors p-1 rounded hover:bg-arc-100"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -496,7 +496,7 @@ export function OverviewPage() {
                     {confirmedPackets.slice(0, 5).map((pkt) => (
                       <button key={pkt.id}
                         onClick={() => navigate('/it-handoff-log')}
-                        className="w-full flex items-start justify-between py-2.5 px-1 hover:bg-arc-50 rounded-lg transition-colors text-left group">
+                        className="w-full flex items-start justify-between py-2.5 px-1 hover:bg-arc-100 rounded-lg transition-colors text-left group">
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-arc-900 group-hover:text-arc-700 truncate">{pkt.name}</p>
                           {pkt.description && (
@@ -544,7 +544,7 @@ export function OverviewPage() {
                     linkTo="/it-handoff-log" linkLabel="Go to IT Handoff Log →">
                     {confirmedPackets.slice(0, 5).map((pkt) => (
                       <button key={pkt.id} onClick={() => navigate('/it-handoff-log')}
-                        className="w-full flex items-start justify-between py-2.5 px-1 hover:bg-arc-50 rounded-lg transition-colors text-left group">
+                        className="w-full flex items-start justify-between py-2.5 px-1 hover:bg-arc-100 rounded-lg transition-colors text-left group">
                         <p className="text-sm font-medium text-arc-900 group-hover:text-arc-700 truncate">{pkt.name}</p>
                         <span className="ml-3 shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
                           Confirmed

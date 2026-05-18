@@ -11,7 +11,7 @@ const styles: Record<BadgeVariant, string> = {
   success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
   warning: 'bg-amber-50 text-amber-700 border border-amber-200',
   danger:  'bg-rose-50 text-rose-700 border border-rose-200',
-  info:    'bg-arc-50 text-arc-700 border border-arc-200',
+  info:    'bg-arc-100 text-arc-700 border border-arc-200',
   neutral: 'bg-zinc-100 text-zinc-600 border border-zinc-200',
   live:    'bg-forest-50 text-forest-700 border border-forest-100 font-semibold',
 };

@@ -60,7 +60,7 @@ function ReviewableTestCaseRow({
   return (
     <>
       <tr
-        className={`border-b border-arc-200 transition-colors ${isReviewed ? 'bg-emerald-50/30' : ''} hover:bg-arc-50`}
+        className={`border-b border-arc-200 transition-colors ${isReviewed ? 'bg-emerald-50/30' : ''} hover:bg-arc-100`}
       >
         <td className="px-4 py-2.5 font-mono text-xs text-arc-500">{tc.id}</td>
         <td className="px-4 py-2.5 text-sm text-arc-900 cursor-pointer" onClick={() => setExpanded((e) => !e)}>
@@ -105,7 +105,7 @@ function ReviewableTestCaseRow({
         )}
       </tr>
       {expanded && (
-        <tr className="border-b border-arc-200 bg-arc-50">
+        <tr className="border-b border-arc-200 bg-arc-100">
           <td colSpan={readonly ? 4 : 5} className="px-6 py-4">
             <div className="grid grid-cols-3 gap-4 text-xs mb-3">
               {[
@@ -370,7 +370,7 @@ export function QaTab({ change }: QaTabProps) {
             <div className="rounded-xl border border-arc-200 overflow-hidden bg-white">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-arc-200 bg-arc-50">
+                  <tr className="border-b border-arc-200 bg-arc-100">
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">ID</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Description</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Status</th>

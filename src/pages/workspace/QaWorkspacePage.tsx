@@ -42,7 +42,7 @@ export function QaWorkspacePage() {
     <div className="flex h-full overflow-hidden">
       {/* ── Left pane ── */}
       <div className="w-72 shrink-0 border-r border-arc-200 bg-white flex flex-col overflow-hidden">
-        <div className="px-3 py-2.5 border-b border-arc-200 bg-arc-50 shrink-0">
+        <div className="px-3 py-2.5 border-b border-arc-200 bg-arc-100 shrink-0">
           <p className="text-xs font-semibold text-arc-500 uppercase tracking-wider">
             QA Review
             <span className="ml-1.5 font-mono font-normal text-arc-300">({qaEdits.length})</span>
@@ -65,8 +65,8 @@ export function QaWorkspacePage() {
                   onClick={() => selectEdit(edit)}
                   className={`w-full text-left px-3 py-3 border-b border-arc-200 transition-colors ${
                     isSelected
-                      ? 'bg-arc-50 border-l-2 border-l-arc-500'
-                      : 'hover:bg-arc-50 border-l-2 border-l-transparent'
+                      ? 'bg-arc-100 border-l-2 border-l-arc-500'
+                      : 'hover:bg-arc-100 border-l-2 border-l-transparent'
                   }`}
                 >
                   <p className="text-xs font-medium text-arc-900 leading-snug line-clamp-2 mb-1.5">

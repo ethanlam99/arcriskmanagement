@@ -15,7 +15,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 const ROLE_COLORS: Record<UserRole, string> = {
-  risk_analyst:  'bg-arc-50 text-arc-700 border border-arc-200',
+  risk_analyst:  'bg-arc-100 text-arc-700 border border-arc-200',
   tester:        'bg-emerald-50 text-emerald-700 border border-emerald-200',
   admin:         'bg-amber-50 text-amber-700 border border-amber-200',
   risk_lead:     'bg-arc-100 text-arc-900 border border-arc-300',
@@ -47,7 +47,7 @@ export function LoginPage() {
   }, {} as Record<UserRole, User[]>);
 
   return (
-    <div className="min-h-screen bg-arc-50 flex flex-col items-center justify-center p-8">
+    <div className="min-h-screen bg-arc-100 flex flex-col items-center justify-center p-8">
       {/* Header */}
       <div className="mb-10 text-center">
         <div className="inline-flex items-center justify-center w-12 h-12 bg-arc-900 rounded-xl mb-4">
@@ -80,7 +80,7 @@ export function LoginPage() {
                     <button
                       key={user.id}
                       onClick={() => handleSignIn(user)}
-                      className="group flex items-center gap-4 p-4 rounded-xl border border-arc-200 bg-white hover:border-arc-500 hover:bg-arc-50 transition-all text-left"
+                      className="group flex items-center gap-4 p-4 rounded-xl border border-arc-200 bg-white hover:border-arc-500 hover:bg-arc-100 transition-all text-left"
                     >
                       <UserAvatar seed={user.avatar_seed} name={user.name} size="lg" />
                       <div className="flex-1 min-w-0">

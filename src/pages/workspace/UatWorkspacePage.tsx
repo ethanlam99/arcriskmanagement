@@ -161,7 +161,7 @@ function UatContextDrawer({
       : 'done';
 
   return (
-    <aside className="w-96 shrink-0 border-l border-arc-200 bg-arc-50/40 flex flex-col overflow-hidden">
+    <aside className="w-96 shrink-0 border-l border-arc-200 bg-arc-100/40 flex flex-col overflow-hidden">
       <div className="px-4 py-3 border-b border-arc-200 bg-white flex items-start gap-2 shrink-0">
         <div className="flex-1 min-w-0">
           <p className="text-xs font-mono text-arc-200">{edit.edit_id_display}</p>
@@ -385,7 +385,7 @@ export function UatWorkspacePage() {
               <div className="rounded-xl border border-arc-200 shadow-sm overflow-hidden bg-white">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-arc-200 bg-arc-50">
+                    <tr className="border-b border-arc-200 bg-arc-100">
                       {canAct && (
                         <th className="px-4 py-2.5 w-10">
                           <input
@@ -411,7 +411,7 @@ export function UatWorkspacePage() {
                           key={edit.id}
                           onClick={() => setOpenEditId(edit.id)}
                           className={`border-b border-arc-200 last:border-0 cursor-pointer transition-colors ${
-                            isOpen ? 'bg-arc-50' : 'hover:bg-arc-50'
+                            isOpen ? 'bg-arc-100' : 'hover:bg-arc-100'
                           }`}
                         >
                           {canAct && (
@@ -494,7 +494,7 @@ export function UatWorkspacePage() {
                       key={edit.id}
                       onClick={() => setOpenEditId(edit.id)}
                       className={`w-full text-left px-5 py-4 border-b border-arc-200 last:border-0 flex items-center gap-4 transition-colors ${
-                        isOpen ? 'bg-arc-50' : 'hover:bg-arc-50'
+                        isOpen ? 'bg-arc-100' : 'hover:bg-arc-100'
                       }`}
                     >
                       <div className="w-5 h-5 border-2 border-arc-500 border-t-transparent rounded-full animate-spin shrink-0" />

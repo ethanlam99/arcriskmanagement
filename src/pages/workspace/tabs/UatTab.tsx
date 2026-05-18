@@ -34,7 +34,7 @@ function TestCaseRow({ tc }: { tc: TestCase }) {
   return (
     <>
       <tr
-        className="border-b border-arc-200 cursor-pointer hover:bg-arc-50 transition-colors"
+        className="border-b border-arc-200 cursor-pointer hover:bg-arc-100 transition-colors"
         onClick={() => setExpanded((e) => !e)}
       >
         <td className="px-4 py-2.5 font-mono text-xs text-arc-500">{tc.id}</td>
@@ -53,7 +53,7 @@ function TestCaseRow({ tc }: { tc: TestCase }) {
         <td className="px-4 py-2.5 text-xs text-arc-200">{expanded ? 'Collapse ▲' : 'Expand ▼'}</td>
       </tr>
       {expanded && (
-        <tr className="border-b border-arc-200 bg-arc-50">
+        <tr className="border-b border-arc-200 bg-arc-100">
           <td colSpan={5} className="px-6 py-4">
             <div className="grid grid-cols-3 gap-4 text-xs">
               {[
@@ -121,7 +121,7 @@ function ScreenshotGallery({ refs }: { refs: string[] }) {
             <img src={lightbox} alt="Screenshot" className="rounded-xl max-h-[80vh] object-contain" />
             <button
               onClick={() => setLightbox(null)}
-              className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center text-arc-900 hover:bg-arc-50 text-sm font-bold"
+              className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center text-arc-900 hover:bg-arc-100 text-sm font-bold"
             >
               ✕
             </button>
@@ -209,7 +209,7 @@ export function UatTab({ change }: UatTabProps) {
           <div className="rounded-xl border border-arc-200 overflow-hidden bg-white">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-arc-200 bg-arc-50">
+                <tr className="border-b border-arc-200 bg-arc-100">
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">ID</th>
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Description</th>
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Status</th>

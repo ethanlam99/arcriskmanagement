@@ -10,7 +10,7 @@ export function AppShell() {
 
   return (
     <NavHistoryProvider>
-      <div className="flex h-screen w-screen overflow-hidden bg-arc-50">
+      <div className="flex h-screen w-screen overflow-hidden bg-arc-100">
         <Sidebar />
         <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
           <Outlet />
