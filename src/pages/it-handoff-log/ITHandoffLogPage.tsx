@@ -161,7 +161,7 @@ export function ITHandoffLogPage() {
   const { data: allPacketEdits = [] } = useAllPacketEdits();
 
   const { data: userMap = {} } = useQuery({
-    queryKey: ['arc', 'users', 'batch', 'all'],
+    queryKey: ['arc', 'users', 'map', 'name'],
     queryFn:  async () => {
       const users = await repo.users.list();
       return Object.fromEntries(users.map((u) => [u.id, u.name]));

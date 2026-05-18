@@ -260,7 +260,7 @@ export function OverviewPage() {
   const confirmedPackets = packetsQuery.data ?? [];
 
   const { data: userMap = {} } = useQuery({
-    queryKey: ['arc', 'users', 'batch', 'all'],
+    queryKey: ['arc', 'users', 'map', 'profile'],
     queryFn: async () => {
       const users = await repo.users.list();
       return Object.fromEntries(

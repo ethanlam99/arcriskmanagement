@@ -541,7 +541,7 @@ export function RiskEditsPage() {
   const { data: rawEdits = [], isLoading } = useRiskEdits();
 
   const { data: users = [] } = useQuery({
-    queryKey: ['arc', 'users', 'batch', 'all'],
+    queryKey: ['arc', 'users', 'list'],
     queryFn: () => repo.users.list(),
   });
 

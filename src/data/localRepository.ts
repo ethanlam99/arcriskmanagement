@@ -41,7 +41,7 @@ const KEYS = {
   uatContextAttachments: 'arc:uat_context_attachments',
   qaReviewAttachments:   'arc:qa_review_attachments',
   // Versioned seed key — bump to force reseed after schema changes
-  seeded:            'arc:seeded_v3',
+  seeded:            'arc:seeded_v3_1',
 } as const;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -57,7 +57,9 @@ function now(): string {
 function load<T>(key: string): T[] {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T[]) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
   } catch {
     return [];
   }
