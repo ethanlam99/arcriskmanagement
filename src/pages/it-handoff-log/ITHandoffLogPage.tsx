@@ -265,7 +265,7 @@ export function ITHandoffLogPage() {
                       const edits = getPacketEdits(pkt.id);
                       return (
                         <tr key={pkt.id}
-                          className="border-b border-arc-200 last:border-0 odd:bg-white even:bg-arc-100/40 hover:bg-arc-100 transition-colors cursor-pointer"
+                          className="border-b border-arc-200 last:border-0 odd:bg-white even:bg-arc-100/40 hover:bg-arc-200 transition-colors duration-150 cursor-pointer"
                           onClick={() => setSelected(pkt)}>
                           <td className="px-4 py-3">
                             <p className="font-medium text-arc-900">{pkt.name}</p>

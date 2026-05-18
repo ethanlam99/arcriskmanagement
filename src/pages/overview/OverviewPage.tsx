@@ -73,10 +73,10 @@ function StatBox({
   return (
     <button
       onClick={onClick}
-      className={`rounded-xl border bg-white shadow-sm p-1.5 text-center transition-colors ${
+      className={`rounded-xl border bg-white shadow-sm p-1.5 text-center transition-all duration-150 ${
         isActive
           ? 'border-arc-500 ring-1 ring-arc-500'
-          : 'border-arc-200 hover:border-arc-500'
+          : 'border-arc-200 hover:border-forest-500 hover:bg-white hover:shadow-md'
       }`}
     >
       <div className="bg-arc-100 rounded-lg px-3 py-2">
@@ -176,7 +176,7 @@ function EditRow({ change, onClick }: { change: RiskEdit; onClick: () => void })
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-between py-2.5 px-1 hover:bg-arc-100 rounded-lg transition-colors text-left group"
+      className="w-full flex items-center justify-between py-2.5 px-1 hover:bg-arc-200 rounded-lg transition-colors duration-150 text-left group"
     >
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-arc-900 truncate group-hover:text-arc-700">{change.title}</p>
@@ -237,7 +237,7 @@ function ModuleMiniCard({
   return (
     <div
       onClick={() => navigate(`/engine-modules/${module.id}`)}
-      className="rounded-xl border border-arc-200 bg-white shadow-sm p-1.5 text-left hover:border-arc-500 transition-colors group cursor-pointer"
+      className="rounded-xl border border-arc-200 bg-white shadow-sm p-1.5 text-left hover:border-forest-500 hover:shadow-md transition-all duration-150 group cursor-pointer"
     >
       <div className="bg-arc-100 rounded-lg p-5 flex flex-col gap-3 min-h-[160px]">
         <div className="flex items-start justify-between gap-3">
@@ -496,7 +496,7 @@ export function OverviewPage() {
                     {confirmedPackets.slice(0, 5).map((pkt) => (
                       <button key={pkt.id}
                         onClick={() => navigate('/it-handoff-log')}
-                        className="w-full flex items-start justify-between py-2.5 px-1 hover:bg-arc-100 rounded-lg transition-colors text-left group">
+                        className="w-full flex items-start justify-between py-2.5 px-1 hover:bg-arc-200 rounded-lg transition-colors duration-150 text-left group">
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-arc-900 group-hover:text-arc-700 truncate">{pkt.name}</p>
                           {pkt.description && (
@@ -544,7 +544,7 @@ export function OverviewPage() {
                     linkTo="/it-handoff-log" linkLabel="Go to IT Handoff Log →">
                     {confirmedPackets.slice(0, 5).map((pkt) => (
                       <button key={pkt.id} onClick={() => navigate('/it-handoff-log')}
-                        className="w-full flex items-start justify-between py-2.5 px-1 hover:bg-arc-100 rounded-lg transition-colors text-left group">
+                        className="w-full flex items-start justify-between py-2.5 px-1 hover:bg-arc-200 rounded-lg transition-colors duration-150 text-left group">
                         <p className="text-sm font-medium text-arc-900 group-hover:text-arc-700 truncate">{pkt.name}</p>
                         <span className="ml-3 shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
                           Confirmed

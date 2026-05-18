@@ -216,7 +216,7 @@ function ApprovedPoolTab() {
               </thead>
               <tbody>
                 {unbundled.map((c) => (
-                  <tr key={c.id} className="border-b border-arc-200 last:border-0 transition-colors odd:bg-white even:bg-arc-100/40 hover:bg-arc-100">
+                  <tr key={c.id} className="border-b border-arc-200 last:border-0 transition-colors duration-150 odd:bg-white even:bg-arc-100/40 hover:bg-arc-200">
                     {canAct && (
                       <td className="px-4 py-3">
                         <input type="checkbox" checked={selected.has(c.id)}

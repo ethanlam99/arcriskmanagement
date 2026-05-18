@@ -410,8 +410,8 @@ export function UatWorkspacePage() {
                         <tr
                           key={edit.id}
                           onClick={() => setOpenEditId(edit.id)}
-                          className={`border-b border-arc-200 last:border-0 cursor-pointer transition-colors ${
-                            isOpen ? 'bg-arc-100' : 'hover:bg-arc-100'
+                          className={`border-b border-arc-200 last:border-0 cursor-pointer transition-colors duration-150 ${
+                            isOpen ? 'bg-arc-200' : 'hover:bg-arc-200'
                           }`}
                         >
                           {canAct && (
@@ -493,8 +493,8 @@ export function UatWorkspacePage() {
                     <button
                       key={edit.id}
                       onClick={() => setOpenEditId(edit.id)}
-                      className={`w-full text-left px-5 py-4 border-b border-arc-200 last:border-0 flex items-center gap-4 transition-colors ${
-                        isOpen ? 'bg-arc-100' : 'hover:bg-arc-100'
+                      className={`w-full text-left px-5 py-4 border-b border-arc-200 last:border-0 flex items-center gap-4 transition-colors duration-150 ${
+                        isOpen ? 'bg-arc-200' : 'hover:bg-arc-200'
                       }`}
                     >
                       <div className="w-5 h-5 border-2 border-arc-500 border-t-transparent rounded-full animate-spin shrink-0" />

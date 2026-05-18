@@ -345,7 +345,7 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
   return (
     <>
       <tr
-        className={`border-b border-arc-200 ${zebra} hover:bg-arc-100 transition-colors cursor-pointer`}
+        className={`border-b border-arc-200 ${zebra} hover:bg-arc-200 transition-colors duration-150 cursor-pointer`}
         onClick={onToggle}
       >
         <td className="px-4 py-3 w-32">

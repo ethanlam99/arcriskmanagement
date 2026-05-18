@@ -10,11 +10,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const base =
-  'inline-flex items-center justify-center gap-2 font-medium rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
+  'inline-flex items-center justify-center gap-2 font-medium rounded-full transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
 
 const variants: Record<Variant, string> = {
-  primary:     'bg-arc-900 text-white hover:bg-arc-700 active:bg-arc-800',
-  secondary:   'border border-arc-700 text-arc-700 bg-white hover:bg-arc-100 active:bg-arc-200',
+  primary:     'bg-arc-900 text-white hover:bg-forest-600 active:bg-arc-800',
+  secondary:   'border border-arc-700 text-arc-700 bg-white hover:bg-arc-100 hover:border-arc-900 active:bg-arc-200',
   ghost:       'text-arc-700 hover:bg-arc-100 active:bg-arc-200',
   destructive: 'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800',
 };

@@ -60,7 +60,7 @@ function ReviewableTestCaseRow({
   return (
     <>
       <tr
-        className={`border-b border-arc-200 transition-colors ${isReviewed ? 'bg-emerald-50/30' : ''} hover:bg-arc-100`}
+        className={`border-b border-arc-200 transition-colors duration-150 ${isReviewed ? 'bg-emerald-50/30' : ''} hover:bg-arc-200`}
       >
         <td className="px-4 py-2.5 font-mono text-xs text-arc-500">{tc.id}</td>
         <td className="px-4 py-2.5 text-sm text-arc-900 cursor-pointer" onClick={() => setExpanded((e) => !e)}>
