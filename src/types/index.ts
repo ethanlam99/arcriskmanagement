@@ -147,6 +147,29 @@ export interface PacketEdit {
   added_at: string;
 }
 
+export interface UatContextAttachment {
+  id: string;
+  risk_edit_id: string;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  content_base64: string;
+  uploaded_by: string;
+  uploaded_at: string;
+}
+
+export interface QaReviewAttachment {
+  id: string;
+  uat_run_id: string;
+  test_case_id: string;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  content_base64: string;
+  uploaded_by: string;
+  uploaded_at: string;
+}
+
 export interface AuditLogEntry {
   id: string;
   actor_id: string;

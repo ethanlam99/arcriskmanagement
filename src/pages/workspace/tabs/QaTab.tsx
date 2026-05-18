@@ -3,11 +3,12 @@ import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useLatestUatRun } from '@/hooks/useUatRuns';
 import { useUpdateRiskEditStage } from '@/hooks/useRiskEdits';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
-import type { RiskEdit, TestCase, TestCaseStatus } from '@/types';
+import { AttachmentUploader } from '@/components/shared/AttachmentUploader';
+import type { RiskEdit, TestCase, TestCaseStatus, QaReviewAttachment } from '@/types';
 
 interface QaTabProps {
   change: RiskEdit;
@@ -30,18 +31,27 @@ function ReviewableTestCaseRow({
   annotation,
   statusOverride,
   isReviewed,
+  attachments,
   onAnnotationChange,
   onStatusOverride,
   onToggleReviewed,
+  onUploadAttachment,
+  onRemoveAttachment,
   readonly,
 }: {
   tc: TestCase;
   annotation: string;
   statusOverride: TestCaseStatus | null;
   isReviewed: boolean;
+  attachments: QaReviewAttachment[];
   onAnnotationChange: (val: string) => void;
   onStatusOverride: (val: TestCaseStatus) => void;
   onToggleReviewed: () => void;
+  onUploadAttachment: (
+    tcId: string,
+    file: { filename: string; mime_type: string; size_bytes: number; content_base64: string }
+  ) => Promise<void>;
+  onRemoveAttachment: (id: string) => Promise<void>;
   readonly: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -133,6 +143,23 @@ function ReviewableTestCaseRow({
                 />
               )}
             </div>
+
+            <div className="mt-3">
+              <p className="text-xs font-semibold text-arc-500 mb-1.5">
+                Supporting evidence
+                {!readonly && (
+                  <span className="ml-1.5 font-normal text-arc-200">
+                    — attach manual UAT screenshots/PDFs when overriding an AI verdict
+                  </span>
+                )}
+              </p>
+              <AttachmentUploader
+                attachments={attachments}
+                onUpload={(file) => onUploadAttachment(tc.id, file)}
+                onRemove={onRemoveAttachment}
+                readonly={readonly}
+              />
+            </div>
           </td>
         </tr>
       )}
@@ -150,6 +177,40 @@ export function QaTab({ change }: QaTabProps) {
 
   const canAct   = (role === 'tester' || role === 'testing_lead' || role === 'admin') && change.current_stage === 'qa_review';
   const isTerminal = ['approved', 'sent_to_it', 'live'].includes(change.current_stage);
+
+  const { data: attachments = [] } = useQuery({
+    queryKey: ['arc', 'qa_review_attachments', run?.id],
+    queryFn: async () => {
+      if (!run) return [] as QaReviewAttachment[];
+      const all = await repo.qaReviewAttachments.list();
+      return all.filter((a) => a.uat_run_id === run.id);
+    },
+    enabled: !!run,
+  });
+
+  async function handleUploadAttachment(
+    tcId: string,
+    file: { filename: string; mime_type: string; size_bytes: number; content_base64: string }
+  ) {
+    if (!currentUser || !run) return;
+    await repo.qaReviewAttachments.create({
+      uat_run_id:     run.id,
+      test_case_id:   tcId,
+      filename:       file.filename,
+      mime_type:      file.mime_type,
+      size_bytes:     file.size_bytes,
+      content_base64: file.content_base64,
+      uploaded_by:    currentUser.id,
+      uploaded_at:    new Date().toISOString(),
+    } as Omit<QaReviewAttachment, 'id' | 'created_at'>);
+    qc.invalidateQueries({ queryKey: ['arc', 'qa_review_attachments', run.id] });
+  }
+
+  async function handleRemoveAttachment(id: string) {
+    if (!run) return;
+    await repo.qaReviewAttachments.delete(id);
+    qc.invalidateQueries({ queryKey: ['arc', 'qa_review_attachments', run.id] });
+  }
 
   const [annotations,    setAnnotations]    = useState<Annotations>({});
   const [statusOverrides, setStatusOverrides] = useState<StatusOverrides>({});
@@ -308,10 +369,13 @@ export function QaTab({ change }: QaTabProps) {
                       annotation={annotations[tc.id] ?? ''}
                       statusOverride={statusOverrides[tc.id] ?? null}
                       isReviewed={!!reviewed[tc.id]}
+                      attachments={attachments.filter((a) => a.test_case_id === tc.id)}
                       readonly={!canAct}
                       onAnnotationChange={(val) => setAnnotations((prev) => ({ ...prev, [tc.id]: val }))}
                       onStatusOverride={(val) => setStatusOverrides((prev) => ({ ...prev, [tc.id]: val }))}
                       onToggleReviewed={() => setReviewed((prev) => ({ ...prev, [tc.id]: !prev[tc.id] }))}
+                      onUploadAttachment={handleUploadAttachment}
+                      onRemoveAttachment={handleRemoveAttachment}
                     />
                   ))}
                 </tbody>

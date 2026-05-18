@@ -10,6 +10,8 @@ import type {
   PacketEdit,
   AuditLogEntry,
   ChatMessageEntity,
+  UatContextAttachment,
+  QaReviewAttachment,
 } from '@/types';
 
 // ── Generic repo shape ────────────────────────────────────────────────────────
@@ -76,4 +78,6 @@ export interface Repository {
   packetEdits: EntityRepo<PacketEdit>;
   auditLog: AuditLogRepo;
   chatMessages: ChatMessageRepo;
+  uatContextAttachments: EntityRepo<UatContextAttachment>;
+  qaReviewAttachments: EntityRepo<QaReviewAttachment>;
 }

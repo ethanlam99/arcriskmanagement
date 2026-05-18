@@ -18,6 +18,8 @@ import type {
   PacketEdit,
   AuditLogEntry,
   ChatMessageEntity,
+  UatContextAttachment,
+  QaReviewAttachment,
 } from '@/types';
 import { generateEditIdDisplay } from './editIdGenerator';
 import seedData from './seed.json';
@@ -36,6 +38,8 @@ const KEYS = {
   packetEdits:       'arc:packet_edits',
   auditLog:          'arc:audit_log',
   chatMessages:      'arc:chat_messages',
+  uatContextAttachments: 'arc:uat_context_attachments',
+  qaReviewAttachments:   'arc:qa_review_attachments',
   // Versioned seed key — bump to force reseed after schema changes
   seeded:            'arc:seeded_v3',
 } as const;
@@ -283,5 +287,7 @@ export function createLocalRepository(): Repository {
     packetEdits:      makeRepo<PacketEdit>(KEYS.packetEdits),
     auditLog:         makeAuditLogRepo(),
     chatMessages:     makeChatMessageRepo(),
+    uatContextAttachments: makeRepo<UatContextAttachment>(KEYS.uatContextAttachments),
+    qaReviewAttachments:   makeRepo<QaReviewAttachment>(KEYS.qaReviewAttachments),
   };
 }
