@@ -1,13 +1,13 @@
 import type { RiskEditStage } from '@/types';
 
-const STAGES: { key: RiskEditStage; label: string }[] = [
-  { key: 'draft',           label: 'Author'     },
-  { key: 'ready_for_uat',   label: 'Queued'     },
-  { key: 'uat_in_progress', label: 'UAT'        },
-  { key: 'qa_review',       label: 'QA Review'  },
-  { key: 'approved',        label: 'Approved'   },
-  { key: 'sent_to_it',      label: 'Sent to IT' },
-  { key: 'live',            label: 'Live'       },
+const STAGES: { key: RiskEditStage; label: string; subtitle: string }[] = [
+  { key: 'draft',           label: 'Author',     subtitle: 'Risk team drafting' },
+  { key: 'ready_for_uat',   label: 'Queued',     subtitle: 'Awaiting tester'    },
+  { key: 'uat_in_progress', label: 'UAT',        subtitle: 'AI running tests'   },
+  { key: 'qa_review',       label: 'QA Review',  subtitle: 'Tester reviewing'   },
+  { key: 'approved',        label: 'Approved',   subtitle: 'Awaiting bundling'  },
+  { key: 'sent_to_it',      label: 'Sent to IT', subtitle: 'Ready to deploy'    },
+  { key: 'live',            label: 'Live',       subtitle: 'In risk engine'     },
 ];
 
 const STAGE_ORDER = STAGES.map((s) => s.key);
@@ -32,46 +32,74 @@ export function Stepper({ currentStage }: StepperProps) {
         // At live, show every step (including the last) as completed.
         const done    = !isRejected && (current > i || (isLive && current === i));
         const active  = !isRejected && !isLive && current === i;
-        const pending = !done && !active;
+        const pending = !done && !active && !isRejected;
+
+        // Connector after this circle is "done" only when both adjacent
+        // circles are done — i.e., the one before the active circle stays
+        // arc-300. When isLive, every connector turns forest.
+        const connectorDone = !isRejected && (isLive || current > i + 1);
+
+        const circleClass = isRejected
+          ? 'bg-rose-50 border-rose-300 text-rose-400'
+          : done
+          ? 'bg-forest-500 border-forest-500 text-white'
+          : active
+          ? 'bg-white border-forest-500 text-forest-600'
+          : 'bg-white border-arc-300 text-arc-500';
+
+        const labelClass = isRejected
+          ? 'text-rose-400'
+          : done
+          ? 'text-forest-600'
+          : active
+          ? 'text-arc-900 font-semibold'
+          : 'text-arc-500';
+
+        const subtitleClass = isRejected
+          ? 'text-rose-400'
+          : done
+          ? 'text-forest-600'
+          : active
+          ? 'text-arc-700'
+          : 'text-arc-300';
 
         return (
           <div key={stage.key} className="flex items-center">
-            {/* Step circle */}
+            {/* Step circle + labels */}
             <div className="flex flex-col items-center">
-              <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 transition-colors
-                  ${done   ? 'bg-arc-500 border-arc-500 text-white' : ''}
-                  ${active ? 'bg-white border-arc-500 text-arc-500' : ''}
-                  ${pending && !isRejected ? 'bg-white border-arc-200 text-arc-200' : ''}
-                  ${isRejected ? 'bg-rose-50 border-rose-300 text-rose-400' : ''}
-                `}
-              >
-                {done ? (
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  i + 1
+              <span title={stage.subtitle} className="relative inline-flex">
+                {active && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 rounded-full border-2 border-forest-500 animate-ping"
+                  />
                 )}
-              </div>
-              <span
-                className={`mt-1 text-xs whitespace-nowrap
-                  ${active  ? 'text-arc-700 font-semibold' : ''}
-                  ${done    ? 'text-arc-500' : ''}
-                  ${pending ? 'text-arc-200' : ''}
-                  ${isRejected ? 'text-rose-400' : ''}
-                `}
-              >
+                <span
+                  className={`relative w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 transition-colors ${circleClass}`}
+                >
+                  {done ? (
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    i + 1
+                  )}
+                </span>
+              </span>
+              <span className={`mt-2 text-xs font-semibold whitespace-nowrap ${labelClass}`}>
                 {stage.label}
+              </span>
+              <span className={`hidden md:block text-[10px] whitespace-nowrap ${subtitleClass}`}>
+                {stage.subtitle}
               </span>
             </div>
 
             {/* Connector */}
             {i < STAGES.length - 1 && (
               <div
-                className={`h-0.5 w-10 mx-1 mb-4 transition-colors
-                  ${done || isLive ? 'bg-arc-500' : 'bg-arc-200'}
-                `}
+                className={`h-0.5 w-10 mx-1 mb-8 transition-colors ${
+                  connectorDone ? 'bg-forest-500' : 'bg-arc-300'
+                }`}
               />
             )}
           </div>
@@ -79,7 +107,7 @@ export function Stepper({ currentStage }: StepperProps) {
       })}
 
       {isRejected && (
-        <div className="ml-4 flex items-center gap-1.5 mb-4">
+        <div className="ml-4 flex items-center gap-1.5 mb-8">
           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
             Rejected
           </span>
