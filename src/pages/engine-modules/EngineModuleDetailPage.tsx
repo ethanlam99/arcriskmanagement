@@ -36,8 +36,8 @@ export function EngineModuleDetailPage() {
     return (
       <div className="flex h-full items-center justify-center flex-col gap-3">
         <p className="text-arc-900 font-medium">Module not found</p>
-        <Button variant="secondary" size="sm" onClick={() => navigate('/engine-modules')}>
-          Back to modules
+        <Button variant="secondary" size="sm" onClick={() => navigate('/overview')}>
+          Back to Overview
         </Button>
       </div>
     );
@@ -52,7 +52,7 @@ export function EngineModuleDetailPage() {
           breadcrumb={
             <Breadcrumb
               items={[
-                { label: 'Engine Modules', to: '/engine-modules' },
+                { label: 'Engine Modules', to: '/overview' },
                 { label: `${module.module_name}.sql` },
               ]}
             />

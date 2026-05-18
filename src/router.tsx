@@ -1,8 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { LoginPage } from '@/pages/login/LoginPage';
-import { HomePage } from '@/pages/home/HomePage';
-import { EngineModulesPage } from '@/pages/engine-modules/EngineModulesPage';
+import { OverviewPage } from '@/pages/overview/OverviewPage';
 import { EngineModuleDetailPage } from '@/pages/engine-modules/EngineModuleDetailPage';
 import { RiskEditsPage } from '@/pages/risk-edits/RiskEditsPage';
 import { WorkspacePage } from '@/pages/workspace/WorkspacePage';
@@ -21,9 +20,8 @@ export const router = createBrowserRouter([
     path: '/',
     element: <AppShell />,
     children: [
-      { index: true,                   element: <Navigate to="/home" replace /> },
-      { path: 'home',                  element: <HomePage /> },
-      { path: 'engine-modules',        element: <EngineModulesPage /> },
+      { index: true,                   element: <Navigate to="/overview" replace /> },
+      { path: 'overview',              element: <OverviewPage /> },
       { path: 'engine-modules/:id',    element: <EngineModuleDetailPage /> },
       { path: 'risk-edits',            element: <RiskEditsPage /> },
       {
@@ -39,17 +37,19 @@ export const router = createBrowserRouter([
       { path: 'changelog',             element: <ChangelogPage /> },
       { path: 'it-handoff-log',        element: <ITHandoffLogPage /> },
       // Legacy redirects
+      { path: 'home',                    element: <Navigate to="/overview" replace /> },
+      { path: 'engine-modules',          element: <Navigate to="/overview" replace /> },
       { path: 'strategy-changes',        element: <Navigate to="/risk-edits" replace /> },
       { path: 'strategy-changes/:id',    element: <Navigate to="/risk-edits" replace /> },
       { path: 'preview-changelog',       element: <Navigate to="/changelog" replace /> },
       { path: 'confirmed-changelog',     element: <Navigate to="/changelog" replace /> },
-      { path: 'audit-log',               element: <Navigate to="/home" replace /> },
+      { path: 'audit-log',               element: <Navigate to="/overview" replace /> },
       // Old per-edit detail route — now directs to the workspace
       { path: 'risk-edits/:id',          element: <Navigate to="/workspace/draft-queue" replace /> },
     ],
   },
   {
     path: '*',
-    element: <Navigate to="/home" replace />,
+    element: <Navigate to="/overview" replace /> ,
   },
 ]);

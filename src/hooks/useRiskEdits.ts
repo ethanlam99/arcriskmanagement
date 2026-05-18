@@ -8,11 +8,15 @@ const KEYS = {
   versions: (id: string) => ['arc', 'risk_edit_versions', id] as const,
 };
 
-export function useRiskEdits(filters?: Partial<RiskEdit>) {
+export function useRiskEdits(
+  filters?: Partial<RiskEdit>,
+  options?: { refetchInterval?: number },
+) {
   const repo = useRepository();
   return useQuery({
     queryKey: [...KEYS.all(), filters],
     queryFn:  () => repo.riskEdits.list(filters as Record<string, unknown>),
+    refetchInterval: options?.refetchInterval,
   });
 }
 

@@ -7,11 +7,12 @@ const KEYS = {
   detail: (id: string) => ['arc', 'engine_modules', id] as const,
 };
 
-export function useEngineModules() {
+export function useEngineModules(options?: { refetchInterval?: number }) {
   const repo = useRepository();
   return useQuery({
     queryKey: KEYS.all(),
     queryFn:  () => repo.engineModules.list(),
+    refetchInterval: options?.refetchInterval,
   });
 }
 

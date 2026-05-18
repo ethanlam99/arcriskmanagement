@@ -37,7 +37,7 @@ export function LoginPage() {
 
   function handleSignIn(user: User) {
     signIn(user);
-    navigate('/home');
+    navigate('/overview');
   }
 
   // Group personas by role for legibility

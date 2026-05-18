@@ -1,27 +1,164 @@
+import { useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
 import { useEngineModules } from '@/hooks/useEngineModules';
 import { usePackets } from '@/hooks/useITHandoffPackets';
 import { useRepository } from '@/data/RepositoryProvider';
-import { useQuery } from '@tanstack/react-query';
 import { TopBar, Breadcrumb } from '@/components/layout/TopBar';
 import { StageBadge } from '@/components/shared/StageBadge';
-import type { Packet, RiskEdit } from '@/types';
+import { UserAvatar } from '@/components/shared/UserAvatar';
+import type { EngineModule, Packet, RiskEdit, RiskEditStage } from '@/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function fmt(dateStr: string) {
+const REFETCH_MS = 30_000;
+
+function fmtDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-GB', {
     day: 'numeric', month: 'short', year: 'numeric',
   });
 }
 
-function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+function fmtClock(ts: number) {
+  return new Date(ts).toLocaleTimeString('en-GB', {
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
+function formatTimeSince(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}
+
+function workspaceUrl(edit: RiskEdit): string {
+  if (edit.current_stage === 'uat_in_progress') return '/workspace/uat';
+  if (edit.current_stage === 'qa_review')       return `/workspace/qa?edit=${edit.id}`;
+  if (['draft', 'ready_for_uat'].includes(edit.current_stage)) {
+    return `/workspace/draft-queue?edit=${edit.id}`;
+  }
+  return '/workspace/draft-queue';
+}
+
+// Pipeline-stage stat cards (the seven boxes)
+type StageKey = Extract<
+  RiskEditStage,
+  'draft' | 'ready_for_uat' | 'uat_in_progress' | 'qa_review' | 'approved' | 'sent_to_it' | 'live'
+>;
+
+const STAGE_CARDS: { key: StageKey; label: string; color: string }[] = [
+  { key: 'draft',           label: 'Draft',      color: 'text-arc-500'    },
+  { key: 'ready_for_uat',   label: 'UAT Queue',  color: 'text-amber-600'  },
+  { key: 'uat_in_progress', label: 'In UAT',     color: 'text-amber-600'  },
+  { key: 'qa_review',       label: 'QA Review',  color: 'text-amber-600'  },
+  { key: 'approved',        label: 'Approved',   color: 'text-emerald-600' },
+  { key: 'sent_to_it',      label: 'Sent to IT', color: 'text-emerald-600' },
+  { key: 'live',            label: 'Live',       color: 'text-teal-600'    },
+];
+
+function StatBox({
+  label, value, color, isActive, onClick,
+}: {
+  label: string; value: number; color: string; isActive: boolean; onClick: () => void;
+}) {
   return (
-    <div className="rounded-xl border border-arc-200 bg-white px-4 py-3 text-center">
+    <button
+      onClick={onClick}
+      className={`rounded-xl border bg-white px-4 py-3 text-center transition-colors ${
+        isActive
+          ? 'border-arc-500 ring-1 ring-arc-500'
+          : 'border-arc-200 hover:border-arc-500'
+      }`}
+    >
       <p className={`text-2xl font-bold tabular-nums ${color}`}>{value}</p>
       <p className="text-xs text-arc-200 mt-0.5">{label}</p>
+    </button>
+  );
+}
+
+// Inline expansion panel listing edits in a stage
+function StageExpansionPanel({
+  stageLabel,
+  edits,
+  userMap,
+  onClose,
+}: {
+  stageLabel: string;
+  edits: RiskEdit[];
+  userMap: Record<string, { name: string; avatar_seed: string }>;
+  onClose: () => void;
+}) {
+  return (
+    <div className="mt-3 rounded-xl border border-arc-200 bg-white overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-arc-200 flex items-center justify-between">
+        <p className="text-sm font-semibold text-arc-900">
+          {stageLabel} — {edits.length} edit{edits.length !== 1 ? 's' : ''}
+        </p>
+        <button
+          onClick={onClose}
+          className="text-arc-200 hover:text-arc-900 transition-colors"
+          title="Collapse"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      {edits.length === 0 ? (
+        <p className="px-4 py-6 text-center text-sm text-arc-200">No edits in this stage.</p>
+      ) : (
+        <table className="w-full text-sm">
+          <thead className="bg-arc-50 text-xs text-arc-500 uppercase tracking-wide">
+            <tr>
+              <th className="text-left font-medium px-4 py-2 w-28">Edit ID</th>
+              <th className="text-left font-medium px-4 py-2">Title</th>
+              <th className="text-left font-medium px-4 py-2 w-40">Author</th>
+              <th className="text-left font-medium px-4 py-2 w-24">In stage</th>
+              <th className="text-right font-medium px-4 py-2 w-44">{/* action */}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-arc-200">
+            {edits.map((e) => {
+              const author = userMap[e.created_by];
+              return (
+                <tr key={e.id} className="hover:bg-arc-50">
+                  <td className="px-4 py-2 font-mono text-xs text-arc-900">{e.edit_id_display}</td>
+                  <td className="px-4 py-2 text-arc-900 truncate">{e.title}</td>
+                  <td className="px-4 py-2">
+                    {author ? (
+                      <span className="inline-flex items-center gap-2">
+                        <UserAvatar seed={author.avatar_seed} name={author.name} size="sm" />
+                        <span className="text-arc-900">{author.name}</span>
+                      </span>
+                    ) : (
+                      <span className="text-arc-200">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2 text-arc-500 tabular-nums">
+                    {formatTimeSince(e.updated_at)}
+                  </td>
+                  <td className="px-4 py-2 text-right">
+                    <Link
+                      to={workspaceUrl(e)}
+                      className="text-xs font-medium text-arc-500 hover:text-arc-900 transition-colors"
+                    >
+                      Open in Workspace →
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
@@ -49,18 +186,13 @@ function EditRow({ change, onClick }: { change: RiskEdit; onClick: () => void })
 }
 
 function Panel({
-  title,
-  count,
-  empty,
-  children,
-  linkTo,
-  linkLabel,
+  title, count, empty, children, linkTo, linkLabel,
 }: {
-  title:      string;
-  count:      number;
-  empty:      string;
-  children?:  React.ReactNode;
-  linkTo?:    string;
+  title: string;
+  count: number;
+  empty: string;
+  children?: React.ReactNode;
+  linkTo?: string;
   linkLabel?: string;
 }) {
   return (
@@ -87,9 +219,7 @@ function Panel({
   );
 }
 
-// ── Engine module mini-grid ───────────────────────────────────────────────────
-
-function ModuleMiniCard({ module }: { module: { id: string; module_name: string; description: string; updated_at: string; current_sql_code: string } }) {
+function ModuleMiniCard({ module }: { module: EngineModule }) {
   const navigate = useNavigate();
   const lines = module.current_sql_code.split('\n').length;
   return (
@@ -104,46 +234,71 @@ function ModuleMiniCard({ module }: { module: { id: string; module_name: string;
         <span className="shrink-0 text-xs text-arc-200 font-mono">{lines}L</span>
       </div>
       <p className="text-xs text-arc-200 line-clamp-2 leading-relaxed">{module.description}</p>
-      <p className="text-xs text-arc-200 mt-2">Updated {fmt(module.updated_at)}</p>
+      <p className="text-xs text-arc-200 mt-2">Updated {fmtDate(module.updated_at)}</p>
     </button>
   );
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export function HomePage() {
+export function OverviewPage() {
   const { currentUser, role } = useAuth();
   const navigate = useNavigate();
+  const repo     = useRepository();
+  const qc       = useQueryClient();
 
-  const { data: allEdits = [] } = useRiskEdits();
-  const { data: allModules = [] } = useEngineModules();
-  const { data: confirmedPackets = [] } = usePackets({ status: 'confirmed' } as Partial<Packet>);
+  const editsQuery   = useRiskEdits(undefined, { refetchInterval: REFETCH_MS });
+  const modulesQuery = useEngineModules({ refetchInterval: REFETCH_MS });
+  const packetsQuery = usePackets({ status: 'confirmed' } as Partial<Packet>, { refetchInterval: REFETCH_MS });
+
+  const allEdits         = editsQuery.data ?? [];
+  const allModules       = modulesQuery.data ?? [];
+  const confirmedPackets = packetsQuery.data ?? [];
+
+  const { data: userMap = {} } = useQuery({
+    queryKey: ['arc', 'users', 'batch', 'all'],
+    queryFn: async () => {
+      const users = await repo.users.list();
+      return Object.fromEntries(
+        users.map((u) => [u.id, { name: u.name, avatar_seed: u.avatar_seed }]),
+      );
+    },
+  });
 
   // Stage counts
-  const counts = {
-    draft:           allEdits.filter((e) => e.current_stage === 'draft').length,
-    ready_for_uat:   allEdits.filter((e) => e.current_stage === 'ready_for_uat').length,
-    uat_in_progress: allEdits.filter((e) => e.current_stage === 'uat_in_progress').length,
-    qa_review:       allEdits.filter((e) => e.current_stage === 'qa_review').length,
-    approved:        allEdits.filter((e) => e.current_stage === 'approved').length,
-    sent_to_it:      allEdits.filter((e) => e.current_stage === 'sent_to_it').length,
-    live:            allEdits.filter((e) => e.current_stage === 'live').length,
-  };
+  const counts = useMemo<Record<StageKey, number>>(() => {
+    const c: Record<StageKey, number> = {
+      draft: 0, ready_for_uat: 0, uat_in_progress: 0, qa_review: 0,
+      approved: 0, sent_to_it: 0, live: 0,
+    };
+    for (const e of allEdits) {
+      if (e.current_stage in c) c[e.current_stage as StageKey] += 1;
+    }
+    return c;
+  }, [allEdits]);
+
+  // Expansion state — only one stage's panel open at a time
+  const [expandedStage, setExpandedStage] = useState<StageKey | null>(null);
+  const expandedEdits = useMemo(() => {
+    if (!expandedStage) return [];
+    return allEdits
+      .filter((e) => e.current_stage === expandedStage)
+      .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+  }, [allEdits, expandedStage]);
 
   // Role-specific edit lists
-  const myId = currentUser?.id;
+  const myId          = currentUser?.id;
+  const myDrafts      = allEdits.filter((e) => e.created_by === myId && e.current_stage === 'draft');
+  const myReadyForUat = allEdits.filter((e) => e.created_by === myId && e.current_stage === 'ready_for_uat');
+  const uatQueue      = allEdits.filter((e) => e.current_stage === 'ready_for_uat');
+  const uatRunning    = allEdits.filter((e) => e.current_stage === 'uat_in_progress');
+  const qaQueue       = allEdits.filter((e) => e.current_stage === 'qa_review');
+  const approvedPool  = allEdits.filter((e) => e.current_stage === 'approved');
 
-  const myDrafts        = allEdits.filter((e) => e.created_by === myId && e.current_stage === 'draft');
-  const myReadyForUat   = allEdits.filter((e) => e.created_by === myId && e.current_stage === 'ready_for_uat');
-  const uatQueue        = allEdits.filter((e) => e.current_stage === 'ready_for_uat');
-  const uatRunning      = allEdits.filter((e) => e.current_stage === 'uat_in_progress');
-  const qaQueue         = allEdits.filter((e) => e.current_stage === 'qa_review');
-  const approvedPool    = allEdits.filter((e) => e.current_stage === 'approved');
-
-  // Engine modules — show 4 most recently updated
-  const topModules = [...allModules]
-    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-    .slice(0, 4);
+  const modulesSorted = useMemo(
+    () => [...allModules].sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
+    [allModules],
+  );
 
   const ROLE_LABELS: Record<string, string> = {
     risk_analyst: 'Risk Analyst', risk_lead: 'Risk Lead',
@@ -151,6 +306,19 @@ export function HomePage() {
     it_team: 'IT Team', admin: 'Admin',
   };
   const roleLabel = role ? (ROLE_LABELS[role] ?? role) : '';
+
+  // Refresh: invalidate the three queries that drive the dashboard
+  function handleRefresh() {
+    qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
+    qc.invalidateQueries({ queryKey: ['arc', 'engine_modules'] });
+    qc.invalidateQueries({ queryKey: ['arc', 'packets'] });
+  }
+
+  const lastUpdated = Math.max(
+    editsQuery.dataUpdatedAt || 0,
+    modulesQuery.dataUpdatedAt || 0,
+    packetsQuery.dataUpdatedAt || 0,
+  );
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -173,16 +341,47 @@ export function HomePage() {
 
           {/* Pipeline stats */}
           <div>
-            <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">Pipeline at a glance</p>
-            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-              <StatCard label="Draft"       value={counts.draft}           color="text-arc-500"    />
-              <StatCard label="UAT Queue"   value={counts.ready_for_uat}   color="text-amber-600"  />
-              <StatCard label="In UAT"      value={counts.uat_in_progress} color="text-amber-600"  />
-              <StatCard label="QA Review"   value={counts.qa_review}       color="text-amber-600"  />
-              <StatCard label="Approved"    value={counts.approved}        color="text-emerald-600" />
-              <StatCard label="Sent to IT"  value={counts.sent_to_it}      color="text-emerald-600" />
-              <StatCard label="Live"        value={counts.live}            color="text-teal-600"    />
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide">Pipeline at a glance</p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-arc-200 tabular-nums">
+                  Last updated {lastUpdated ? fmtClock(lastUpdated) : '—'}
+                </span>
+                <button
+                  onClick={handleRefresh}
+                  title="Refresh now"
+                  className="text-arc-500 hover:text-arc-900 transition-colors p-1 rounded hover:bg-arc-50"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              </div>
             </div>
+
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+              {STAGE_CARDS.map((s) => (
+                <StatBox
+                  key={s.key}
+                  label={s.label}
+                  value={counts[s.key]}
+                  color={s.color}
+                  isActive={expandedStage === s.key}
+                  onClick={() =>
+                    setExpandedStage((current) => (current === s.key ? null : s.key))
+                  }
+                />
+              ))}
+            </div>
+
+            {expandedStage && (
+              <StageExpansionPanel
+                stageLabel={STAGE_CARDS.find((s) => s.key === expandedStage)!.label}
+                edits={expandedEdits}
+                userMap={userMap}
+                onClose={() => setExpandedStage(null)}
+              />
+            )}
           </div>
 
           {/* Role-specific action panels */}
@@ -190,79 +389,74 @@ export function HomePage() {
             <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">Your queue</p>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-              {/* Risk Analyst */}
               {(role === 'risk_analyst' || role === 'admin') && (
                 <>
                   <Panel title="Your Drafts" count={myDrafts.length} empty="No drafts."
                     linkTo="/risk-edits" linkLabel="Go to Risk Edits →">
                     {myDrafts.slice(0, 5).map((e) => (
-                      <EditRow key={e.id} change={e} onClick={() => navigate(`/risk-edits/${e.id}`)} />
+                      <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
                   <Panel title="Pending UAT Confirmation" count={myReadyForUat.length} empty="Nothing queued."
                     linkTo="/risk-edits" linkLabel="Go to Risk Edits →">
                     {myReadyForUat.slice(0, 5).map((e) => (
-                      <EditRow key={e.id} change={e} onClick={() => navigate(`/risk-edits/${e.id}`)} />
+                      <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
                 </>
               )}
 
-              {/* Risk Lead */}
               {role === 'risk_lead' && (
                 <>
                   <Panel title="UAT Queue" count={uatQueue.length} empty="No changes queued."
                     linkTo="/changelog" linkLabel="Confirm on Changelog →">
                     {uatQueue.slice(0, 5).map((e) => (
-                      <EditRow key={e.id} change={e} onClick={() => navigate(`/risk-edits/${e.id}`)} />
+                      <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
                   <Panel title="UAT Running" count={uatRunning.length} empty="None in progress."
                     linkTo="/changelog" linkLabel="View Changelog →">
                     {uatRunning.slice(0, 5).map((e) => (
-                      <EditRow key={e.id} change={e} onClick={() => navigate(`/risk-edits/${e.id}`)} />
+                      <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
                 </>
               )}
 
-              {/* Tester */}
               {role === 'tester' && (
                 <>
                   <Panel title="QA Review Queue" count={qaQueue.length} empty="Queue is clear."
                     linkTo="/changelog" linkLabel="View Changelog →">
                     {qaQueue.slice(0, 5).map((e) => (
-                      <EditRow key={e.id} change={e} onClick={() => navigate(`/risk-edits/${e.id}`)} />
+                      <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
                   <Panel title="Approved Pool" count={approvedPool.length} empty="None approved yet."
                     linkTo="/changelog" linkLabel="View Changelog →">
                     {approvedPool.slice(0, 5).map((e) => (
-                      <EditRow key={e.id} change={e} onClick={() => navigate(`/risk-edits/${e.id}`)} />
+                      <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
                 </>
               )}
 
-              {/* Testing Lead */}
               {role === 'testing_lead' && (
                 <>
                   <Panel title="QA Review Queue" count={qaQueue.length} empty="Queue is clear."
                     linkTo="/changelog" linkLabel="View Changelog →">
                     {qaQueue.slice(0, 5).map((e) => (
-                      <EditRow key={e.id} change={e} onClick={() => navigate(`/risk-edits/${e.id}`)} />
+                      <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
                   <Panel title="Approved — Ready to Package" count={approvedPool.length} empty="Nothing approved yet."
                     linkTo="/changelog" linkLabel="Go to Approved Pool →">
                     {approvedPool.slice(0, 5).map((e) => (
-                      <EditRow key={e.id} change={e} onClick={() => navigate(`/risk-edits/${e.id}`)} />
+                      <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
                 </>
               )}
 
-              {/* IT Team */}
               {role === 'it_team' && (
                 <>
                   <Panel title="Confirmed Packets" count={confirmedPackets.length}
@@ -288,31 +482,30 @@ export function HomePage() {
                     empty="No edits sent to IT yet."
                     linkTo="/risk-edits" linkLabel="View Risk Edits →">
                     {allEdits.filter((e) => e.current_stage === 'sent_to_it').slice(0, 5).map((e) => (
-                      <EditRow key={e.id} change={e} onClick={() => navigate(`/risk-edits/${e.id}`)} />
+                      <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
                 </>
               )}
 
-              {/* Admin — show cross-cutting view */}
               {role === 'admin' && (
                 <>
                   <Panel title="UAT Queue" count={uatQueue.length} empty="No changes queued."
                     linkTo="/changelog" linkLabel="Confirm on Changelog →">
                     {uatQueue.slice(0, 5).map((e) => (
-                      <EditRow key={e.id} change={e} onClick={() => navigate(`/risk-edits/${e.id}`)} />
+                      <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
                   <Panel title="QA Review" count={qaQueue.length} empty="Queue is clear."
                     linkTo="/changelog" linkLabel="View Changelog →">
                     {qaQueue.slice(0, 5).map((e) => (
-                      <EditRow key={e.id} change={e} onClick={() => navigate(`/risk-edits/${e.id}`)} />
+                      <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
                   <Panel title="Approved Pool" count={approvedPool.length} empty="Nothing to package."
                     linkTo="/changelog" linkLabel="Go to Approved Pool →">
                     {approvedPool.slice(0, 5).map((e) => (
-                      <EditRow key={e.id} change={e} onClick={() => navigate(`/risk-edits/${e.id}`)} />
+                      <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
                   <Panel title="Confirmed Packets" count={confirmedPackets.length}
@@ -333,16 +526,11 @@ export function HomePage() {
             </div>
           </div>
 
-          {/* Engine modules mini-grid */}
+          {/* Engine modules — full grid, no separate listing page */}
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide">Engine Modules</p>
-              <Link to="/engine-modules" className="text-xs text-arc-500 hover:text-arc-900 font-medium transition-colors">
-                View all →
-              </Link>
-            </div>
+            <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">Engine Modules</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {topModules.map((mod) => (
+              {modulesSorted.map((mod) => (
                 <ModuleMiniCard key={mod.id} module={mod} />
               ))}
             </div>

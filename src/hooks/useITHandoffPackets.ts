@@ -20,11 +20,15 @@ export function useInvalidateITHandoffPackets() {
 
 // ── Packet hooks (v0.3) ───────────────────────────────────────────────────────
 
-export function usePackets(filters?: Partial<Packet>) {
+export function usePackets(
+  filters?: Partial<Packet>,
+  options?: { refetchInterval?: number },
+) {
   const repo = useRepository();
   return useQuery({
     queryKey: ['arc', 'packets', filters],
     queryFn: () => repo.packets.list(filters as Record<string, unknown>),
+    refetchInterval: options?.refetchInterval,
   });
 }
 
