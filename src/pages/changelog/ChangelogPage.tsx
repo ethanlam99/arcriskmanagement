@@ -1,22 +1,19 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
-import { useAllUatRuns } from '@/hooks/useUatRuns';
 import {
   usePackets,
   useAllPacketEdits,
   useCreatePacket,
 } from '@/hooks/useITHandoffPackets';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { runUat } from '@/integrations/uatRunner';
 import { TopBar, Breadcrumb } from '@/components/layout/TopBar';
 import { Tabs, TabList, TabTrigger, TabPanel } from '@/components/ui/Tabs';
 import { Button } from '@/components/ui/Button';
 import { StageBadge } from '@/components/shared/StageBadge';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
-import type { Packet, RiskEdit, RiskEditStage } from '@/types';
+import type { Packet, RiskEdit } from '@/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -26,21 +23,30 @@ function fmt(dateStr: string) {
   });
 }
 
-function exportCsv(changes: RiskEdit[], userMap: Record<string, string>) {
-  const headers = ['Title', 'Module', 'Author', 'Stage', 'Last Updated'];
-  const rows = changes.map((c) => [
-    `"${c.title}"`,
-    c.target_module_id,
-    `"${userMap[c.created_by] ?? c.created_by}"`,
-    c.current_stage,
-    fmt(c.updated_at),
+function exportPacketsCsv(
+  packets: Packet[],
+  userMap: Record<string, string>,
+  editCounts: Record<string, number>,
+) {
+  const headers = [
+    'Name', 'Status', 'Created by', 'Confirmed by',
+    'Confirmed at', 'Lived at', 'Edit count',
+  ];
+  const rows = packets.map((p) => [
+    `"${p.name.replace(/"/g, '""')}"`,
+    p.status,
+    `"${userMap[p.created_by] ?? p.created_by}"`,
+    p.confirmed_by ? `"${userMap[p.confirmed_by] ?? p.confirmed_by}"` : '',
+    p.confirmed_at ? fmt(p.confirmed_at) : '',
+    p.lived_at ? fmt(p.lived_at) : '',
+    String(editCounts[p.id] ?? 0),
   ]);
   const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = 'arc-changelog.csv';
+  a.download = 'arc-changelog-packets.csv';
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -57,223 +63,23 @@ function useUserNames(userIds: string[]) {
   });
 }
 
-// ── UAT trigger helper ────────────────────────────────────────────────────────
-
-async function triggerUatForChange(
-  changeId: string,
-  repo: ReturnType<typeof useRepository>,
-  actorId: string
-): Promise<void> {
-  await repo.riskEdits.update(changeId, {
-    current_stage: 'uat_in_progress',
-    updated_at:    new Date().toISOString(),
-  } as Partial<RiskEdit>);
-
-  const allVersions = await repo.riskEditVersions.list();
-  const latestVersion = allVersions
-    .filter((v) => v.risk_edit_id === changeId)
-    .sort((a, b) => b.version_number - a.version_number)[0];
-
-  if (!latestVersion) throw new Error(`No version found for change ${changeId}`);
-
-  await repo.auditLog.append({
-    actor_id:     actorId,
-    action:       'uat_run.triggered',
-    entity_type:  'risk_edit',
-    entity_id:    changeId,
-    payload_json: { version_id: latestVersion.id },
+function useAllUserNames() {
+  const repo = useRepository();
+  return useQuery({
+    queryKey: ['arc', 'users', 'batch', 'all'],
+    queryFn:  async () => {
+      const users = await repo.users.list();
+      return Object.fromEntries(users.map((u) => [u.id, u.name]));
+    },
   });
-
-  const run = await repo.uatRuns.create({
-    risk_edit_id:    changeId,
-    version_id:      latestVersion.id,
-    status:          'running',
-    started_at:      new Date().toISOString(),
-    completed_at:    null,
-    ai_report_json:  null,
-    screenshot_refs: [],
-  } as Parameters<typeof repo.uatRuns.create>[0]);
-
-  try {
-    const report = await runUat({ riskEditId: changeId, versionId: latestVersion.id });
-
-    await repo.uatRuns.update(run.id, {
-      status:          'completed',
-      completed_at:    new Date().toISOString(),
-      ai_report_json:  report,
-      screenshot_refs: report.screenshot_refs,
-    } as Partial<typeof run>);
-
-    await repo.riskEdits.update(changeId, {
-      current_stage: 'qa_review',
-      updated_at:    new Date().toISOString(),
-    } as Partial<RiskEdit>);
-
-    await repo.auditLog.append({
-      actor_id:     'system',
-      action:       'uat_run.completed',
-      entity_type:  'uat_run',
-      entity_id:    run.id,
-      payload_json: {
-        risk_edit_id: changeId,
-        cases_total:  report.summary.total,
-        cases_passed: report.summary.passed,
-      },
-    });
-  } catch (err) {
-    await repo.uatRuns.update(run.id, { status: 'failed' } as Partial<typeof run>);
-    await repo.auditLog.append({
-      actor_id:     'system',
-      action:       'uat_run.failed',
-      entity_type:  'uat_run',
-      entity_id:    run.id,
-      payload_json: { risk_edit_id: changeId, error: String(err) },
-    });
-    throw err;
-  }
 }
 
-// ── Tab 1: UAT Queue ──────────────────────────────────────────────────────────
-
-function UatQueueTab() {
-  const { currentUser, role } = useAuth();
-  const repo  = useRepository();
-  const qc    = useQueryClient();
-
-  const { data: changes = [], isLoading } = useRiskEdits({ current_stage: 'ready_for_uat' } as Partial<RiskEdit>);
-  const userIds = [...new Set(changes.map((c) => c.created_by))];
-  const { data: userMap = {} } = useUserNames(userIds);
-
-  const [selected,   setSelected]   = useState<Set<string>>(new Set());
-  const [triggering, setTriggering] = useState<Set<string>>(new Set());
-
-  const canAct = role === 'risk_lead' || role === 'admin';
-
-  function toggleSelect(id: string) {
-    setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  }
-  function toggleAll() {
-    setSelected((prev) => prev.size === changes.length ? new Set() : new Set(changes.map((c) => c.id)));
-  }
-
-  async function handleTrigger(ids: string[]) {
-    if (!currentUser) return;
-    setTriggering(new Set(ids));
-    await Promise.allSettled(ids.map((id) => triggerUatForChange(id, repo, currentUser.id)));
-    setTriggering(new Set());
-    setSelected(new Set());
-    qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
-    qc.invalidateQueries({ queryKey: ['arc', 'uat_runs'] });
-  }
-
-  const selectedIds = [...selected];
-
-  return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="px-6 py-3 border-b border-arc-200 bg-white flex items-center justify-between gap-4 shrink-0">
-        <p className="text-xs text-arc-200">
-          {changes.length === 0
-            ? 'No changes awaiting UAT confirmation.'
-            : `${changes.length} change${changes.length !== 1 ? 's' : ''} awaiting confirmation`}
-        </p>
-        {canAct && selectedIds.length > 0 && (
-          <Button size="sm" disabled={triggering.size > 0} loading={triggering.size > 0}
-            onClick={() => handleTrigger(selectedIds)}>
-            Confirm &amp; run UAT ({selectedIds.length})
-          </Button>
-        )}
-      </div>
-
-      <div className="flex-1 overflow-y-auto">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-16 text-arc-200 text-sm">Loading…</div>
-        ) : changes.length === 0 ? (
-          <div className="flex items-center justify-center py-16 flex-col gap-2 text-arc-200">
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <p className="text-sm">No changes are queued for UAT.</p>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-arc-200 bg-arc-50 sticky top-0">
-                {canAct && (
-                  <th className="px-4 py-2.5 w-10">
-                    <input type="checkbox"
-                      checked={selected.size === changes.length && changes.length > 0}
-                      onChange={toggleAll} className="rounded border-arc-300" />
-                  </th>
-                )}
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Change</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Module</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Author</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Submitted</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Brief</th>
-                {canAct && <th className="px-4 py-2.5 w-44" />}
-              </tr>
-            </thead>
-            <tbody>
-              {changes.map((c) => {
-                const isRunning = triggering.has(c.id);
-                return (
-                  <tr key={c.id} className="border-b border-arc-200 last:border-0 hover:bg-arc-50 transition-colors">
-                    {canAct && (
-                      <td className="px-4 py-3">
-                        <input type="checkbox" checked={selected.has(c.id)}
-                          onChange={() => toggleSelect(c.id)} disabled={isRunning}
-                          className="rounded border-arc-300" />
-                      </td>
-                    )}
-                    <td className="px-4 py-3">
-                      <Link to={`/workspace/draft-queue?edit=${c.id}`}
-                        className="text-arc-900 font-medium hover:text-arc-500 transition-colors">
-                        {c.title}
-                      </Link>
-                      <p className="text-xs font-mono text-arc-200 mt-0.5">{c.edit_id_display}</p>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-arc-500">{c.target_module_id}</td>
-                    <td className="px-4 py-3 text-xs text-arc-200">{userMap[c.created_by] ?? c.created_by}</td>
-                    <td className="px-4 py-3 text-xs text-arc-200">{fmt(c.updated_at)}</td>
-                    <td className="px-4 py-3 text-xs text-arc-200 max-w-xs truncate" title={c.natural_language_brief}>
-                      {c.natural_language_brief}
-                    </td>
-                    {canAct && (
-                      <td className="px-4 py-3">
-                        {isRunning ? (
-                          <span className="flex items-center gap-1.5 text-xs text-arc-200">
-                            <span className="w-3 h-3 border border-arc-500 border-t-transparent rounded-full animate-spin" />
-                            Running UAT…
-                          </span>
-                        ) : (
-                          <Button size="sm" variant="secondary" disabled={triggering.size > 0}
-                            onClick={() => handleTrigger([c.id])}>
-                            Confirm &amp; run UAT
-                          </Button>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-        {!canAct && changes.length > 0 && (
-          <p className="px-6 py-3 text-xs text-arc-200 border-t border-arc-200">
-            Only Risk Leads and admins can confirm changes for UAT.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Tab 2: Approved Pool ──────────────────────────────────────────────────────
+// ── Tab 1: Approved Pool (unbundled edits only) ───────────────────────────────
 
 function ApprovedPoolTab() {
   const { currentUser, role } = useAuth();
   const repo = useRepository();
+  const qc = useQueryClient();
   const createPacket = useCreatePacket();
 
   const { data: changes = [], isLoading } = useRiskEdits({ current_stage: 'approved' } as Partial<RiskEdit>);
@@ -282,49 +88,81 @@ function ApprovedPoolTab() {
   const userIds = [...new Set(changes.map((c) => c.created_by))];
   const { data: userMap = {} } = useUserNames(userIds);
 
-  const canAct = role === 'testing_lead' || role === 'admin';
-
-  // Which approved edits are already in a proposed packet?
-  const editPacketMap = new Map<string, Packet>();
+  // Unbundled = approved AND not in any packet whose status is 'proposed' or 'confirmed'.
+  // Rejected packets release their edits back to the pool; confirmed packets
+  // already moved their edits to sent_to_it (defensive — caught by stage filter too).
+  const lockedEditIds = new Set<string>();
   for (const pe of allPacketEdits) {
-    const pkt = allPackets.find((p) => p.id === pe.packet_id && p.status === 'proposed');
-    if (pkt) editPacketMap.set(pe.risk_edit_id, pkt);
+    const pkt = allPackets.find((p) => p.id === pe.packet_id);
+    if (pkt && (pkt.status === 'proposed' || pkt.status === 'confirmed')) {
+      lockedEditIds.add(pe.risk_edit_id);
+    }
   }
+  const unbundled = changes.filter((c) => !lockedEditIds.has(c.id));
 
-  const [selected,       setSelected]       = useState<Set<string>>(new Set());
+  const canAct = role !== null && role !== 'it_team';
+
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newPacketName,  setNewPacketName]   = useState('');
+  const [newPacketName, setNewPacketName] = useState('');
+  const [newPacketDescription, setNewPacketDescription] = useState('');
 
   function toggleSelect(id: string) {
-    if (editPacketMap.has(id)) return; // already in a packet
-    setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setSelected((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
   }
-
-  const freeChanges = changes.filter((c) => !editPacketMap.has(c.id));
-
   function toggleAll() {
     setSelected((prev) =>
-      prev.size === freeChanges.length ? new Set() : new Set(freeChanges.map((c) => c.id))
+      prev.size === unbundled.length ? new Set() : new Set(unbundled.map((c) => c.id))
     );
   }
 
   async function handleCreate() {
-    if (!currentUser || !newPacketName.trim()) return;
-    await createPacket.mutateAsync({
-      name:        newPacketName.trim(),
+    if (!currentUser || !newPacketName.trim() || selected.size === 0) return;
+    const name = newPacketName.trim();
+    const description = newPacketDescription.trim() || undefined;
+    const editIds = [...selected];
+
+    const { packet } = await createPacket.mutateAsync({
+      name,
+      description,
       createdBy:   currentUser.id,
-      riskEditIds: [...selected],
+      riskEditIds: editIds,
     });
+
+    await Promise.all(editIds.map((editId) =>
+      repo.auditLog.append({
+        actor_id:     currentUser.id,
+        action:       'packet.proposed',
+        entity_type:  'risk_edit',
+        entity_id:    editId,
+        payload_json: { packet_id: packet.id, packet_name: packet.name },
+      })
+    ));
     await repo.auditLog.append({
       actor_id:     currentUser.id,
-      action:       'packet.created',
+      action:       'packet.proposed',
       entity_type:  'packet',
-      entity_id:    'new',
-      payload_json: { risk_edit_ids: [...selected], name: newPacketName.trim() },
+      entity_id:    packet.id,
+      payload_json: { risk_edit_ids: editIds, name: packet.name },
     });
+
+    qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
+
     setSelected(new Set());
     setShowCreateModal(false);
     setNewPacketName('');
+    setNewPacketDescription('');
+  }
+
+  function closeModal() {
+    if (createPacket.isPending) return;
+    setShowCreateModal(false);
+    setNewPacketName('');
+    setNewPacketDescription('');
   }
 
   return (
@@ -332,13 +170,17 @@ function ApprovedPoolTab() {
       <div className="flex flex-col h-full overflow-hidden">
         <div className="px-6 py-3 border-b border-arc-200 bg-white flex items-center justify-between gap-4 shrink-0">
           <p className="text-xs text-arc-200">
-            {changes.length === 0
-              ? 'No approved edits.'
-              : `${freeChanges.length} free · ${changes.length - freeChanges.length} already in a packet`}
+            {unbundled.length === 0
+              ? 'No approved edits available to bundle.'
+              : `${unbundled.length} approved edit${unbundled.length !== 1 ? 's' : ''} available`}
           </p>
-          {canAct && selected.size > 0 && (
-            <Button size="sm" onClick={() => setShowCreateModal(true)}>
-              Create packet ({selected.size} edit{selected.size !== 1 ? 's' : ''})
+          {canAct && (
+            <Button
+              size="sm"
+              disabled={selected.size === 0}
+              onClick={() => setShowCreateModal(true)}
+            >
+              Create proposed packet from selected ({selected.size})
             </Button>
           )}
         </div>
@@ -346,12 +188,14 @@ function ApprovedPoolTab() {
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="flex items-center justify-center py-16 text-arc-200 text-sm">Loading…</div>
-          ) : changes.length === 0 ? (
-            <div className="flex items-center justify-center py-16 flex-col gap-2 text-arc-200">
+          ) : unbundled.length === 0 ? (
+            <div className="flex items-center justify-center py-16 flex-col gap-2 text-arc-200 px-6 text-center">
               <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-sm">No approved edits waiting to be packaged.</p>
+              <p className="text-sm max-w-sm">
+                No approved edits available to bundle. Edits will appear here after testers approve UAT reports.
+              </p>
             </div>
           ) : (
             <table className="w-full text-sm">
@@ -360,84 +204,84 @@ function ApprovedPoolTab() {
                   {canAct && (
                     <th className="px-4 py-2.5 w-10">
                       <input type="checkbox"
-                        checked={selected.size === freeChanges.length && freeChanges.length > 0}
-                        onChange={toggleAll} className="rounded border-arc-300"
-                        disabled={freeChanges.length === 0} />
+                        checked={selected.size === unbundled.length && unbundled.length > 0}
+                        onChange={toggleAll}
+                        className="rounded border-arc-300" />
                     </th>
                   )}
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Change</th>
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Module</th>
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Author</th>
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Approved</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Packet</th>
                 </tr>
               </thead>
               <tbody>
-                {changes.map((c) => {
-                  const inPacket = editPacketMap.get(c.id);
-                  return (
-                    <tr key={c.id} className={`border-b border-arc-200 last:border-0 transition-colors ${inPacket ? 'opacity-60' : 'hover:bg-arc-50'}`}>
-                      {canAct && (
-                        <td className="px-4 py-3">
-                          <input type="checkbox" checked={selected.has(c.id)}
-                            onChange={() => toggleSelect(c.id)} disabled={!!inPacket}
-                            className="rounded border-arc-300" />
-                        </td>
-                      )}
+                {unbundled.map((c) => (
+                  <tr key={c.id} className="border-b border-arc-200 last:border-0 transition-colors hover:bg-arc-50">
+                    {canAct && (
                       <td className="px-4 py-3">
-                        <span className="text-arc-900 font-medium">{c.title}</span>
-                        <p className="text-xs font-mono text-arc-200 mt-0.5">{c.edit_id_display}</p>
+                        <input type="checkbox" checked={selected.has(c.id)}
+                          onChange={() => toggleSelect(c.id)}
+                          className="rounded border-arc-300" />
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-arc-500">{c.target_module_id}</td>
-                      <td className="px-4 py-3 text-xs text-arc-200">{userMap[c.created_by] ?? c.created_by}</td>
-                      <td className="px-4 py-3 text-xs text-arc-200">{fmt(c.updated_at)}</td>
-                      <td className="px-4 py-3 text-xs">
-                        {inPacket ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-arc-50 border border-arc-200 text-arc-500 font-medium">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                            {inPacket.name}
-                          </span>
-                        ) : (
-                          <span className="text-arc-200">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                    )}
+                    <td className="px-4 py-3">
+                      <span className="text-arc-900 font-medium">{c.title}</span>
+                      <p className="text-xs font-mono text-arc-200 mt-0.5">{c.edit_id_display}</p>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-arc-500">{c.target_module_id}</td>
+                    <td className="px-4 py-3 text-xs text-arc-200">{userMap[c.created_by] ?? c.created_by}</td>
+                    <td className="px-4 py-3 text-xs text-arc-200">{fmt(c.updated_at)}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           )}
         </div>
       </div>
 
-      {/* Create packet modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-40 bg-arc-900/30 flex items-center justify-center p-6">
-          <div className="bg-white rounded-xl border border-arc-200 shadow-xl w-full max-w-sm p-6 flex flex-col gap-4">
+          <div className="bg-white rounded-xl border border-arc-200 shadow-xl w-full max-w-md p-6 flex flex-col gap-4">
             <div>
-              <h3 className="font-semibold text-arc-900 mb-0.5">Create IT Packet</h3>
+              <h3 className="font-semibold text-arc-900 mb-0.5">Create proposed packet</h3>
               <p className="text-xs text-arc-200">
-                Packaging {selected.size} edit{selected.size !== 1 ? 's' : ''} into a proposed packet.
+                Bundling {selected.size} approved edit{selected.size !== 1 ? 's' : ''}.
               </p>
             </div>
             <div>
-              <label className="text-xs font-medium text-arc-500 mb-1.5 block">Packet name</label>
+              <label className="text-xs font-medium text-arc-500 mb-1.5 block">
+                Packet name <span className="text-rose-500">*</span>
+              </label>
               <input
                 className="w-full border border-arc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-arc-500 transition-colors"
-                placeholder="e.g. June 2026 Batch A"
+                placeholder="e.g. May 2026 Batch C"
                 value={newPacketName}
                 onChange={(e) => setNewPacketName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                 autoFocus
               />
             </div>
+            <div>
+              <label className="text-xs font-medium text-arc-500 mb-1.5 block">Description (optional)</label>
+              <textarea
+                className="w-full border border-arc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-arc-500 transition-colors resize-none"
+                rows={3}
+                placeholder="Short context for the lead reviewer (optional)."
+                value={newPacketDescription}
+                onChange={(e) => setNewPacketDescription(e.target.value)}
+              />
+            </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="secondary" size="sm" onClick={() => { setShowCreateModal(false); setNewPacketName(''); }}>
+              <Button variant="secondary" size="sm" onClick={closeModal} disabled={createPacket.isPending}>
                 Cancel
               </Button>
-              <Button size="sm" disabled={!newPacketName.trim() || createPacket.isPending}
-                loading={createPacket.isPending} onClick={handleCreate}>
-                Create &amp; propose
+              <Button
+                size="sm"
+                disabled={!newPacketName.trim() || createPacket.isPending}
+                loading={createPacket.isPending}
+                onClick={handleCreate}
+              >
+                Create
               </Button>
             </div>
           </div>
@@ -447,7 +291,7 @@ function ApprovedPoolTab() {
   );
 }
 
-// ── Tab 3: Proposed Packets ───────────────────────────────────────────────────
+// ── Tab 2: Proposed Packets (Approve / Reject) ────────────────────────────────
 
 function ProposedPacketsTab() {
   const { currentUser, role } = useAuth();
@@ -455,56 +299,112 @@ function ProposedPacketsTab() {
   const qc   = useQueryClient();
 
   const { data: packets = [], isLoading } = usePackets({ status: 'proposed' } as Partial<Packet>);
-  const { data: allEdits  = [] } = useRiskEdits();
+  const { data: allEdits = [] } = useRiskEdits();
   const { data: allPacketEdits = [] } = useAllPacketEdits();
-  const { data: userMap = {} } = useQuery({
-    queryKey: ['arc', 'users', 'batch', 'all'],
-    queryFn:  async () => {
-      const users = await repo.users.list();
-      return Object.fromEntries(users.map((u) => [u.id, u.name]));
-    },
-  });
+  const { data: userMap = {} } = useAllUserNames();
 
-  const canAct = role === 'testing_lead' || role === 'admin';
+  const canAct = role === 'risk_lead' || role === 'testing_lead' || role === 'admin';
 
-  const [showConfirm, setShowConfirm] = useState<Packet | null>(null);
-  const [confirming,  setConfirming]  = useState(false);
+  const [showApprove, setShowApprove] = useState<Packet | null>(null);
+  const [showReject,  setShowReject]  = useState<Packet | null>(null);
+  const [submitting,  setSubmitting]  = useState(false);
+  const [rejectNotes, setRejectNotes] = useState('');
   const [expanded,    setExpanded]    = useState<Set<string>>(new Set());
 
   function toggleExpand(id: string) {
-    setExpanded((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setExpanded((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
   }
 
-  function getPacketEdits(packetId: string) {
+  function getPacketEdits(packetId: string): RiskEdit[] {
     const pes = allPacketEdits.filter((pe) => pe.packet_id === packetId);
     return pes.map((pe) => allEdits.find((e) => e.id === pe.risk_edit_id)).filter(Boolean) as RiskEdit[];
   }
 
-  async function handleConfirm(packet: Packet) {
+  async function handleApprove(packet: Packet) {
     if (!currentUser) return;
     const edits = getPacketEdits(packet.id);
-    setConfirming(true);
+    const editIds = edits.map((e) => e.id);
+    setSubmitting(true);
     try {
+      const now = new Date().toISOString();
       await repo.packets.update(packet.id, {
         status:       'confirmed',
         confirmed_by: currentUser.id,
-        confirmed_at: new Date().toISOString(),
+        confirmed_at: now,
       } as Partial<Packet>);
       await Promise.all(edits.map((e) =>
-        repo.riskEdits.update(e.id, { current_stage: 'sent_to_it', updated_at: new Date().toISOString() })
+        repo.riskEdits.update(e.id, {
+          current_stage: 'sent_to_it',
+          updated_at:    now,
+        } as Partial<RiskEdit>)
+      ));
+      await Promise.all(editIds.map((editId) =>
+        repo.auditLog.append({
+          actor_id:     currentUser.id,
+          action:       'packet.confirmed',
+          entity_type:  'risk_edit',
+          entity_id:    editId,
+          payload_json: { packet_id: packet.id, packet_name: packet.name },
+        })
       ));
       await repo.auditLog.append({
         actor_id:     currentUser.id,
         action:       'packet.confirmed',
         entity_type:  'packet',
         entity_id:    packet.id,
-        payload_json: { risk_edit_ids: edits.map((e) => e.id) },
+        payload_json: { risk_edit_ids: editIds, name: packet.name },
       });
       qc.invalidateQueries({ queryKey: ['arc', 'packets'] });
       qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
-      setShowConfirm(null);
+      setShowApprove(null);
     } finally {
-      setConfirming(false);
+      setSubmitting(false);
+    }
+  }
+
+  async function handleReject(packet: Packet) {
+    if (!currentUser) return;
+    const notes = rejectNotes.trim();
+    if (!notes) return;
+    const edits = getPacketEdits(packet.id);
+    const editIds = edits.map((e) => e.id);
+    setSubmitting(true);
+    try {
+      const now = new Date().toISOString();
+      // Edits stay at 'approved'; packet_edits rows are preserved on purpose so
+      // the audit trail of which edits were in the rejected packet survives.
+      await repo.packets.update(packet.id, {
+        status:           'rejected',
+        rejected_by:      currentUser.id,
+        rejected_at:      now,
+        rejection_notes:  notes,
+      } as Partial<Packet>);
+      await Promise.all(editIds.map((editId) =>
+        repo.auditLog.append({
+          actor_id:     currentUser.id,
+          action:       'packet.rejected',
+          entity_type:  'risk_edit',
+          entity_id:    editId,
+          payload_json: { packet_id: packet.id, packet_name: packet.name, rejection_notes: notes },
+        })
+      ));
+      await repo.auditLog.append({
+        actor_id:     currentUser.id,
+        action:       'packet.rejected',
+        entity_type:  'packet',
+        entity_id:    packet.id,
+        payload_json: { risk_edit_ids: editIds, name: packet.name, rejection_notes: notes },
+      });
+      qc.invalidateQueries({ queryKey: ['arc', 'packets'] });
+      qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
+      setShowReject(null);
+      setRejectNotes('');
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -514,7 +414,7 @@ function ProposedPacketsTab() {
         <div className="px-6 py-3 border-b border-arc-200 bg-white flex items-center gap-4 shrink-0">
           <p className="text-xs text-arc-200">
             {packets.length === 0
-              ? 'No packets awaiting confirmation.'
+              ? 'No packets awaiting review.'
               : `${packets.length} packet${packets.length !== 1 ? 's' : ''} proposed`}
           </p>
         </div>
@@ -528,16 +428,17 @@ function ProposedPacketsTab() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
               </svg>
               <p className="text-sm">No packets are proposed.</p>
-              <p className="text-xs text-center max-w-xs">Create a packet from approved edits in the Approved Pool tab.</p>
+              <p className="text-xs text-center max-w-xs">
+                Create a packet from approved edits in the Approved Pool tab.
+              </p>
             </div>
           ) : (
             <div className="max-w-3xl mx-auto flex flex-col gap-4">
               {packets.map((pkt) => {
-                const edits   = getPacketEdits(pkt.id);
-                const isOpen  = expanded.has(pkt.id);
+                const edits  = getPacketEdits(pkt.id);
+                const isOpen = expanded.has(pkt.id);
                 return (
                   <div key={pkt.id} className="rounded-xl border border-arc-200 bg-white overflow-hidden">
-                    {/* Packet header */}
                     <div className="px-5 py-4 flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
@@ -559,17 +460,30 @@ function ProposedPacketsTab() {
                           onClick={() => toggleExpand(pkt.id)}
                           className="text-xs text-arc-500 hover:text-arc-900 transition-colors px-2 py-1 rounded border border-arc-200 hover:border-arc-500"
                         >
-                          {isOpen ? 'Hide edits ▲' : `Show edits ▼`}
+                          {isOpen ? 'Hide edits ▲' : 'Show edits ▼'}
                         </button>
                         {canAct && (
-                          <Button size="sm" onClick={() => setShowConfirm(pkt)}>
-                            Confirm packet
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              className="!bg-emerald-600 hover:!bg-emerald-700 active:!bg-emerald-800"
+                              onClick={() => setShowApprove(pkt)}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="!border-rose-500 !text-rose-600 hover:!bg-rose-50 active:!bg-rose-100"
+                              onClick={() => { setShowReject(pkt); setRejectNotes(''); }}
+                            >
+                              Reject
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
 
-                    {/* Expanded edit list */}
                     {isOpen && (
                       <div className="border-t border-arc-200 divide-y divide-arc-200 bg-arc-50">
                         {edits.length === 0 ? (
@@ -578,9 +492,7 @@ function ProposedPacketsTab() {
                           edits.map((e) => (
                             <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-4">
                               <div className="min-w-0">
-                                <span className="text-sm font-medium text-arc-900 truncate block">
-                                  {e.title}
-                                </span>
+                                <span className="text-sm font-medium text-arc-900 truncate block">{e.title}</span>
                                 <span className="text-xs font-mono text-arc-200">{e.edit_id_display} · {e.target_module_id}</span>
                               </div>
                               <StageBadge stage={e.current_stage} />
@@ -597,101 +509,240 @@ function ProposedPacketsTab() {
         </div>
       </div>
 
-      {showConfirm && (() => {
-        const edits = getPacketEdits(showConfirm.id);
+      {showApprove && (() => {
+        const edits = getPacketEdits(showApprove.id);
         return (
           <ConfirmModal
-            title="Confirm packet"
-            description={`"${showConfirm.name}" contains ${edits.length} edit${edits.length !== 1 ? 's' : ''}. Confirming will send ${edits.length !== 1 ? 'them' : 'it'} to the IT team and lock further QA changes.`}
-            confirmLabel="Confirm packet"
-            loading={confirming}
-            onConfirm={() => handleConfirm(showConfirm)}
-            onCancel={() => setShowConfirm(null)}
+            title="Approve packet"
+            description={`Approve packet "${showApprove.name}"? This will mark the packet confirmed and move all ${edits.length} edit${edits.length !== 1 ? 's' : ''} to Sent to IT.`}
+            confirmLabel="Approve"
+            loading={submitting}
+            onConfirm={() => handleApprove(showApprove)}
+            onCancel={() => setShowApprove(null)}
           />
         );
       })()}
+
+      {showReject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-arc-900/40 backdrop-blur-sm"
+            onClick={() => { if (!submitting) { setShowReject(null); setRejectNotes(''); } }}
+          />
+          <div className="relative bg-white rounded-xl border border-arc-200 shadow-lg w-full max-w-md mx-4 p-6">
+            <h2 className="text-base font-semibold text-arc-900 mb-2">Reject packet</h2>
+            <p className="text-sm text-arc-500 mb-4">
+              Rejecting "{showReject.name}". The packet will be closed and its edits will return to the Approved Pool.
+            </p>
+            <label className="text-xs font-medium text-arc-500 mb-1.5 block">
+              Rejection notes <span className="text-rose-500">*</span>
+            </label>
+            <textarea
+              className="w-full border border-arc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-arc-500 transition-colors resize-none mb-4"
+              rows={4}
+              placeholder="Explain why this packet is being rejected so the analyst can address it."
+              value={rejectNotes}
+              onChange={(e) => setRejectNotes(e.target.value)}
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => { setShowReject(null); setRejectNotes(''); }}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="!bg-rose-600 hover:!bg-rose-700 active:!bg-rose-800 !text-white"
+                disabled={!rejectNotes.trim() || submitting}
+                loading={submitting}
+                onClick={() => handleReject(showReject)}
+              >
+                Reject
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
 
-// ── Tab 4: Confirmed Changelog ────────────────────────────────────────────────
+// ── Tab 3: Confirmed (packet-centric: Sent to IT + Live) ──────────────────────
 
-const HISTORY_STAGES: RiskEditStage[] = ['uat_in_progress', 'qa_review', 'approved', 'sent_to_it'];
-type FilterChip = 'all' | 'uat_in_progress' | 'qa_review' | 'approved' | 'sent_to_it';
+interface PacketSectionProps {
+  title: string;
+  packets: Packet[];
+  userMap: Record<string, string>;
+  getPacketEdits: (id: string) => RiskEdit[];
+  expanded: Set<string>;
+  onToggle: (id: string) => void;
+  badge: { label: string; className: string };
+  emptyText: string;
+}
+
+function PacketSection({
+  title, packets, userMap, getPacketEdits, expanded, onToggle, badge, emptyText,
+}: PacketSectionProps) {
+  return (
+    <section>
+      <header className="flex items-center justify-between mb-2">
+        <h2 className="text-sm font-semibold text-arc-900 uppercase tracking-wide">{title}</h2>
+        <span className="text-xs text-arc-200">{packets.length} packet{packets.length !== 1 ? 's' : ''}</span>
+      </header>
+      {packets.length === 0 ? (
+        <p className="text-xs text-arc-200 px-1 py-3">{emptyText}</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {packets.map((pkt) => {
+            const edits  = getPacketEdits(pkt.id);
+            const isOpen = expanded.has(pkt.id);
+            return (
+              <div key={pkt.id} className="rounded-xl border border-arc-200 bg-white overflow-hidden">
+                <div className="px-5 py-4 flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${badge.className}`}>
+                        {badge.label}
+                      </span>
+                      <span className="text-xs text-arc-200">{edits.length} edit{edits.length !== 1 ? 's' : ''}</span>
+                    </div>
+                    <h3 className="font-semibold text-arc-900">{pkt.name}</h3>
+                    {pkt.description && (
+                      <p className="text-xs text-arc-200 mt-0.5 leading-relaxed">{pkt.description}</p>
+                    )}
+                    <p className="text-xs text-arc-200 mt-1">
+                      Created by {userMap[pkt.created_by] ?? pkt.created_by} · {fmt(pkt.created_at)}
+                      {pkt.confirmed_by && pkt.confirmed_at && (
+                        <> · Confirmed by {userMap[pkt.confirmed_by] ?? pkt.confirmed_by} · {fmt(pkt.confirmed_at)}</>
+                      )}
+                      {pkt.lived_by && pkt.lived_at && (
+                        <> · Lived by {userMap[pkt.lived_by] ?? pkt.lived_by} · {fmt(pkt.lived_at)}</>
+                      )}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => onToggle(pkt.id)}
+                    className="shrink-0 text-xs text-arc-500 hover:text-arc-900 transition-colors px-2 py-1 rounded border border-arc-200 hover:border-arc-500"
+                  >
+                    {isOpen ? 'Hide edits ▲' : 'Show edits ▼'}
+                  </button>
+                </div>
+
+                {isOpen && (
+                  <div className="border-t border-arc-200 divide-y divide-arc-200 bg-arc-50">
+                    {edits.length === 0 ? (
+                      <p className="px-5 py-3 text-xs text-arc-200">No edits attached.</p>
+                    ) : (
+                      edits.map((e) => (
+                        <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <span className="text-sm font-medium text-arc-900 truncate block">{e.title}</span>
+                            <span className="text-xs font-mono text-arc-200">{e.edit_id_display} · {e.target_module_id}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
 
 function ConfirmedTab() {
-  const { data: allChanges = [], isLoading } = useRiskEdits();
-  useAllUatRuns(); // pre-warm
+  const { data: allPackets = [], isLoading } = usePackets();
+  const { data: allEdits = [] } = useRiskEdits();
+  const { data: allPacketEdits = [] } = useAllPacketEdits();
+  const { data: userMap = {} } = useAllUserNames();
 
-  const [filter, setFilter] = useState<FilterChip>('all');
+  const sentToIt = allPackets
+    .filter((p) => p.status === 'confirmed')
+    .sort((a, b) => (b.confirmed_at ?? '').localeCompare(a.confirmed_at ?? ''));
+  const live = allPackets
+    .filter((p) => p.status === 'live')
+    .sort((a, b) => (b.lived_at ?? '').localeCompare(a.lived_at ?? ''));
 
-  const historyChanges = allChanges.filter((c) => HISTORY_STAGES.includes(c.current_stage));
-  const filtered = filter === 'all' ? historyChanges : historyChanges.filter((c) => c.current_stage === filter);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  function toggleExpand(id: string) {
+    setExpanded((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  }
 
-  const userIds = [...new Set(historyChanges.map((c) => c.created_by))];
-  const { data: userMap = {} } = useUserNames(userIds);
+  function getPacketEdits(packetId: string): RiskEdit[] {
+    const pes = allPacketEdits.filter((pe) => pe.packet_id === packetId);
+    return pes.map((pe) => allEdits.find((e) => e.id === pe.risk_edit_id)).filter(Boolean) as RiskEdit[];
+  }
 
-  const CHIPS: { id: FilterChip; label: string }[] = [
-    { id: 'all',             label: 'All' },
-    { id: 'uat_in_progress', label: 'In UAT' },
-    { id: 'qa_review',       label: 'QA Review' },
-    { id: 'approved',        label: 'Approved' },
-    { id: 'sent_to_it',      label: 'Sent to IT' },
-  ];
+  const editCounts: Record<string, number> = {};
+  for (const p of allPackets) {
+    editCounts[p.id] = allPacketEdits.filter((pe) => pe.packet_id === p.id).length;
+  }
+
+  function handleExport() {
+    exportPacketsCsv([...sentToIt, ...live], userMap, editCounts);
+  }
+
+  const totalVisible = sentToIt.length + live.length;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-6 py-3 border-b border-arc-200 bg-white flex items-center justify-between gap-4 shrink-0">
-        <div className="flex items-center gap-2">
-          {CHIPS.map((chip) => (
-            <button key={chip.id} onClick={() => setFilter(chip.id)}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                filter === chip.id
-                  ? 'bg-arc-500 text-white border-arc-500'
-                  : 'bg-white text-arc-500 border-arc-200 hover:border-arc-500'
-              }`}>
-              {chip.label}
-            </button>
-          ))}
-        </div>
-        <Button variant="secondary" size="sm" onClick={() => exportCsv(filtered, userMap)}>
+        <p className="text-xs text-arc-200">
+          {totalVisible === 0
+            ? 'No confirmed packets yet.'
+            : `${sentToIt.length} sent to IT · ${live.length} live`}
+        </p>
+        <Button variant="secondary" size="sm" disabled={totalVisible === 0} onClick={handleExport}>
           Export CSV
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-16 text-arc-200 text-sm">Loading…</div>
-        ) : filtered.length === 0 ? (
-          <div className="flex items-center justify-center py-16 text-arc-200">
-            <p className="text-sm">No changes in this view.</p>
+        ) : totalVisible === 0 ? (
+          <div className="flex items-center justify-center py-16 flex-col gap-2 text-arc-200 text-center">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <p className="text-sm max-w-sm">
+              No confirmed packets yet. Packets approved on the Proposed Packets tab will appear here.
+            </p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-arc-200 bg-arc-50 sticky top-0">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Change</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Module</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Author</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Stage</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Last Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((c) => (
-                <tr key={c.id} className="border-b border-arc-200 last:border-0 hover:bg-arc-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <span className="text-arc-900 font-medium">{c.title}</span>
-                    <p className="text-xs font-mono text-arc-200 mt-0.5">{c.edit_id_display}</p>
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-arc-500">{c.target_module_id}</td>
-                  <td className="px-4 py-3 text-xs text-arc-200">{userMap[c.created_by] ?? c.created_by}</td>
-                  <td className="px-4 py-3"><StageBadge stage={c.current_stage} /></td>
-                  <td className="px-4 py-3 text-xs text-arc-200">{fmt(c.updated_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="max-w-3xl mx-auto flex flex-col gap-8">
+            <PacketSection
+              title="Sent to IT"
+              packets={sentToIt}
+              userMap={userMap}
+              getPacketEdits={getPacketEdits}
+              expanded={expanded}
+              onToggle={toggleExpand}
+              badge={{ label: 'Confirmed', className: 'bg-arc-50 text-arc-700 border-arc-200' }}
+              emptyText="No packets currently with IT."
+            />
+            <PacketSection
+              title="Live"
+              packets={live}
+              userMap={userMap}
+              getPacketEdits={getPacketEdits}
+              expanded={expanded}
+              onToggle={toggleExpand}
+              badge={{ label: 'Live', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' }}
+              emptyText="No packets live yet."
+            />
+          </div>
         )}
       </div>
     </div>
@@ -701,23 +752,14 @@ function ConfirmedTab() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export function ChangelogPage() {
-  const { data: readyChanges = [] } = useRiskEdits({ current_stage: 'ready_for_uat' } as Partial<RiskEdit>);
   const { data: proposedPackets = [] } = usePackets({ status: 'proposed' } as Partial<Packet>);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <TopBar breadcrumb={<Breadcrumb items={[{ label: 'Changelog' }]} />} />
 
-      <Tabs defaultTab="uatqueue" className="flex-1 min-h-0 overflow-hidden">
+      <Tabs defaultTab="approved" className="flex-1 min-h-0 overflow-hidden">
         <TabList className="px-6 bg-white shrink-0">
-          <TabTrigger id="uatqueue">
-            UAT Queue
-            {readyChanges.length > 0 && (
-              <span className="ml-2 px-1.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
-                {readyChanges.length}
-              </span>
-            )}
-          </TabTrigger>
           <TabTrigger id="approved">Approved Pool</TabTrigger>
           <TabTrigger id="proposed">
             Proposed Packets
@@ -730,7 +772,6 @@ export function ChangelogPage() {
           <TabTrigger id="confirmed">Confirmed</TabTrigger>
         </TabList>
 
-        <TabPanel id="uatqueue"  className="overflow-hidden"><UatQueueTab /></TabPanel>
         <TabPanel id="approved"  className="overflow-hidden"><ApprovedPoolTab /></TabPanel>
         <TabPanel id="proposed"  className="overflow-hidden"><ProposedPacketsTab /></TabPanel>
         <TabPanel id="confirmed" className="overflow-hidden"><ConfirmedTab /></TabPanel>
