@@ -1,10 +1,10 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { resetToSeedData } from '@/data/localRepository';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
 
 interface NavItem {
@@ -21,22 +21,26 @@ function NavIcon({ d }: { d: string }) {
   );
 }
 
-const NAV_ITEMS: NavItem[] = [
-  {
-    to: '/overview',
-    label: 'Overview',
-    icon: <NavIcon d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />,
-  },
-  {
-    to: '/workspace',
-    label: 'Workspace',
-    icon: <NavIcon d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />,
-  },
-  {
-    to: '/risk-edits',
-    label: 'Risk Edits',
-    icon: <NavIcon d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />,
-  },
+const OVERVIEW_ITEM: NavItem = {
+  to: '/overview',
+  label: 'Overview',
+  icon: <NavIcon d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />,
+};
+
+const RISK_EDITS_ITEM: NavItem = {
+  to: '/risk-edits',
+  label: 'Risk Edits',
+  icon: <NavIcon d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />,
+};
+
+const WORKSPACE_ICON = (
+  <NavIcon d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
+);
+
+const WORKSPACE_CHILDREN: { to: string; label: string }[] = [
+  { to: '/workspace/draft-queue', label: 'Draft & Queue' },
+  { to: '/workspace/uat',         label: 'UAT' },
+  { to: '/workspace/qa',          label: 'QA Review' },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
@@ -56,6 +60,67 @@ const linkBase =
   'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors';
 const linkInactive = 'text-arc-100 hover:bg-arc-700 hover:text-white';
 const linkActive   = 'bg-arc-700 text-white';
+
+function PrimaryNavLink({ item }: { item: NavItem }) {
+  return (
+    <NavLink
+      to={item.to}
+      className={({ isActive }) => `${linkBase} ${isActive ? linkActive : linkInactive}`}
+    >
+      {item.icon}
+      {item.label}
+    </NavLink>
+  );
+}
+
+function WorkspaceNav() {
+  const location = useLocation();
+  const isOnWorkspace = location.pathname.startsWith('/workspace');
+  const [open, setOpen] = useState(isOnWorkspace);
+
+  // Sync dropdown to route: auto-open on /workspace/*, auto-close when leaving.
+  // User's local toggle persists until the next navigation event.
+  useEffect(() => {
+    setOpen(isOnWorkspace);
+  }, [location.pathname, isOnWorkspace]);
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`${linkBase} ${isOnWorkspace ? linkActive : linkInactive} w-full justify-between`}
+      >
+        <span className="flex items-center gap-2.5">
+          {WORKSPACE_ICON}
+          Workspace
+        </span>
+        <svg
+          className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="flex flex-col gap-0.5 ml-6 pl-3 border-l border-arc-700">
+          {WORKSPACE_CHILDREN.map((c) => (
+            <NavLink
+              key={c.to}
+              to={c.to}
+              className={({ isActive }) =>
+                `${linkBase} text-xs py-1.5 ${isActive ? linkActive : linkInactive}`
+              }
+            >
+              {c.label}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Sidebar() {
   const { currentUser, signOut } = useAuth();
@@ -90,30 +155,16 @@ export function Sidebar() {
 
         {/* Primary nav */}
         <nav className="flex-1 px-2 py-3 flex flex-col gap-0.5 overflow-y-auto">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => `${linkBase} ${isActive ? linkActive : linkInactive}`}
-            >
-              {item.icon}
-              {item.label}
-            </NavLink>
-          ))}
+          <PrimaryNavLink item={OVERVIEW_ITEM} />
+          <WorkspaceNav />
+          <PrimaryNavLink item={RISK_EDITS_ITEM} />
 
           <div className="mt-4 mb-1 px-3">
             <span className="text-xs text-arc-200 uppercase tracking-wider font-medium">Reports</span>
           </div>
 
           {BOTTOM_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => `${linkBase} ${isActive ? linkActive : linkInactive}`}
-            >
-              {item.icon}
-              {item.label}
-            </NavLink>
+            <PrimaryNavLink key={item.to} item={item} />
           ))}
         </nav>
 
