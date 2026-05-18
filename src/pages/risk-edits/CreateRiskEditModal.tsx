@@ -72,7 +72,7 @@ export function CreateRiskEditModal({ defaultModuleId, onClose }: CreateRiskEdit
             </Select>
           </FormField>
 
-          <FormField label="Edit Brief">
+          <FormField label="Edit brief">
             <Textarea
               required
               rows={5}

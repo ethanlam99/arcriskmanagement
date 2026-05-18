@@ -56,7 +56,7 @@ function BriefPanel({
         onClick={() => setExpanded((e) => !e)}
       >
         <span className="text-xs font-semibold text-arc-500 uppercase tracking-wide">
-          Natural Language Brief
+          Edit brief
         </span>
         <svg
           className={`w-4 h-4 text-arc-200 transition-transform ${expanded ? 'rotate-180' : ''}`}
