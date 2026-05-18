@@ -329,7 +329,7 @@ export function QaTab({ change }: QaTabProps) {
   if (!run || !run.ai_report_json) {
     return (
       <div className="flex h-full items-center justify-center flex-col gap-2 text-arc-200">
-        <p className="text-sm">No completed UAT report to review.</p>
+        <p className="text-sm">No completed AI UAT report to review.</p>
       </div>
     );
   }
@@ -342,7 +342,7 @@ export function QaTab({ change }: QaTabProps) {
       <div className="flex flex-col h-full overflow-hidden">
         <div className="px-6 py-3 border-b border-arc-200 bg-amber-50 shrink-0">
           <p className="text-xs text-amber-800 leading-relaxed">
-            <span className="font-semibold">Reviewing AI-generated UAT report for "{change.title}".</span>
+            <span className="font-semibold">Reviewing AI UAT report for "{change.title}".</span>
             {canAct && ' Edits here override the AI\'s findings — your final verdict moves the edit to Approved.'}
             {isTerminal && ' This change has already been approved and is awaiting IT deployment.'}
           </p>

@@ -184,7 +184,7 @@ function UatContextDrawer({
           <p className="text-xs text-arc-500 mb-3 leading-relaxed">
             {locked
               ? 'Uploads are locked once UAT has started. Existing files remain visible to the AI.'
-              : 'Upload screenshots or supporting media that the AI bot should consider when generating the UAT report. Up to 5 files, 1MB each, image or PDF only.'}
+              : 'Upload screenshots or supporting media that the AI bot should consider when generating the AI UAT report. Up to 5 files, 1MB each, image or PDF only.'}
           </p>
           <AttachmentUploader
             attachments={attachments}

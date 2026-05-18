@@ -193,7 +193,7 @@ function ApprovedPoolTab() {
             <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-200 px-6 text-center">
               <PackageOpen className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
               <p className="text-sm max-w-sm">
-                No approved edits available to bundle. Edits will appear here after testers approve UAT reports.
+                No approved edits available to bundle. Edits will appear here after testers approve AI UAT reports.
               </p>
             </div>
           ) : (
