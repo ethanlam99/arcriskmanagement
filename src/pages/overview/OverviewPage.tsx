@@ -9,6 +9,8 @@ import { useRepository } from '@/data/RepositoryProvider';
 import { TopBar, Breadcrumb } from '@/components/layout/TopBar';
 import { StageBadge } from '@/components/shared/StageBadge';
 import { UserAvatar } from '@/components/shared/UserAvatar';
+import { Button } from '@/components/ui/Button';
+import { CreateRiskEditModal } from '@/pages/risk-edits/CreateRiskEditModal';
 import type { EngineModule, Packet, RiskEdit, RiskEditStage } from '@/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -221,25 +223,47 @@ function Panel({
   );
 }
 
-function ModuleMiniCard({ module }: { module: EngineModule }) {
+function ModuleMiniCard({
+  module,
+  canCreate,
+  onNewEdit,
+}: {
+  module: EngineModule;
+  canCreate: boolean;
+  onNewEdit: () => void;
+}) {
   const navigate = useNavigate();
   const lines = module.current_sql_code.split('\n').length;
   return (
-    <button
+    <div
       onClick={() => navigate(`/engine-modules/${module.id}`)}
-      className="rounded-xl border border-arc-200 bg-white shadow-sm p-1.5 text-left hover:border-arc-500 transition-colors group"
+      className="rounded-xl border border-arc-200 bg-white shadow-sm p-1.5 text-left hover:border-arc-500 transition-colors group cursor-pointer"
     >
-      <div className="bg-arc-50 rounded-lg p-4">
-        <div className="flex items-start justify-between gap-2 mb-1">
+      <div className="bg-arc-50 rounded-lg p-5 flex flex-col gap-3 min-h-[160px]">
+        <div className="flex items-start justify-between gap-3">
           <p className="font-mono text-sm font-semibold text-arc-900 group-hover:text-arc-700 truncate">
             {module.module_name}
           </p>
           <span className="shrink-0 text-xs text-arc-200 font-mono">{lines}L</span>
         </div>
-        <p className="text-xs text-arc-200 line-clamp-2 leading-relaxed">{module.description}</p>
-        <p className="text-xs text-arc-200 mt-2">Updated {fmtDate(module.updated_at)}</p>
+        <p className="text-xs text-arc-500 line-clamp-3 leading-relaxed flex-1">{module.description}</p>
+        <div className="flex items-center justify-between gap-2 pt-1">
+          <p className="text-xs text-arc-200">Updated {fmtDate(module.updated_at)}</p>
+          {canCreate && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={(e) => {
+                e.stopPropagation();
+                onNewEdit();
+              }}
+            >
+              New Edit
+            </Button>
+          )}
+        </div>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -250,6 +274,9 @@ export function OverviewPage() {
   const navigate = useNavigate();
   const repo     = useRepository();
   const qc       = useQueryClient();
+
+  const canCreateRiskEdit = role === 'risk_analyst' || role === 'risk_lead' || role === 'admin';
+  const [newEditModuleId, setNewEditModuleId] = useState<string | null>(null);
 
   const editsQuery   = useRiskEdits(undefined, { refetchInterval: REFETCH_MS });
   const modulesQuery = useEngineModules({ refetchInterval: REFETCH_MS });
@@ -533,15 +560,27 @@ export function OverviewPage() {
           {/* Engine modules — full grid, no separate listing page */}
           <div>
             <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">Engine Modules</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {modulesSorted.map((mod) => (
-                <ModuleMiniCard key={mod.id} module={mod} />
+                <ModuleMiniCard
+                  key={mod.id}
+                  module={mod}
+                  canCreate={canCreateRiskEdit}
+                  onNewEdit={() => setNewEditModuleId(mod.id)}
+                />
               ))}
             </div>
           </div>
 
         </div>
       </div>
+
+      {newEditModuleId && (
+        <CreateRiskEditModal
+          defaultModuleId={newEditModuleId}
+          onClose={() => setNewEditModuleId(null)}
+        />
+      )}
     </div>
   );
 }
