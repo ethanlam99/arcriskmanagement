@@ -13,7 +13,7 @@ import type { EngineModule, Packet, RiskEdit, RiskEditStage } from '@/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const REFETCH_MS = 30_000;
+const REFETCH_MS = 3_600_000;
 
 function fmtDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-GB', {
