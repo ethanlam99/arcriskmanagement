@@ -75,10 +75,10 @@ function PacketDrawer({
             </div>
             <h2 className="text-base font-semibold text-arc-900">{packet.name}</h2>
             {packet.description && (
-              <p className="text-xs text-arc-200 mt-0.5 leading-relaxed">{packet.description}</p>
+              <p className="text-xs text-arc-500 mt-0.5 leading-relaxed">{packet.description}</p>
             )}
           </div>
-          <button onClick={onClose} className="text-arc-200 hover:text-arc-900 transition-colors ml-4 shrink-0">
+          <button onClick={onClose} className="text-arc-500 hover:text-arc-900 transition-colors ml-4 shrink-0">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -102,7 +102,7 @@ function PacketDrawer({
               ] : []),
             ].map(({ label, value }) => (
               <div key={label} className="flex items-start gap-3 px-4 py-2.5">
-                <span className="text-xs text-arc-200 w-28 shrink-0 pt-0.5">{label}</span>
+                <span className="text-xs text-arc-500 w-28 shrink-0 pt-0.5">{label}</span>
                 <span className="text-xs text-arc-900 font-medium">{value}</span>
               </div>
             ))}
@@ -114,14 +114,14 @@ function PacketDrawer({
               Risk Edits ({edits.length})
             </p>
             {edits.length === 0 ? (
-              <p className="text-xs text-arc-200">No edits in this packet.</p>
+              <p className="text-xs text-arc-500">No edits in this packet.</p>
             ) : (
               <div className="rounded-xl border border-arc-200 overflow-hidden bg-white divide-y divide-arc-200">
                 {edits.map((e) => (
                   <div key={e.id} className="px-4 py-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <span className="text-sm font-medium text-arc-900 truncate block">{e.title}</span>
-                      <span className="text-xs font-mono text-arc-200">{e.edit_id_display} · {e.target_module_id}</span>
+                      <span className="text-xs font-mono text-arc-500">{e.edit_id_display} · {e.target_module_id}</span>
                     </div>
                     <StageBadge stage={e.current_stage} />
                   </div>
@@ -235,16 +235,16 @@ export function ITHandoffLogPage() {
           <div className="max-w-6xl mx-auto">
             <div className="mb-5">
               <h1 className="text-xl font-semibold text-arc-900">IT Handoff Log</h1>
-              <p className="text-sm text-arc-200 mt-0.5">
+              <p className="text-sm text-arc-500 mt-0.5">
                 Confirmed packets awaiting deployment, and live packets already in the risk engine.
               </p>
             </div>
 
             {isLoading ? (
-              <div className="flex items-center justify-center py-24 text-arc-200 text-sm">Loading…</div>
+              <div className="flex items-center justify-center py-24 text-arc-500 text-sm">Loading…</div>
             ) : packets.length === 0 ? (
-              <div className="flex items-center justify-center py-24 flex-col gap-3 text-arc-200">
-                <Send className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
+              <div className="flex items-center justify-center py-24 flex-col gap-3 text-arc-500">
+                <Send className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
                 <p className="text-sm">No packets have been confirmed yet.</p>
               </div>
             ) : (
@@ -270,7 +270,7 @@ export function ITHandoffLogPage() {
                           <td className="px-4 py-3">
                             <p className="font-medium text-arc-900">{pkt.name}</p>
                             {pkt.description && (
-                              <p className="text-xs text-arc-200 mt-0.5 truncate max-w-xs">{pkt.description}</p>
+                              <p className="text-xs text-arc-500 mt-0.5 truncate max-w-xs">{pkt.description}</p>
                             )}
                           </td>
                           <td className="px-4 py-3">
@@ -279,10 +279,10 @@ export function ITHandoffLogPage() {
                           <td className="px-4 py-3 text-xs text-arc-500">
                             {edits.length} edit{edits.length !== 1 ? 's' : ''}
                           </td>
-                          <td className="px-4 py-3 text-xs text-arc-200">
+                          <td className="px-4 py-3 text-xs text-arc-500">
                             {pkt.confirmed_by ? (userMap[pkt.confirmed_by] ?? pkt.confirmed_by) : '—'}
                           </td>
-                          <td className="px-4 py-3 text-xs text-arc-200">
+                          <td className="px-4 py-3 text-xs text-arc-500">
                             {pkt.confirmed_at ? fmt(pkt.confirmed_at) : '—'}
                           </td>
                           <td className="px-4 py-3">

@@ -170,7 +170,7 @@ export function AttachmentUploader({
           >
             {busy ? 'Uploading…' : limitReached ? 'Limit reached' : 'Choose files or drag here'}
           </button>
-          <p className="text-[11px] text-arc-200 mt-1">
+          <p className="text-[11px] text-arc-500 mt-1">
             Image or PDF · ≤ {formatSize(maxSizeBytes)} each · {attachments.length}/{maxFiles} used
           </p>
         </div>
@@ -183,7 +183,7 @@ export function AttachmentUploader({
       )}
 
       {attachments.length === 0 ? (
-        <p className="text-xs text-arc-200 italic">No attachments yet.</p>
+        <p className="text-xs text-arc-500 italic">No attachments yet.</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {attachments.map((a) => (
@@ -204,7 +204,7 @@ export function AttachmentUploader({
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-arc-900 truncate">{a.filename}</p>
-                <p className="text-[11px] text-arc-200">
+                <p className="text-[11px] text-arc-500">
                   {formatSize(a.size_bytes)} · <UploaderName userId={a.uploaded_by} /> ·{' '}
                   {new Date(a.uploaded_at).toLocaleDateString('en-GB', {
                     day: 'numeric',
@@ -218,7 +218,7 @@ export function AttachmentUploader({
                 <button
                   type="button"
                   onClick={() => void onRemove(a.id)}
-                  className="shrink-0 text-arc-200 hover:text-rose-600 transition-colors text-sm leading-none px-1"
+                  className="shrink-0 text-arc-500 hover:text-rose-600 transition-colors text-sm leading-none px-1"
                   aria-label={`Remove ${a.filename}`}
                   title="Remove"
                 >

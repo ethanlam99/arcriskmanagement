@@ -96,7 +96,7 @@ function ReviewableTestCaseRow({
               className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-lg border transition-colors ${
                 isReviewed
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                  : 'bg-white border-arc-200 text-arc-200 hover:border-arc-500 hover:text-arc-500'
+                  : 'bg-white border-arc-200 text-arc-500 hover:border-arc-500 hover:text-arc-700'
               }`}
             >
               {isReviewed ? '✓ Reviewed' : 'Mark reviewed'}
@@ -131,7 +131,7 @@ function ReviewableTestCaseRow({
                     {annotation}
                   </p>
                 ) : (
-                  <p className="text-xs text-arc-200 italic">No annotation added.</p>
+                  <p className="text-xs text-arc-500 italic">No annotation added.</p>
                 )
               ) : (
                 <Textarea
@@ -148,7 +148,7 @@ function ReviewableTestCaseRow({
               <p className="text-xs font-semibold text-arc-500 mb-1.5">
                 Supporting evidence
                 {!readonly && (
-                  <span className="ml-1.5 font-normal text-arc-200">
+                  <span className="ml-1.5 font-normal text-arc-500">
                     — attach manual UAT screenshots/PDFs when overriding an AI verdict
                   </span>
                 )}
@@ -323,12 +323,12 @@ export function QaTab({ change }: QaTabProps) {
   }
 
   if (runLoading) {
-    return <div className="flex h-full items-center justify-center text-arc-200 text-sm">Loading…</div>;
+    return <div className="flex h-full items-center justify-center text-arc-500 text-sm">Loading…</div>;
   }
 
   if (!run || !run.ai_report_json) {
     return (
-      <div className="flex h-full items-center justify-center flex-col gap-2 text-arc-200">
+      <div className="flex h-full items-center justify-center flex-col gap-2 text-arc-500">
         <p className="text-sm">No completed AI UAT report to review.</p>
       </div>
     );
@@ -403,7 +403,7 @@ export function QaTab({ change }: QaTabProps) {
 
         {canAct && (
           <div className="shrink-0 border-t border-arc-200 bg-white px-6 py-4 flex items-center justify-between gap-4">
-            <p className="text-xs text-arc-200">
+            <p className="text-xs text-arc-500">
               {passedCount} of {testCases.length} passing · {reviewedCount} of {testCases.length} reviewed
             </p>
             <div className="flex items-center gap-2">
@@ -455,7 +455,7 @@ export function QaTab({ change }: QaTabProps) {
           <div className="absolute inset-0 bg-arc-900/40 backdrop-blur-sm" onClick={() => setShowRejectModal(false)} />
           <div className="relative bg-white rounded-xl border border-arc-200 w-full max-w-md mx-4 p-6 shadow-lg">
             <h2 className="text-base font-semibold text-arc-900 mb-1">Reject — Return to Author</h2>
-            <p className="text-xs text-arc-200 mb-4">
+            <p className="text-xs text-arc-500 mb-4">
               The change will be moved back to Draft. The risk analyst will see your notes when they re-open it.
             </p>
             <label className="block text-xs font-medium text-arc-900 mb-1.5">

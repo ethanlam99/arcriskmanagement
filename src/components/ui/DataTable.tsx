@@ -44,7 +44,7 @@ export function DataTable<T>({
             <tr>
               <td
                 colSpan={columns.length}
-                className="px-4 py-8 text-center text-arc-200 text-sm"
+                className="px-4 py-8 text-center text-arc-500 text-sm"
               >
                 {emptyMessage}
               </td>

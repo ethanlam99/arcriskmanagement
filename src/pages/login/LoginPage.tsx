@@ -54,25 +54,25 @@ export function LoginPage() {
           <span className="text-white text-xl font-bold">A</span>
         </div>
         <h1 className="text-2xl font-semibold text-arc-900">ARC</h1>
-        <p className="text-arc-200 text-sm mt-1">AI Risk Control</p>
+        <p className="text-arc-500 text-sm mt-1">AI Risk Control</p>
       </div>
 
       {/* Persona picker card */}
       <div className="w-full max-w-2xl bg-white rounded-xl border border-arc-200 p-8">
         <div className="mb-6">
           <h2 className="text-base font-semibold text-arc-900">Select a persona to continue</h2>
-          <p className="text-sm text-arc-200 mt-0.5">
+          <p className="text-sm text-arc-500 mt-0.5">
             Phase 1 — no password required. Each persona has a different role and permission set.
           </p>
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12 text-arc-200 text-sm">Loading…</div>
+          <div className="flex items-center justify-center py-12 text-arc-500 text-sm">Loading…</div>
         ) : (
           <div className="space-y-5">
             {ROLE_ORDER.filter((role) => grouped[role]?.length > 0).map((role) => (
               <div key={role}>
-                <p className="text-xs font-semibold text-arc-200 uppercase tracking-wider mb-2">
+                <p className="text-xs font-semibold text-arc-500 uppercase tracking-wider mb-2">
                   {ROLE_LABELS[role]}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -85,13 +85,13 @@ export function LoginPage() {
                       <UserAvatar seed={user.avatar_seed} name={user.name} size="lg" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-arc-900 truncate">{user.name}</p>
-                        <p className="text-xs text-arc-200 truncate">{user.email}</p>
+                        <p className="text-xs text-arc-500 truncate">{user.email}</p>
                         <span className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_COLORS[user.role]}`}>
                           {ROLE_LABELS[user.role]}
                         </span>
                       </div>
                       <svg
-                        className="w-4 h-4 text-arc-200 group-hover:text-arc-500 transition-colors shrink-0"
+                        className="w-4 h-4 text-arc-500 group-hover:text-arc-700 transition-colors shrink-0"
                         fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -104,7 +104,7 @@ export function LoginPage() {
           </div>
         )}
 
-        <p className="mt-6 text-xs text-arc-200 text-center">
+        <p className="mt-6 text-xs text-arc-500 text-center">
           Phase 1 POC — all data is local. No external systems are contacted.
         </p>
       </div>

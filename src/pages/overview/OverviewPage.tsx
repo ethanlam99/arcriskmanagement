@@ -81,7 +81,7 @@ function StatBox({
     >
       <div className="bg-arc-100 rounded-lg px-3 py-2">
         <p className={`text-2xl font-bold tabular-nums ${color}`}>{value}</p>
-        <p className="text-xs text-arc-200 mt-0.5">{label}</p>
+        <p className="text-xs text-arc-500 mt-0.5">{label}</p>
       </div>
     </button>
   );
@@ -107,7 +107,7 @@ function StageExpansionPanel({
         </p>
         <button
           onClick={onClose}
-          className="text-arc-200 hover:text-arc-900 transition-colors"
+          className="text-arc-500 hover:text-arc-900 transition-colors"
           title="Collapse"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -117,7 +117,7 @@ function StageExpansionPanel({
       </div>
 
       {edits.length === 0 ? (
-        <p className="px-4 py-6 text-center text-sm text-arc-200">No edits in this stage.</p>
+        <p className="px-4 py-6 text-center text-sm text-arc-500">No edits in this stage.</p>
       ) : (
         <table className="w-full text-sm">
           <thead className="bg-arc-100 text-xs text-arc-500 uppercase tracking-wide">
@@ -143,7 +143,7 @@ function StageExpansionPanel({
                         <span className="text-arc-900">{author.name}</span>
                       </span>
                     ) : (
-                      <span className="text-arc-200">—</span>
+                      <span className="text-arc-500">—</span>
                     )}
                   </td>
                   <td className="px-4 py-2 text-arc-500 tabular-nums">
@@ -180,7 +180,7 @@ function EditRow({ change, onClick }: { change: RiskEdit; onClick: () => void })
     >
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-arc-900 truncate group-hover:text-arc-700">{change.title}</p>
-        <p className="text-xs text-arc-200 mt-0.5 font-mono truncate">
+        <p className="text-xs text-arc-500 mt-0.5 font-mono truncate">
           {module?.module_name ?? change.target_module_id} · {change.edit_id_display}
         </p>
       </div>
@@ -203,11 +203,11 @@ function Panel({
     <div className="rounded-xl border border-arc-200 bg-white shadow-sm overflow-hidden flex flex-col">
       <div className="px-4 py-3 border-b border-arc-200 flex items-center justify-between">
         <p className="text-sm font-semibold text-arc-900">{title}</p>
-        <span className="text-xs text-arc-200">{count} item{count !== 1 ? 's' : ''}</span>
+        <span className="text-xs text-arc-500">{count} item{count !== 1 ? 's' : ''}</span>
       </div>
       <div className="flex-1 px-4 py-1">
         {count === 0 ? (
-          <p className="text-sm text-arc-200 py-4 text-center">{empty}</p>
+          <p className="text-sm text-arc-500 py-4 text-center">{empty}</p>
         ) : (
           <div className="divide-y divide-arc-200">{children}</div>
         )}
@@ -244,11 +244,11 @@ function ModuleMiniCard({
           <p className="font-mono text-sm font-semibold text-arc-900 group-hover:text-arc-700 truncate">
             {module.module_name}
           </p>
-          <span className="shrink-0 text-xs text-arc-200 font-mono">{lines}L</span>
+          <span className="shrink-0 text-xs text-arc-500 font-mono">{lines}L</span>
         </div>
         <p className="text-xs text-arc-500 line-clamp-3 leading-relaxed flex-1">{module.description}</p>
         <div className="flex items-center justify-between gap-2 pt-1">
-          <p className="text-xs text-arc-200">Updated {fmtDate(module.updated_at)}</p>
+          <p className="text-xs text-arc-500">Updated {fmtDate(module.updated_at)}</p>
           {canCreate && (
             <Button
               size="sm"
@@ -364,7 +364,7 @@ export function OverviewPage() {
               <h1 className="text-xl font-semibold text-arc-900">
                 Welcome back, {currentUser?.name}
               </h1>
-              <p className="text-sm text-arc-200 mt-0.5">
+              <p className="text-sm text-arc-500 mt-0.5">
                 {roleLabel} · {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
             </div>
@@ -375,7 +375,7 @@ export function OverviewPage() {
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide">Pipeline at a glance</p>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-arc-200 tabular-nums">
+                <span className="text-xs text-arc-500 tabular-nums">
                   Last updated {lastUpdated ? fmtClock(lastUpdated) : '—'}
                 </span>
                 <button
@@ -500,7 +500,7 @@ export function OverviewPage() {
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-arc-900 group-hover:text-arc-700 truncate">{pkt.name}</p>
                           {pkt.description && (
-                            <p className="text-xs text-arc-200 mt-0.5 truncate">{pkt.description}</p>
+                            <p className="text-xs text-arc-500 mt-0.5 truncate">{pkt.description}</p>
                           )}
                         </div>
                         <span className="ml-3 shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">

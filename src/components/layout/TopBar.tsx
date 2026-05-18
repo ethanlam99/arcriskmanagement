@@ -47,8 +47,8 @@ export function Breadcrumb({ items }: { items: { label: string; to?: string }[] 
     <nav className="flex items-center gap-1.5">
       {items.map((item, i) => (
         <span key={i} className="flex items-center gap-1.5">
-          {i > 0 && <span className="text-arc-200">/</span>}
-          <span className={i === items.length - 1 ? 'text-arc-900 font-medium' : 'text-arc-200'}>
+          {i > 0 && <span className="text-arc-500">/</span>}
+          <span className={i === items.length - 1 ? 'text-arc-900 font-medium' : 'text-arc-500'}>
             {item.label}
           </span>
         </span>

@@ -59,7 +59,7 @@ function BriefPanel({
           Edit brief
         </span>
         <svg
-          className={`w-4 h-4 text-arc-200 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-arc-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -99,7 +99,7 @@ function MiniChatMessage({ msg, userSeed }: { msg: ChatMessage; userSeed?: strin
           {msg.content}
         </div>
         {msg.diff_summary && (
-          <p className="text-xs text-arc-200 italic px-1">{msg.diff_summary}</p>
+          <p className="text-xs text-arc-500 italic px-1">{msg.diff_summary}</p>
         )}
       </div>
     </div>
@@ -333,8 +333,8 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
                       {v.source === 'ai_proposal' ? 'AI' : 'Human'}
                     </span>
                   </div>
-                  <p className="text-xs text-arc-200 truncate">{v.diff_summary}</p>
-                  <p className="text-xs text-arc-200 mt-0.5 font-mono">
+                  <p className="text-xs text-arc-500 truncate">{v.diff_summary}</p>
+                  <p className="text-xs text-arc-500 mt-0.5 font-mono">
                     {new Date(v.created_at).toLocaleDateString()}
                   </p>
                 </button>
@@ -379,7 +379,7 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
 
           <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
             {messagesLoading ? (
-              <div className="flex items-center justify-center py-8 text-arc-200 text-xs">
+              <div className="flex items-center justify-center py-8 text-arc-500 text-xs">
                 Loading conversation…
               </div>
             ) : (
@@ -425,13 +425,13 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
               >
                 Send
               </Button>
-              <p className="text-xs text-arc-200 text-center">
+              <p className="text-xs text-arc-500 text-center">
                 Phase 1 — AI responses are mocked.
               </p>
             </div>
           ) : (
             <div className="px-4 py-3 border-t border-arc-200 bg-white">
-              <p className="text-xs text-arc-200 text-center">
+              <p className="text-xs text-arc-500 text-center">
                 Editing locked — stage is{' '}
                 <span className="font-medium text-arc-500">
                   {change.current_stage.replace(/_/g, ' ')}

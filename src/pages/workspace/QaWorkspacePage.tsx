@@ -45,14 +45,14 @@ export function QaWorkspacePage() {
         <div className="px-3 py-2.5 border-b border-arc-200 bg-arc-100 shrink-0">
           <p className="text-xs font-semibold text-arc-500 uppercase tracking-wider">
             QA Review
-            <span className="ml-1.5 font-mono font-normal text-arc-300">({qaEdits.length})</span>
+            <span className="ml-1.5 font-mono font-normal text-arc-700">({qaEdits.length})</span>
           </p>
         </div>
 
         <div className="flex-1 overflow-y-auto">
           {qaEdits.length === 0 ? (
-            <div className="flex items-center justify-center py-12 flex-col gap-3 text-arc-200 px-3">
-              <CheckCircle2 className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
+            <div className="flex items-center justify-center py-12 flex-col gap-3 text-arc-500 px-3">
+              <CheckCircle2 className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
               <p className="text-sm text-center">No edits in QA Review.</p>
             </div>
           ) : (
@@ -73,7 +73,7 @@ export function QaWorkspacePage() {
                     {edit.title}
                   </p>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-xs text-arc-300">{edit.edit_id_display}</span>
+                    <span className="font-mono text-xs text-arc-700">{edit.edit_id_display}</span>
                     {stats ? (
                       <div className="flex items-center gap-2">
                         <StatChip value={stats.passed}       label="pass" color="text-emerald-600" />
@@ -81,7 +81,7 @@ export function QaWorkspacePage() {
                         <StatChip value={stats.inconclusive} label="inc"  color="text-amber-600" />
                       </div>
                     ) : (
-                      <span className="text-xs text-arc-200 italic">No report yet</span>
+                      <span className="text-xs text-arc-500 italic">No report yet</span>
                     )}
                   </div>
                 </button>
@@ -94,15 +94,15 @@ export function QaWorkspacePage() {
       {/* ── Right pane ── */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {!selectedEdit ? (
-          <div className="flex h-full items-center justify-center flex-col gap-3 text-arc-200">
-            <CheckCircle2 className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
+          <div className="flex h-full items-center justify-center flex-col gap-3 text-arc-500">
+            <CheckCircle2 className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
             <p className="text-sm">Select an edit from the list to review.</p>
           </div>
         ) : (
           <>
             {/* Right pane header */}
             <div className="px-4 py-2.5 border-b border-arc-200 bg-white flex items-center gap-2 shrink-0">
-              <span className="font-mono text-xs text-arc-300 shrink-0">{selectedEdit.edit_id_display}</span>
+              <span className="font-mono text-xs text-arc-700 shrink-0">{selectedEdit.edit_id_display}</span>
               <span className="text-sm font-medium text-arc-900 truncate flex-1 min-w-0">
                 {selectedEdit.title}
               </span>

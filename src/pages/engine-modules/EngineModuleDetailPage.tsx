@@ -28,7 +28,7 @@ export function EngineModuleDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center text-arc-200 text-sm">Loading…</div>
+      <div className="flex h-full items-center justify-center text-arc-500 text-sm">Loading…</div>
     );
   }
 
@@ -73,9 +73,9 @@ export function EngineModuleDetailPage() {
               <h1 className="text-base font-semibold text-arc-900 font-mono">
                 {module.module_name}.sql
               </h1>
-              <p className="text-sm text-arc-200 mt-0.5 leading-relaxed">{module.description}</p>
+              <p className="text-sm text-arc-500 mt-0.5 leading-relaxed">{module.description}</p>
             </div>
-            <div className="shrink-0 flex items-center gap-6 text-xs text-arc-200">
+            <div className="shrink-0 flex items-center gap-6 text-xs text-arc-500">
               <div className="text-right">
                 <p className="text-arc-500 font-medium">{lineCount}</p>
                 <p>lines</p>

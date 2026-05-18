@@ -161,8 +161,8 @@ function AuditPanel({ editId, userMap }: { editId: string; userMap: Record<strin
   const { data: entries = [], isLoading } = useAuditLog({ entity_type: 'risk_edit', entity_id: editId });
   const sorted = [...entries].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 6);
 
-  if (isLoading) return <p className="text-xs text-arc-200 py-2">Loading…</p>;
-  if (sorted.length === 0) return <p className="text-xs text-arc-200 py-2">No audit entries yet.</p>;
+  if (isLoading) return <p className="text-xs text-arc-500 py-2">Loading…</p>;
+  if (sorted.length === 0) return <p className="text-xs text-arc-500 py-2">No audit entries yet.</p>;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -170,7 +170,7 @@ function AuditPanel({ editId, userMap }: { editId: string; userMap: Record<strin
         <div key={entry.id} className="flex items-start gap-2.5 text-xs">
           <span className="w-1.5 h-1.5 rounded-full bg-arc-300 mt-1.5 shrink-0" />
           <span className="text-arc-900 font-medium min-w-0">{fmtAction(entry)}</span>
-          <span className="text-arc-200 shrink-0 ml-auto pl-4">
+          <span className="text-arc-500 shrink-0 ml-auto pl-4">
             {userMap[entry.actor_id] ?? entry.actor_id} · {fmtDateTime(entry.created_at)}
           </span>
         </div>
@@ -230,7 +230,7 @@ function stageBarColor(stage: RiskEditStage): string {
 function StageTimeline({ edit, nowMs }: { edit: RiskEdit; nowMs: number }) {
   const { data: audit = [], isLoading } = useAuditLog({ entity_type: 'risk_edit', entity_id: edit.id });
 
-  if (isLoading) return <p className="text-xs text-arc-200">Loading timeline…</p>;
+  if (isLoading) return <p className="text-xs text-arc-500">Loading timeline…</p>;
 
   const segments = buildTimeline(edit, audit, nowMs);
   const reachedStages = new Set(segments.map((s) => s.stage));
@@ -305,7 +305,7 @@ function AuthorCell({ userId }: { userId: string }) {
     queryKey: ['arc', 'users', userId],
     queryFn: () => repo.users.get(userId),
   });
-  if (!user) return <span className="text-arc-200 text-xs">—</span>;
+  if (!user) return <span className="text-arc-500 text-xs">—</span>;
   return (
     <div className="flex items-center gap-2">
       <UserAvatar seed={user.avatar_seed} name={user.name} size="sm" />
@@ -380,7 +380,7 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
             </span>
           </td>
         )}
-        <td className="px-4 py-3 w-8 text-arc-300 text-xs text-right">
+        <td className="px-4 py-3 w-8 text-arc-700 text-xs text-right">
           {isOpen ? '▲' : '▼'}
         </td>
       </tr>
@@ -393,7 +393,7 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-2">Edit brief</p>
                   <p className="text-xs text-arc-900 leading-relaxed line-clamp-3">
-                    {edit.natural_language_brief || <span className="text-arc-200 italic">No brief provided.</span>}
+                    {edit.natural_language_brief || <span className="text-arc-500 italic">No brief provided.</span>}
                   </p>
                 </div>
                 <div className="w-px bg-arc-200 shrink-0" />
@@ -447,7 +447,7 @@ function HeaderCell({
     >
       <span className="inline-flex items-center gap-1">
         {label}
-        {active && <span className="text-arc-300">{sort.dir === 'asc' ? '▲' : '▼'}</span>}
+        {active && <span className="text-arc-700">{sort.dir === 'asc' ? '▲' : '▼'}</span>}
       </span>
     </th>
   );
@@ -634,7 +634,7 @@ export function RiskEditsPage() {
           <div className="max-w-6xl mx-auto">
             <div className="mb-5">
               <h1 className="text-xl font-semibold text-arc-900">Risk Edits</h1>
-              <p className="text-sm text-arc-200 mt-0.5">
+              <p className="text-sm text-arc-500 mt-0.5">
                 Complete history of every risk engine edit — active work above, terminal stages below.
               </p>
             </div>
@@ -678,7 +678,7 @@ export function RiskEditsPage() {
             </div>
 
             {isLoading ? (
-              <div className="bg-white rounded-xl border border-arc-200 shadow-sm py-16 text-center text-arc-200 text-sm">
+              <div className="bg-white rounded-xl border border-arc-200 shadow-sm py-16 text-center text-arc-500 text-sm">
                 Loading…
               </div>
             ) : (
@@ -687,12 +687,12 @@ export function RiskEditsPage() {
                   <div className="flex items-baseline justify-between mb-2">
                     <h2 className="text-sm font-semibold text-arc-900">
                       Active Edits{' '}
-                      <span className="text-arc-200 font-normal">({sortedActive.length})</span>
+                      <span className="text-arc-500 font-normal">({sortedActive.length})</span>
                     </h2>
-                    <p className="text-xs text-arc-200">Pre-terminal stages</p>
+                    <p className="text-xs text-arc-500">Pre-terminal stages</p>
                   </div>
                   {sortedActive.length === 0 ? (
-                    <div className="bg-white rounded-xl border border-arc-200 shadow-sm py-10 text-center text-arc-200 text-sm">
+                    <div className="bg-white rounded-xl border border-arc-200 shadow-sm py-10 text-center text-arc-500 text-sm">
                       No active edits match the current filters.
                     </div>
                   ) : (
@@ -711,12 +711,12 @@ export function RiskEditsPage() {
                   <div className="flex items-baseline justify-between mb-2">
                     <h2 className="text-sm font-semibold text-arc-900">
                       Live &amp; Archived Edits{' '}
-                      <span className="text-arc-200 font-normal">({sortedArchived.length})</span>
+                      <span className="text-arc-500 font-normal">({sortedArchived.length})</span>
                     </h2>
-                    <p className="text-xs text-arc-200">Terminal stages: live, rejected</p>
+                    <p className="text-xs text-arc-500">Terminal stages: live, rejected</p>
                   </div>
                   {sortedArchived.length === 0 ? (
-                    <div className="bg-white rounded-xl border border-arc-200 shadow-sm py-10 text-center text-arc-200 text-sm">
+                    <div className="bg-white rounded-xl border border-arc-200 shadow-sm py-10 text-center text-arc-500 text-sm">
                       No live or archived edits match the current filters.
                     </div>
                   ) : (

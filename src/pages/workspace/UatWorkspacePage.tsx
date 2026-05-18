@@ -164,12 +164,12 @@ function UatContextDrawer({
     <aside className="w-96 shrink-0 border-l border-arc-200 bg-arc-100/40 flex flex-col overflow-hidden">
       <div className="px-4 py-3 border-b border-arc-200 bg-white flex items-start gap-2 shrink-0">
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-mono text-arc-200">{edit.edit_id_display}</p>
+          <p className="text-xs font-mono text-arc-500">{edit.edit_id_display}</p>
           <p className="text-sm font-medium text-arc-900 truncate">{edit.title}</p>
         </div>
         <button
           onClick={onClose}
-          className="text-arc-200 hover:text-arc-700 transition-colors text-base leading-none px-1"
+          className="text-arc-500 hover:text-arc-700 transition-colors text-base leading-none px-1"
           aria-label="Close panel"
         >
           ✕
@@ -201,7 +201,7 @@ function UatContextDrawer({
           <div className="rounded-lg border border-arc-200 bg-white px-3 py-3">
             <AiTaskList mode={mode} startedAt={edit.updated_at} />
             {mode === 'queued' && (
-              <p className="mt-3 pt-2.5 border-t border-arc-200 text-[11px] text-arc-200">
+              <p className="mt-3 pt-2.5 border-t border-arc-200 text-[11px] text-arc-500">
                 Waiting to start — send to AI UAT to begin.
               </p>
             )}
@@ -356,7 +356,7 @@ export function UatWorkspacePage() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h2 className="text-sm font-semibold text-arc-900">Queued for UAT</h2>
-                <p className="text-xs text-arc-200 mt-0.5">
+                <p className="text-xs text-arc-500 mt-0.5">
                   {queued.length === 0
                     ? 'No edits waiting.'
                     : `${queued.length} edit${queued.length !== 1 ? 's' : ''} ready to run · click a row for AI context`}
@@ -374,10 +374,10 @@ export function UatWorkspacePage() {
             </div>
 
             {queued.length === 0 ? (
-              <div className="rounded-xl border border-arc-200 shadow-sm bg-white flex items-center justify-center py-12 flex-col gap-3 text-arc-200">
-                <Beaker className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
+              <div className="rounded-xl border border-arc-200 shadow-sm bg-white flex items-center justify-center py-12 flex-col gap-3 text-arc-500">
+                <Beaker className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
                 <p className="text-sm">No edits queued for UAT.</p>
-                <p className="text-xs text-center max-w-xs text-arc-200">
+                <p className="text-xs text-center max-w-xs text-arc-500">
                   Risk analysts send edits for UAT from the Draft &amp; Queue workspace.
                 </p>
               </div>
@@ -427,10 +427,10 @@ export function UatWorkspacePage() {
                           )}
                           <td className="px-4 py-3">
                             <p className="font-medium text-arc-900">{edit.title}</p>
-                            <p className="text-xs font-mono text-arc-200 mt-0.5">{edit.edit_id_display}</p>
+                            <p className="text-xs font-mono text-arc-500 mt-0.5">{edit.edit_id_display}</p>
                           </td>
                           <td className="px-4 py-3 font-mono text-xs text-arc-500">{edit.target_module_id}</td>
-                          <td className="px-4 py-3 text-xs text-arc-200">
+                          <td className="px-4 py-3 text-xs text-arc-500">
                             {new Date(edit.updated_at).toLocaleDateString('en-GB', {
                               day: 'numeric', month: 'short',
                             })}
@@ -438,7 +438,7 @@ export function UatWorkspacePage() {
                           {canAct && (
                             <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                               {isTriggering ? (
-                                <span className="flex items-center gap-1.5 text-xs text-arc-200">
+                                <span className="flex items-center gap-1.5 text-xs text-arc-500">
                                   <span className="w-3 h-3 border border-arc-500 border-t-transparent rounded-full animate-spin" />
                                   Triggering…
                                 </span>
@@ -463,7 +463,7 @@ export function UatWorkspacePage() {
             )}
 
             {!canAct && queued.length > 0 && (
-              <p className="mt-2 text-xs text-arc-200">
+              <p className="mt-2 text-xs text-arc-500">
                 Only Testers, Testing Leads, and Admins can trigger AI UAT runs.
               </p>
             )}
@@ -473,7 +473,7 @@ export function UatWorkspacePage() {
           <section>
             <div className="mb-3">
               <h2 className="text-sm font-semibold text-arc-900">UAT Running</h2>
-              <p className="text-xs text-arc-200 mt-0.5">
+              <p className="text-xs text-arc-500 mt-0.5">
                 {running.length === 0
                   ? 'No active runs.'
                   : `${running.length} run${running.length !== 1 ? 's' : ''} in progress · click a row for live AI progress`}
@@ -481,8 +481,8 @@ export function UatWorkspacePage() {
             </div>
 
             {running.length === 0 ? (
-              <div className="rounded-xl border border-arc-200 shadow-sm bg-white flex items-center justify-center py-12 flex-col gap-3 text-arc-200">
-                <Beaker className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
+              <div className="rounded-xl border border-arc-200 shadow-sm bg-white flex items-center justify-center py-12 flex-col gap-3 text-arc-500">
+                <Beaker className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
                 <p className="text-sm">No UAT runs in progress.</p>
               </div>
             ) : (
@@ -500,7 +500,7 @@ export function UatWorkspacePage() {
                       <div className="w-5 h-5 border-2 border-arc-500 border-t-transparent rounded-full animate-spin shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-arc-900 truncate">{edit.title}</p>
-                        <p className="text-xs font-mono text-arc-200 mt-0.5">
+                        <p className="text-xs font-mono text-arc-500 mt-0.5">
                           {edit.edit_id_display} · {edit.target_module_id}
                         </p>
                       </div>

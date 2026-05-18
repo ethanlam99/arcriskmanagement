@@ -170,7 +170,7 @@ function ApprovedPoolTab() {
     <>
       <div className="flex flex-col h-full overflow-hidden">
         <div className="px-6 py-3 border-b border-arc-200 bg-white flex items-center justify-between gap-4 shrink-0">
-          <p className="text-xs text-arc-200">
+          <p className="text-xs text-arc-500">
             {unbundled.length === 0
               ? 'No approved edits available to bundle.'
               : `${unbundled.length} approved edit${unbundled.length !== 1 ? 's' : ''} available`}
@@ -188,10 +188,10 @@ function ApprovedPoolTab() {
 
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center py-16 text-arc-200 text-sm">Loading…</div>
+            <div className="flex items-center justify-center py-16 text-arc-500 text-sm">Loading…</div>
           ) : unbundled.length === 0 ? (
-            <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-200 px-6 text-center">
-              <PackageOpen className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
+            <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-500 px-6 text-center">
+              <PackageOpen className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
               <p className="text-sm max-w-sm">
                 No approved edits available to bundle. Edits will appear here after testers approve AI UAT reports.
               </p>
@@ -226,11 +226,11 @@ function ApprovedPoolTab() {
                     )}
                     <td className="px-4 py-3">
                       <span className="text-arc-900 font-medium">{c.title}</span>
-                      <p className="text-xs font-mono text-arc-200 mt-0.5">{c.edit_id_display}</p>
+                      <p className="text-xs font-mono text-arc-500 mt-0.5">{c.edit_id_display}</p>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-arc-500">{c.target_module_id}</td>
-                    <td className="px-4 py-3 text-xs text-arc-200">{userMap[c.created_by] ?? c.created_by}</td>
-                    <td className="px-4 py-3 text-xs text-arc-200">{fmt(c.updated_at)}</td>
+                    <td className="px-4 py-3 text-xs text-arc-500">{userMap[c.created_by] ?? c.created_by}</td>
+                    <td className="px-4 py-3 text-xs text-arc-500">{fmt(c.updated_at)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -244,7 +244,7 @@ function ApprovedPoolTab() {
           <div className="bg-white rounded-xl border border-arc-200 shadow-xl w-full max-w-md p-6 flex flex-col gap-4">
             <div>
               <h3 className="font-semibold text-arc-900 mb-0.5">Create proposed packet</h3>
-              <p className="text-xs text-arc-200">
+              <p className="text-xs text-arc-500">
                 Bundling {selected.size} approved edit{selected.size !== 1 ? 's' : ''}.
               </p>
             </div>
@@ -411,7 +411,7 @@ function ProposedPacketsTab() {
     <>
       <div className="flex flex-col h-full overflow-hidden">
         <div className="px-6 py-3 border-b border-arc-200 bg-white flex items-center gap-4 shrink-0">
-          <p className="text-xs text-arc-200">
+          <p className="text-xs text-arc-500">
             {packets.length === 0
               ? 'No packets awaiting review.'
               : `${packets.length} packet${packets.length !== 1 ? 's' : ''} proposed`}
@@ -420,10 +420,10 @@ function ProposedPacketsTab() {
 
         <div className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
-            <div className="flex items-center justify-center py-16 text-arc-200 text-sm">Loading…</div>
+            <div className="flex items-center justify-center py-16 text-arc-500 text-sm">Loading…</div>
           ) : packets.length === 0 ? (
-            <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-200">
-              <Package className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
+            <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-500">
+              <Package className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
               <p className="text-sm">No packets are proposed.</p>
               <p className="text-xs text-center max-w-xs">
                 Create a packet from approved edits in the Approved Pool tab.
@@ -442,13 +442,13 @@ function ProposedPacketsTab() {
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
                             Proposed
                           </span>
-                          <span className="text-xs text-arc-200">{edits.length} edit{edits.length !== 1 ? 's' : ''}</span>
+                          <span className="text-xs text-arc-500">{edits.length} edit{edits.length !== 1 ? 's' : ''}</span>
                         </div>
                         <h3 className="font-semibold text-arc-900">{pkt.name}</h3>
                         {pkt.description && (
-                          <p className="text-xs text-arc-200 mt-0.5 leading-relaxed">{pkt.description}</p>
+                          <p className="text-xs text-arc-500 mt-0.5 leading-relaxed">{pkt.description}</p>
                         )}
-                        <p className="text-xs text-arc-200 mt-1">
+                        <p className="text-xs text-arc-500 mt-1">
                           Proposed by {userMap[pkt.created_by] ?? pkt.created_by} · {fmt(pkt.created_at)}
                         </p>
                       </div>
@@ -484,13 +484,13 @@ function ProposedPacketsTab() {
                     {isOpen && (
                       <div className="border-t border-arc-200 divide-y divide-arc-200 bg-arc-100">
                         {edits.length === 0 ? (
-                          <p className="px-5 py-3 text-xs text-arc-200">No edits attached.</p>
+                          <p className="px-5 py-3 text-xs text-arc-500">No edits attached.</p>
                         ) : (
                           edits.map((e) => (
                             <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-4">
                               <div className="min-w-0">
                                 <span className="text-sm font-medium text-arc-900 truncate block">{e.title}</span>
-                                <span className="text-xs font-mono text-arc-200">{e.edit_id_display} · {e.target_module_id}</span>
+                                <span className="text-xs font-mono text-arc-500">{e.edit_id_display} · {e.target_module_id}</span>
                               </div>
                               <StageBadge stage={e.current_stage} />
                             </div>
@@ -588,10 +588,10 @@ function PacketSection({
     <section>
       <header className="flex items-center justify-between mb-2">
         <h2 className="text-sm font-semibold text-arc-900 uppercase tracking-wide">{title}</h2>
-        <span className="text-xs text-arc-200">{packets.length} packet{packets.length !== 1 ? 's' : ''}</span>
+        <span className="text-xs text-arc-500">{packets.length} packet{packets.length !== 1 ? 's' : ''}</span>
       </header>
       {packets.length === 0 ? (
-        <p className="text-xs text-arc-200 px-1 py-3">{emptyText}</p>
+        <p className="text-xs text-arc-500 px-1 py-3">{emptyText}</p>
       ) : (
         <div className="flex flex-col gap-3">
           {packets.map((pkt) => {
@@ -605,13 +605,13 @@ function PacketSection({
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${badge.className}`}>
                         {badge.label}
                       </span>
-                      <span className="text-xs text-arc-200">{edits.length} edit{edits.length !== 1 ? 's' : ''}</span>
+                      <span className="text-xs text-arc-500">{edits.length} edit{edits.length !== 1 ? 's' : ''}</span>
                     </div>
                     <h3 className="font-semibold text-arc-900">{pkt.name}</h3>
                     {pkt.description && (
-                      <p className="text-xs text-arc-200 mt-0.5 leading-relaxed">{pkt.description}</p>
+                      <p className="text-xs text-arc-500 mt-0.5 leading-relaxed">{pkt.description}</p>
                     )}
-                    <p className="text-xs text-arc-200 mt-1">
+                    <p className="text-xs text-arc-500 mt-1">
                       Created by {userMap[pkt.created_by] ?? pkt.created_by} · {fmt(pkt.created_at)}
                       {pkt.confirmed_by && pkt.confirmed_at && (
                         <> · Confirmed by {userMap[pkt.confirmed_by] ?? pkt.confirmed_by} · {fmt(pkt.confirmed_at)}</>
@@ -632,13 +632,13 @@ function PacketSection({
                 {isOpen && (
                   <div className="border-t border-arc-200 divide-y divide-arc-200 bg-white">
                     {edits.length === 0 ? (
-                      <p className="px-5 py-3 text-xs text-arc-200">No edits attached.</p>
+                      <p className="px-5 py-3 text-xs text-arc-500">No edits attached.</p>
                     ) : (
                       edits.map((e) => (
                         <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-4 odd:bg-white even:bg-arc-100/40">
                           <div className="min-w-0">
                             <span className="text-sm font-medium text-arc-900 truncate block">{e.title}</span>
-                            <span className="text-xs font-mono text-arc-200">{e.edit_id_display} · {e.target_module_id}</span>
+                            <span className="text-xs font-mono text-arc-500">{e.edit_id_display} · {e.target_module_id}</span>
                           </div>
                         </div>
                       ))
@@ -695,7 +695,7 @@ function ConfirmedTab() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-6 py-3 border-b border-arc-200 bg-white flex items-center justify-between gap-4 shrink-0">
-        <p className="text-xs text-arc-200">
+        <p className="text-xs text-arc-500">
           {totalVisible === 0
             ? 'No confirmed packets yet.'
             : `${sentToIt.length} sent to IT · ${live.length} live`}
@@ -707,10 +707,10 @@ function ConfirmedTab() {
 
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center py-16 text-arc-200 text-sm">Loading…</div>
+          <div className="flex items-center justify-center py-16 text-arc-500 text-sm">Loading…</div>
         ) : totalVisible === 0 ? (
-          <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-200 text-center">
-            <Send className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
+          <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-500 text-center">
+            <Send className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
             <p className="text-sm max-w-sm">
               No confirmed packets yet. Packets approved on the Proposed Packets tab will appear here.
             </p>

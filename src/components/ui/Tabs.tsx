@@ -61,7 +61,7 @@ export function TabTrigger({ id, disabled = false, children }: TabTriggerProps) 
           ? 'border-arc-500 text-arc-700'
           : disabled
           ? 'border-transparent text-arc-200 cursor-not-allowed'
-          : 'border-transparent text-arc-200 hover:text-arc-500 hover:border-arc-300 cursor-pointer'
+          : 'border-transparent text-arc-500 hover:text-arc-900 hover:border-arc-300 cursor-pointer'
         }
       `}
     >

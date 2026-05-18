@@ -52,11 +52,11 @@ function EditListItem({
         </span>
       </div>
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-xs text-arc-300 truncate">{edit.target_module_id}</span>
+        <span className="font-mono text-xs text-arc-700 truncate">{edit.target_module_id}</span>
         {user && (
           <div className="flex items-center gap-1 shrink-0">
             <UserAvatar seed={user.avatar_seed} name={user.name} size="sm" />
-            <span className="text-xs text-arc-300 truncate max-w-[72px]">{user.name.split(' ')[0]}</span>
+            <span className="text-xs text-arc-700 truncate max-w-[72px]">{user.name.split(' ')[0]}</span>
           </div>
         )}
       </div>
@@ -128,13 +128,13 @@ export function DraftQueueWorkspacePage() {
         <div className="px-3 py-2.5 border-b border-arc-200 bg-arc-100 shrink-0">
           <p className="text-xs font-semibold text-arc-500 uppercase tracking-wider">
             Drafts
-            <span className="ml-1.5 font-mono font-normal text-arc-300">({drafts.length})</span>
+            <span className="ml-1.5 font-mono font-normal text-arc-700">({drafts.length})</span>
           </p>
         </div>
 
         <div className="overflow-y-auto flex-1">
           {drafts.length === 0 ? (
-            <p className="px-3 py-4 text-xs text-arc-200 text-center italic">No drafts.</p>
+            <p className="px-3 py-4 text-xs text-arc-500 text-center italic">No drafts.</p>
           ) : (
             drafts.map((e) => (
               <EditListItem
@@ -150,12 +150,12 @@ export function DraftQueueWorkspacePage() {
           <div className="px-3 py-2.5 border-b border-t border-arc-200 bg-arc-100 shrink-0">
             <p className="text-xs font-semibold text-arc-500 uppercase tracking-wider">
               Queued for UAT
-              <span className="ml-1.5 font-mono font-normal text-arc-300">({queued.length})</span>
+              <span className="ml-1.5 font-mono font-normal text-arc-700">({queued.length})</span>
             </p>
           </div>
 
           {queued.length === 0 ? (
-            <p className="px-3 py-4 text-xs text-arc-200 text-center italic">No edits queued.</p>
+            <p className="px-3 py-4 text-xs text-arc-500 text-center italic">No edits queued.</p>
           ) : (
             queued.map((e) => (
               <EditListItem
@@ -173,8 +173,8 @@ export function DraftQueueWorkspacePage() {
       {/* ── Right pane ── */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {!selectedEdit ? (
-          <div className="flex h-full items-center justify-center flex-col gap-3 text-arc-200">
-            <Inbox className="w-12 h-12 text-arc-200" strokeWidth={1.5} />
+          <div className="flex h-full items-center justify-center flex-col gap-3 text-arc-500">
+            <Inbox className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
             <p className="text-sm">Select an edit from the list to begin.</p>
           </div>
         ) : (
@@ -190,7 +190,7 @@ export function DraftQueueWorkspacePage() {
                 >
                   ←
                 </button>
-                <span className="text-xs text-arc-300 tabular-nums w-10 text-center">
+                <span className="text-xs text-arc-700 tabular-nums w-10 text-center">
                   {selectedIdx + 1} / {combined.length}
                 </span>
                 <button
@@ -205,7 +205,7 @@ export function DraftQueueWorkspacePage() {
               <div className="w-px h-4 bg-arc-200 shrink-0" />
 
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="font-mono text-xs text-arc-300 shrink-0">{selectedEdit.edit_id_display}</span>
+                <span className="font-mono text-xs text-arc-700 shrink-0">{selectedEdit.edit_id_display}</span>
                 <span className="text-sm font-medium text-arc-900 truncate">{selectedEdit.title}</span>
                 <StageBadge stage={selectedEdit.current_stage} />
               </div>

@@ -45,7 +45,7 @@ export function CreateRiskEditModal({ defaultModuleId, onClose }: CreateRiskEdit
       <div className="relative bg-white rounded-xl border border-arc-200 w-full max-w-lg mx-4 p-6 shadow-lg">
         <div className="mb-5">
           <h2 className="text-base font-semibold text-arc-900">New Risk Edit</h2>
-          <p className="text-xs text-arc-200 mt-0.5">
+          <p className="text-xs text-arc-500 mt-0.5">
             Describe what you want to change — the AI will help you translate this into SQL.
           </p>
         </div>
