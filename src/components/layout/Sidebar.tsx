@@ -58,8 +58,8 @@ const BOTTOM_ITEMS: NavItem[] = [
 
 const linkBase =
   'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors';
-const linkInactive = 'text-arc-100 hover:bg-arc-700 hover:text-white';
-const linkActive   = 'bg-arc-700 text-white';
+const linkInactive = 'text-arc-200 hover:bg-arc-700 hover:text-white';
+const linkActive   = 'bg-forest-500 text-white';
 
 function PrimaryNavLink({ item }: { item: NavItem }) {
   return (

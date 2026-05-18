@@ -320,7 +320,7 @@ function ModuleCell({ moduleId }: { moduleId: string }) {
     queryKey: ['arc', 'engine_modules', moduleId],
     queryFn: () => repo.engineModules.get(moduleId),
   });
-  return <span className="font-mono text-xs text-arc-500">{mod?.module_name ?? moduleId}</span>;
+  return <span className="font-mono text-xs text-arc-700">{mod?.module_name ?? moduleId}</span>;
 }
 
 // ── Expandable row ────────────────────────────────────────────────────────────
@@ -349,7 +349,7 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
         onClick={onToggle}
       >
         <td className="px-4 py-3 w-32">
-          <span className="font-mono text-xs text-arc-500">{edit.edit_id_display}</span>
+          <span className="font-mono text-xs text-arc-700">{edit.edit_id_display}</span>
         </td>
         <td className="px-4 py-3">
           <span className="font-medium text-arc-900">{edit.title}</span>
@@ -364,18 +364,18 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
           <AuthorCell userId={edit.created_by} />
         </td>
         <td className="px-4 py-3 w-28">
-          <span className="text-xs text-arc-500 font-mono whitespace-nowrap">
+          <span className="text-xs text-arc-700 font-mono whitespace-nowrap">
             {fmtRelative(sinceUpdateMs(edit, nowMs))}
           </span>
         </td>
         <td className="px-4 py-3 w-28">
-          <span className="text-xs text-arc-500 font-mono whitespace-nowrap">
+          <span className="text-xs text-arc-700 font-mono whitespace-nowrap">
             {fmtRelative(totalElapsedMs(edit, nowMs))}
           </span>
         </td>
         {showFinalTs && (
           <td className="px-4 py-3 w-32">
-            <span className="text-xs text-arc-500 font-mono whitespace-nowrap">
+            <span className="text-xs text-arc-700 font-mono whitespace-nowrap">
               {tAt ? fmtDate(tAt) : '—'}
             </span>
           </td>
