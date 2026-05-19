@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Beaker } from 'lucide-react';
+import { Beaker, AlertCircle } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
+import { useAllUatRuns } from '@/hooks/useUatRuns';
 import { useRepository } from '@/data/RepositoryProvider';
 import { runUat } from '@/integrations/uatRunner';
 import { Button } from '@/components/ui/Button';
 import { StageBadge } from '@/components/shared/StageBadge';
+import { ConfirmModal } from '@/components/shared/ConfirmModal';
 import { AttachmentUploader } from '@/components/shared/AttachmentUploader';
 import type { RiskEdit, UatContextAttachment } from '@/types';
 
@@ -239,14 +241,70 @@ export function UatWorkspacePage() {
   const [triggering, setTriggering] = useState<Set<string>>(new Set());
   const [openEditId, setOpenEditId] = useState<string | null>(null);
   type ToastPayload =
-    | { ok: true;  editId: string; displayId: string }
-    | { ok: false; displayId: string; error: string };
+    | { ok: true;  kind: 'completion'; editId: string; displayId: string }
+    | { ok: true;  kind: 'unstuck';    editId: string; displayId: string }
+    | { ok: false; displayId: string;  error: string };
 
   const [toast, setToast] = useState<ToastPayload | null>(null);
+  const [confirmUnstickId, setConfirmUnstickId] = useState<string | null>(null);
+  const [unsticking, setUnsticking] = useState(false);
 
   function showOutcomeToast(payload: ToastPayload) {
     setToast(payload);
     setTimeout(() => setToast(null), 5000);
+  }
+
+  const { data: allRuns = [] } = useAllUatRuns();
+
+  function latestRun(editId: string) {
+    return allRuns
+      .filter((r) => r.risk_edit_id === editId)
+      .sort((a, b) => b.started_at.localeCompare(a.started_at))[0];
+  }
+  function isOrphaned(editId: string) {
+    return latestRun(editId)?.status === 'failed';
+  }
+
+  // Local time-since helper — mirrors OverviewPage.formatTimeSince. Inline to
+  // keep this patch self-contained; if a third caller emerges, extract.
+  function formatElapsed(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime();
+    const s = Math.floor(diff / 1000);
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h`;
+    return `${Math.floor(h / 24)}d`;
+  }
+
+  async function handleUnstick(editId: string) {
+    if (!currentUser) return;
+    setUnsticking(true);
+    try {
+      await repo.riskEdits.update(editId, {
+        current_stage: 'ready_for_uat',
+        updated_at:    new Date().toISOString(),
+      } as Partial<RiskEdit>);
+      await repo.auditLog.append({
+        actor_id:     currentUser.id,
+        action:       'uat_run.unstuck',
+        entity_type:  'risk_edit',
+        entity_id:    editId,
+        payload_json: { note: 'Admin manual recovery from orphaned uat_in_progress state' },
+      });
+      qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
+      const edit = allEdits.find((e) => e.id === editId);
+      showOutcomeToast({
+        ok: true,
+        kind: 'unstuck',
+        editId,
+        displayId: edit?.edit_id_display ?? editId,
+      });
+    } finally {
+      setConfirmUnstickId(null);
+      setUnsticking(false);
+    }
   }
 
   const openEdit =
@@ -320,7 +378,7 @@ export function UatWorkspacePage() {
       } as Partial<RiskEdit>);
 
       const displayId = allEdits.find((e) => e.id === editId)?.edit_id_display ?? editId;
-      showOutcomeToast({ ok: true, editId, displayId });
+      showOutcomeToast({ ok: true, kind: 'completion', editId, displayId });
 
       await repo.auditLog.append({
         actor_id:     'system',
@@ -510,13 +568,53 @@ export function UatWorkspacePage() {
               <div className="rounded-xl border border-arc-200 shadow-sm overflow-hidden bg-white">
                 {running.map((edit) => {
                   const isOpen = openEditId === edit.id;
+                  const orphan = isOrphaned(edit.id);
+                  const rowClass = `w-full text-left px-5 py-4 border-b border-arc-200 last:border-0 flex items-center gap-4 transition-colors duration-150 ${
+                    isOpen ? 'bg-arc-200' : 'hover:bg-arc-200'
+                  }`;
+
+                  if (orphan) {
+                    const run = latestRun(edit.id);
+                    return (
+                      <div
+                        key={edit.id}
+                        onClick={() => setOpenEditId(edit.id)}
+                        className={`${rowClass} cursor-pointer`}
+                      >
+                        <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" strokeWidth={2} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-arc-900 truncate">{edit.title}</p>
+                          <p className="text-xs font-mono text-arc-500 mt-0.5">
+                            {edit.edit_id_display} · {edit.target_module_id}
+                          </p>
+                        </div>
+                        <span className="text-xs text-rose-600 font-medium shrink-0">
+                          UAT run failed · stuck since {run ? formatElapsed(run.started_at) : '—'}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
+                          Stuck
+                        </span>
+                        {role === 'admin' && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmUnstickId(edit.id);
+                            }}
+                          >
+                            Unstick
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  }
+
                   return (
                     <button
                       key={edit.id}
                       onClick={() => setOpenEditId(edit.id)}
-                      className={`w-full text-left px-5 py-4 border-b border-arc-200 last:border-0 flex items-center gap-4 transition-colors duration-150 ${
-                        isOpen ? 'bg-arc-200' : 'hover:bg-arc-200'
-                      }`}
+                      className={rowClass}
                     >
                       <div className="w-5 h-5 border-2 border-arc-500 border-t-transparent rounded-full animate-spin shrink-0" />
                       <div className="flex-1 min-w-0">
@@ -542,11 +640,15 @@ export function UatWorkspacePage() {
       {toast && (
         <div className={`fixed bottom-6 right-6 z-50 ${toast.ok ? 'bg-arc-900' : 'bg-rose-900'} text-white text-sm px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-3`}>
           <span>
-            {toast.ok
+            {toast.ok && toast.kind === 'completion'
               ? `UAT complete — ${toast.displayId} moved to QA Review.`
-              : `UAT failed for ${toast.displayId} — back in queue for retry.`}
+              : toast.ok && toast.kind === 'unstuck'
+              ? `${toast.displayId} returned to queue for retry.`
+              : !toast.ok
+              ? `UAT failed for ${toast.displayId} — back in queue for retry.`
+              : ''}
           </span>
-          {toast.ok && (
+          {toast.ok && toast.kind === 'completion' && (
             <Link
               to={`/workspace/qa?edit=${toast.editId}`}
               className="text-forest-100 hover:text-white font-medium underline-offset-2 hover:underline"
@@ -560,6 +662,17 @@ export function UatWorkspacePage() {
 
       {openEdit && (
         <UatContextDrawer edit={openEdit} onClose={() => setOpenEditId(null)} />
+      )}
+
+      {confirmUnstickId && (
+        <ConfirmModal
+          title="Unstick UAT run"
+          description={`Return "${allEdits.find((e) => e.id === confirmUnstickId)?.title ?? confirmUnstickId}" to the UAT queue? The failed run record stays in history for audit. A tester can retrigger UAT from the queue.`}
+          confirmLabel="Unstick"
+          loading={unsticking}
+          onConfirm={() => handleUnstick(confirmUnstickId)}
+          onCancel={() => setConfirmUnstickId(null)}
+        />
       )}
     </div>
   );
