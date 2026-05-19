@@ -238,13 +238,14 @@ export function UatWorkspacePage() {
   const [selected,   setSelected]   = useState<Set<string>>(new Set());
   const [triggering, setTriggering] = useState<Set<string>>(new Set());
   const [openEditId, setOpenEditId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; editId: string } | null>(null);
+  type ToastPayload =
+    | { ok: true;  editId: string; displayId: string }
+    | { ok: false; displayId: string; error: string };
 
-  function showCompletionToast(editId: string, editDisplayId: string) {
-    setToast({
-      message: `UAT complete — ${editDisplayId} moved to QA Review.`,
-      editId,
-    });
+  const [toast, setToast] = useState<ToastPayload | null>(null);
+
+  function showOutcomeToast(payload: ToastPayload) {
+    setToast(payload);
     setTimeout(() => setToast(null), 5000);
   }
 
@@ -319,7 +320,7 @@ export function UatWorkspacePage() {
       } as Partial<RiskEdit>);
 
       const displayId = allEdits.find((e) => e.id === editId)?.edit_id_display ?? editId;
-      showCompletionToast(editId, displayId);
+      showOutcomeToast({ ok: true, editId, displayId });
 
       await repo.auditLog.append({
         actor_id:     'system',
@@ -334,6 +335,11 @@ export function UatWorkspacePage() {
       });
     } catch (err) {
       await repo.uatRuns.update(run.id, { status: 'failed' } as Partial<typeof run>);
+      // Roll the edit back so the tester can retry — orphan-on-failure fix
+      await repo.riskEdits.update(editId, {
+        current_stage: 'ready_for_uat',
+        updated_at:    new Date().toISOString(),
+      } as Partial<RiskEdit>);
       await repo.auditLog.append({
         actor_id:     'system',
         action:       'uat_run.failed',
@@ -341,6 +347,8 @@ export function UatWorkspacePage() {
         entity_id:    run.id,
         payload_json: { risk_edit_id: editId, error: String(err) },
       });
+      const displayId = allEdits.find((e) => e.id === editId)?.edit_id_display ?? editId;
+      showOutcomeToast({ ok: false, displayId, error: String(err) });
       throw err;
     } finally {
       qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
@@ -532,15 +540,21 @@ export function UatWorkspacePage() {
       </div>
 
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-arc-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-3">
-          <span>{toast.message}</span>
-          <Link
-            to={`/workspace/qa?edit=${toast.editId}`}
-            className="text-forest-100 hover:text-white font-medium underline-offset-2 hover:underline"
-            onClick={() => setToast(null)}
-          >
-            Open →
-          </Link>
+        <div className={`fixed bottom-6 right-6 z-50 ${toast.ok ? 'bg-arc-900' : 'bg-rose-900'} text-white text-sm px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-3`}>
+          <span>
+            {toast.ok
+              ? `UAT complete — ${toast.displayId} moved to QA Review.`
+              : `UAT failed for ${toast.displayId} — back in queue for retry.`}
+          </span>
+          {toast.ok && (
+            <Link
+              to={`/workspace/qa?edit=${toast.editId}`}
+              className="text-forest-100 hover:text-white font-medium underline-offset-2 hover:underline"
+              onClick={() => setToast(null)}
+            >
+              Open →
+            </Link>
+          )}
         </div>
       )}
 
