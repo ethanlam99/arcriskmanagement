@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Beaker } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/auth/AuthProvider';
@@ -237,6 +238,15 @@ export function UatWorkspacePage() {
   const [selected,   setSelected]   = useState<Set<string>>(new Set());
   const [triggering, setTriggering] = useState<Set<string>>(new Set());
   const [openEditId, setOpenEditId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; editId: string } | null>(null);
+
+  function showCompletionToast(editId: string, editDisplayId: string) {
+    setToast({
+      message: `UAT complete — ${editDisplayId} moved to QA Review.`,
+      editId,
+    });
+    setTimeout(() => setToast(null), 5000);
+  }
 
   const openEdit =
     [...queued, ...running].find((e) => e.id === openEditId) ?? null;
@@ -307,6 +317,9 @@ export function UatWorkspacePage() {
         current_stage: 'qa_review',
         updated_at:    new Date().toISOString(),
       } as Partial<RiskEdit>);
+
+      const displayId = allEdits.find((e) => e.id === editId)?.edit_id_display ?? editId;
+      showCompletionToast(editId, displayId);
 
       await repo.auditLog.append({
         actor_id:     'system',
@@ -517,6 +530,19 @@ export function UatWorkspacePage() {
 
         </div>
       </div>
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-arc-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-3">
+          <span>{toast.message}</span>
+          <Link
+            to={`/workspace/qa?edit=${toast.editId}`}
+            className="text-forest-100 hover:text-white font-medium underline-offset-2 hover:underline"
+            onClick={() => setToast(null)}
+          >
+            Open →
+          </Link>
+        </div>
+      )}
 
       {openEdit && (
         <UatContextDrawer edit={openEdit} onClose={() => setOpenEditId(null)} />
