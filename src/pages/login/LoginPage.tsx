@@ -3,6 +3,7 @@ import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useQuery } from '@tanstack/react-query';
 import { UserAvatar } from '@/components/shared/UserAvatar';
+import { Logo } from '@/components/shared/Logo';
 import type { User, UserRole } from '@/types';
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -51,22 +52,7 @@ export function LoginPage() {
       {/* Header */}
       <div className="mb-10 text-center">
         <div className="inline-flex items-center justify-center w-12 h-12 bg-arc-900 rounded-xl mb-4">
-          <svg viewBox="0 0 48 48" className="w-8 h-8" aria-hidden="true">
-            <path
-              d="M 8 30 Q 24 8 40 30"
-              stroke="#FFFFFF"
-              strokeWidth="1.2"
-              strokeLinecap="round"
-              fill="none"
-              opacity="0.4"
-            />
-            <circle cx="8"    cy="30"   r="2.4" fill="#FFFFFF" />
-            <circle cx="14.4" cy="22"   r="2.4" fill="#FFFFFF" />
-            <circle cx="21.6" cy="15.5" r="2.4" fill="#FFFFFF" />
-            <circle cx="29.4" cy="15.5" r="2.4" fill="#FFFFFF" />
-            <circle cx="36"   cy="22"   r="2.4" fill="#FFFFFF" />
-            <circle cx="40"   cy="30"   r="3.2" fill="#2D4A3A" stroke="#FFFFFF" strokeWidth="1.2" />
-          </svg>
+          <Logo size="sm" variant="light" />
         </div>
         <h1 className="text-2xl font-semibold text-arc-900">ARC</h1>
         <p className="text-arc-500 text-sm mt-1">AI Risk Control</p>

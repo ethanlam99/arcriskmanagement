@@ -1,9 +1,10 @@
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { resetToSeedData } from '@/data/localRepository';
 import { UserAvatar } from '@/components/shared/UserAvatar';
+import { Logo } from '@/components/shared/Logo';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
 
@@ -143,15 +144,19 @@ export function Sidebar() {
     <>
       <aside className="w-56 shrink-0 bg-arc-900 flex flex-col h-full">
         {/* Logo */}
-        <div className="px-4 py-5 border-b border-arc-700">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-arc-500 rounded-lg flex items-center justify-center">
-              <span className="text-white text-xs font-bold">A</span>
+        <Link
+          to="/overview"
+          className="block px-4 py-5 border-b border-arc-700 hover:bg-arc-800 transition-colors"
+          aria-label="ARC — back to Overview"
+        >
+          <div className="flex items-center gap-3">
+            <Logo size="md" variant="light" />
+            <div>
+              <span className="text-white font-semibold text-sm tracking-wide block">ARC</span>
+              <span className="text-arc-200 text-xs leading-tight">AI Risk Control</span>
             </div>
-            <span className="text-white font-semibold text-sm tracking-wide">ARC</span>
           </div>
-          <p className="text-arc-200 text-xs mt-1 leading-tight">AI Risk Control</p>
-        </div>
+        </Link>
 
         {/* Primary nav */}
         <nav className="flex-1 px-2 py-3 flex flex-col gap-0.5 overflow-y-auto">
