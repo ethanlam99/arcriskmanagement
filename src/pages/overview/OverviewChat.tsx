@@ -134,7 +134,7 @@ export function OverviewChat() {
   const [creating, setCreating] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: threads = [] } = useQuery({
     queryKey: ['arc', 'overview_chat_threads', currentUser?.id],
@@ -148,12 +148,15 @@ export function OverviewChat() {
     enabled:  !!threadId,
   });
 
-  // Auto-scroll to latest message
+  // Auto-scroll the messages container to its own bottom — directly setting
+  // scrollTop keeps the scroll local. scrollIntoView would walk up the ancestor
+  // tree and scroll the page itself when the container is already at-bottom.
   useEffect(() => {
-    if (expanded && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages, expanded]);
+    if (!expanded) return;
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [messages, expanded, sending]);
 
   async function handleSend() {
     if (!currentUser || !draft.trim() || sending) return;
@@ -441,7 +444,7 @@ export function OverviewChat() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
         {messages.length === 0 ? (
           <div className="flex-1 flex items-center justify-center text-center px-6">
             <div>
@@ -497,7 +500,6 @@ export function OverviewChat() {
             </div>
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       <div className="px-4 py-3 border-t border-arc-200">
