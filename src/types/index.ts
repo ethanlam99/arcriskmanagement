@@ -217,6 +217,29 @@ export interface ChatMessageEntity {
   created_at: string;
 }
 
+// ── Overview chatbox (v0.4.1a) ────────────────────────────────────────────────
+// Separate from ChatMessage(Entity) — semantics differ (consultative vs
+// SQL-proposal). Kept distinct intentionally; do not unify.
+
+export interface OverviewChatThread {
+  id: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  resulting_risk_edit_id?: string;   // set after transmute (Issue 2B)
+}
+
+export interface OverviewChatMessage {
+  id: string;
+  thread_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  suggested_module_id?: string;
+  suggested_title?: string;
+  suggested_brief?: string;
+  created_at: string;
+}
+
 // ── LLM integration types (Phase 2: real schema passed as dbContext) ──────────
 
 export interface DatabaseColumn {

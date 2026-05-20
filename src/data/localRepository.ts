@@ -6,6 +6,8 @@ import type {
   ChatMessageRepo,
   PacketRepo,
   ProposedTestCaseRepo,
+  OverviewChatThreadRepo,
+  OverviewChatMessageRepo,
 } from './repository';
 import type {
   User,
@@ -22,6 +24,8 @@ import type {
   UatContextAttachment,
   QaReviewAttachment,
   ProposedTestCase,
+  OverviewChatThread,
+  OverviewChatMessage,
 } from '@/types';
 import { generateEditIdDisplay } from './editIdGenerator';
 import seedData from './seed.json';
@@ -43,6 +47,8 @@ const KEYS = {
   uatContextAttachments: 'arc:uat_context_attachments',
   qaReviewAttachments:   'arc:qa_review_attachments',
   proposedTestCases: 'arc:proposed_test_cases',
+  overviewChatThreads:  'arc:overview_chat_threads',
+  overviewChatMessages: 'arc:overview_chat_messages',
   // Versioned seed key — bump to force reseed after schema changes
   seeded:            'arc:seeded_v3_1',
 } as const;
@@ -92,6 +98,8 @@ export function seedIfEmpty(): void {
   save(KEYS.auditLog,         (seedData as Record<string, unknown[]>).audit_log);
   save(KEYS.chatMessages,     (seedData as Record<string, unknown[]>).chat_messages);
   save(KEYS.proposedTestCases, (seedData as Record<string, unknown[]>).proposed_test_cases ?? []);
+  save(KEYS.overviewChatThreads,  (seedData as Record<string, unknown[]>).overview_chat_threads  ?? []);
+  save(KEYS.overviewChatMessages, (seedData as Record<string, unknown[]>).overview_chat_messages ?? []);
   localStorage.setItem(KEYS.seeded, '1');
 }
 
@@ -241,6 +249,34 @@ function makeProposedTestCaseRepo(): ProposedTestCaseRepo {
   };
 }
 
+// ── Overview chat thread repo ────────────────────────────────────────────────
+
+function makeOverviewChatThreadRepo(): OverviewChatThreadRepo {
+  const base = makeRepo<OverviewChatThread>(KEYS.overviewChatThreads);
+  return {
+    ...base,
+    async listForUser(userId) {
+      return load<OverviewChatThread>(KEYS.overviewChatThreads)
+        .filter((t) => t.created_by === userId)
+        .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+    },
+  };
+}
+
+// ── Overview chat message repo ───────────────────────────────────────────────
+
+function makeOverviewChatMessageRepo(): OverviewChatMessageRepo {
+  const base = makeRepo<OverviewChatMessage>(KEYS.overviewChatMessages);
+  return {
+    ...base,
+    async listForThread(threadId) {
+      return load<OverviewChatMessage>(KEYS.overviewChatMessages)
+        .filter((m) => m.thread_id === threadId)
+        .sort((a, b) => a.created_at.localeCompare(b.created_at));
+    },
+  };
+}
+
 // ── Audit log repo ────────────────────────────────────────────────────────────
 
 function makeAuditLogRepo(): AuditLogRepo {
@@ -310,5 +346,7 @@ export function createLocalRepository(): Repository {
     uatContextAttachments: makeRepo<UatContextAttachment>(KEYS.uatContextAttachments),
     qaReviewAttachments:   makeRepo<QaReviewAttachment>(KEYS.qaReviewAttachments),
     proposedTestCases:     makeProposedTestCaseRepo(),
+    overviewChatThreads:   makeOverviewChatThreadRepo(),
+    overviewChatMessages:  makeOverviewChatMessageRepo(),
   };
 }

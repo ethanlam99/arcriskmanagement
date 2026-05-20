@@ -11,6 +11,7 @@ import { StageBadge } from '@/components/shared/StageBadge';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import { Button } from '@/components/ui/Button';
 import { CreateRiskEditModal } from '@/pages/risk-edits/CreateRiskEditModal';
+import { OverviewChat } from '@/pages/overview/OverviewChat';
 import type { EngineModule, Packet, RiskEdit, RiskEditStage } from '@/types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -557,9 +558,19 @@ export function OverviewPage() {
             </div>
           </div>
 
+          {/* Create a new risk edit — chatbox + module browser */}
+          {canCreateRiskEdit && (
+            <div>
+              <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">Create a new risk edit</p>
+              <OverviewChat />
+            </div>
+          )}
+
           {/* Engine modules — full grid, no separate listing page */}
           <div>
-            <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">Engine Modules</p>
+            <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">
+              {canCreateRiskEdit ? 'Or browse modules to start from' : 'Engine Modules'}
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {modulesSorted.map((mod) => (
                 <ModuleMiniCard

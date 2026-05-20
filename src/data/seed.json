@@ -773,5 +773,7 @@
     { "id": "al-039", "actor_id": "user-008", "action": "packet.live", "entity_type": "packet", "entity_id": "packet-003", "payload_json": { "status": "live" }, "created_at": "2026-05-01T11:00:00Z" },
     { "id": "al-040", "actor_id": "system", "action": "risk_edit.stage_transition", "entity_type": "risk_edit", "entity_id": "re-007", "payload_json": { "from": "sent_to_it", "to": "live" }, "created_at": "2026-05-01T11:00:00Z" }
   ],
-  "proposed_test_cases": []
+  "proposed_test_cases": [],
+  "overview_chat_threads": [],
+  "overview_chat_messages": []
 }

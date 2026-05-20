@@ -13,6 +13,8 @@ import type {
   UatContextAttachment,
   QaReviewAttachment,
   ProposedTestCase,
+  OverviewChatThread,
+  OverviewChatMessage,
 } from '@/types';
 
 // ── Generic repo shape ────────────────────────────────────────────────────────
@@ -58,6 +60,16 @@ export interface ProposedTestCaseRepo extends EntityRepo<ProposedTestCase> {
   listForEdit(riskEditId: string): Promise<ProposedTestCase[]>;
 }
 
+// ── Overview chat repos — threads + messages for the Overview chatbox ────────
+
+export interface OverviewChatThreadRepo extends EntityRepo<OverviewChatThread> {
+  listForUser(userId: string): Promise<OverviewChatThread[]>;
+}
+
+export interface OverviewChatMessageRepo extends EntityRepo<OverviewChatMessage> {
+  listForThread(threadId: string): Promise<OverviewChatMessage[]>;
+}
+
 // ── Packet repo — enforces the one-active-packet-per-edit business rule ───────
 
 export interface PacketRepo extends EntityRepo<Packet> {
@@ -88,4 +100,6 @@ export interface Repository {
   uatContextAttachments: EntityRepo<UatContextAttachment>;
   qaReviewAttachments: EntityRepo<QaReviewAttachment>;
   proposedTestCases: ProposedTestCaseRepo;
+  overviewChatThreads: OverviewChatThreadRepo;
+  overviewChatMessages: OverviewChatMessageRepo;
 }
