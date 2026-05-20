@@ -49,8 +49,11 @@ const KEYS = {
   proposedTestCases: 'arc:proposed_test_cases',
   overviewChatThreads:  'arc:overview_chat_threads',
   overviewChatMessages: 'arc:overview_chat_messages',
-  // Versioned seed key — bump to force reseed after schema changes
-  seeded:            'arc:seeded_v3_1',
+  // Versioned seed key — bump to force reseed after schema changes.
+  // v4_1a_lock: adds mock proposed_test_cases for re-002 so reviewers can
+  // exercise the checkbox + lock + drawer-Send flow without first creating
+  // an edit and waiting for the runtime proposer to fire.
+  seeded:            'arc:seeded_v4_1a_lock',
 } as const;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

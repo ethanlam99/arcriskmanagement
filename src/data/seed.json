@@ -773,7 +773,41 @@
     { "id": "al-039", "actor_id": "user-008", "action": "packet.live", "entity_type": "packet", "entity_id": "packet-003", "payload_json": { "status": "live" }, "created_at": "2026-05-01T11:00:00Z" },
     { "id": "al-040", "actor_id": "system", "action": "risk_edit.stage_transition", "entity_type": "risk_edit", "entity_id": "re-007", "payload_json": { "from": "sent_to_it", "to": "live" }, "created_at": "2026-05-01T11:00:00Z" }
   ],
-  "proposed_test_cases": [],
+  "proposed_test_cases": [
+    {
+      "id": "ptc-001",
+      "risk_edit_id": "re-002",
+      "description": "Retail segment customer at standard leverage cap",
+      "input": { "customer_id": 20001, "segment": "retail", "total_debt": 50000000, "monthly_income": 12000000 },
+      "expected": { "max_leverage_ratio": 5.0, "within_cap": true },
+      "source": "ai",
+      "included_in_run": true,
+      "proposed_by": "system",
+      "created_at": "2026-05-09T10:15:01Z"
+    },
+    {
+      "id": "ptc-002",
+      "risk_edit_id": "re-002",
+      "description": "SME customer exceeding new tighter leverage ceiling",
+      "input": { "customer_id": 20002, "segment": "sme", "total_debt": 800000000, "monthly_income": 80000000 },
+      "expected": { "within_cap": false, "rejection_reason": "leverage_exceeded" },
+      "source": "ai",
+      "included_in_run": true,
+      "proposed_by": "system",
+      "created_at": "2026-05-09T10:15:02Z"
+    },
+    {
+      "id": "ptc-003",
+      "risk_edit_id": "re-002",
+      "description": "Corporate customer — leverage rule should not apply",
+      "input": { "customer_id": 20003, "segment": "corporate", "total_debt": 5000000000, "monthly_income": 200000000 },
+      "expected": { "rule_applied": false, "segment_excluded": "corporate" },
+      "source": "ai",
+      "included_in_run": true,
+      "proposed_by": "system",
+      "created_at": "2026-05-09T10:15:03Z"
+    }
+  ],
   "overview_chat_threads": [],
   "overview_chat_messages": []
 }
