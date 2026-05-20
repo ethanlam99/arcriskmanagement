@@ -5,6 +5,7 @@ import type {
   UserRepo,
   ChatMessageRepo,
   PacketRepo,
+  ProposedTestCaseRepo,
 } from './repository';
 import type {
   User,
@@ -20,6 +21,7 @@ import type {
   ChatMessageEntity,
   UatContextAttachment,
   QaReviewAttachment,
+  ProposedTestCase,
 } from '@/types';
 import { generateEditIdDisplay } from './editIdGenerator';
 import seedData from './seed.json';
@@ -40,6 +42,7 @@ const KEYS = {
   chatMessages:      'arc:chat_messages',
   uatContextAttachments: 'arc:uat_context_attachments',
   qaReviewAttachments:   'arc:qa_review_attachments',
+  proposedTestCases: 'arc:proposed_test_cases',
   // Versioned seed key — bump to force reseed after schema changes
   seeded:            'arc:seeded_v3_1',
 } as const;
@@ -88,6 +91,7 @@ export function seedIfEmpty(): void {
   save(KEYS.packetEdits,      (seedData as Record<string, unknown[]>).packet_edits);
   save(KEYS.auditLog,         (seedData as Record<string, unknown[]>).audit_log);
   save(KEYS.chatMessages,     (seedData as Record<string, unknown[]>).chat_messages);
+  save(KEYS.proposedTestCases, (seedData as Record<string, unknown[]>).proposed_test_cases ?? []);
   localStorage.setItem(KEYS.seeded, '1');
 }
 
@@ -223,6 +227,20 @@ function makePacketRepo(): PacketRepo {
   };
 }
 
+// ── Proposed test case repo — generic repo + listForEdit helper ──────────────
+
+function makeProposedTestCaseRepo(): ProposedTestCaseRepo {
+  const base = makeRepo<ProposedTestCase>(KEYS.proposedTestCases);
+  return {
+    ...base,
+    async listForEdit(riskEditId) {
+      return load<ProposedTestCase>(KEYS.proposedTestCases)
+        .filter((c) => c.risk_edit_id === riskEditId)
+        .sort((a, b) => a.created_at.localeCompare(b.created_at));
+    },
+  };
+}
+
 // ── Audit log repo ────────────────────────────────────────────────────────────
 
 function makeAuditLogRepo(): AuditLogRepo {
@@ -291,5 +309,6 @@ export function createLocalRepository(): Repository {
     chatMessages:     makeChatMessageRepo(),
     uatContextAttachments: makeRepo<UatContextAttachment>(KEYS.uatContextAttachments),
     qaReviewAttachments:   makeRepo<QaReviewAttachment>(KEYS.qaReviewAttachments),
+    proposedTestCases:     makeProposedTestCaseRepo(),
   };
 }

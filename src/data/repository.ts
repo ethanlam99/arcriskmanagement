@@ -12,6 +12,7 @@ import type {
   ChatMessageEntity,
   UatContextAttachment,
   QaReviewAttachment,
+  ProposedTestCase,
 } from '@/types';
 
 // ── Generic repo shape ────────────────────────────────────────────────────────
@@ -51,6 +52,12 @@ export interface ChatMessageRepo {
   append(message: Omit<ChatMessageEntity, 'id'>): Promise<ChatMessageEntity>;
 }
 
+// ── Proposed test case repo — adds a listForEdit helper for the UAT review gate
+
+export interface ProposedTestCaseRepo extends EntityRepo<ProposedTestCase> {
+  listForEdit(riskEditId: string): Promise<ProposedTestCase[]>;
+}
+
 // ── Packet repo — enforces the one-active-packet-per-edit business rule ───────
 
 export interface PacketRepo extends EntityRepo<Packet> {
@@ -80,4 +87,5 @@ export interface Repository {
   chatMessages: ChatMessageRepo;
   uatContextAttachments: EntityRepo<UatContextAttachment>;
   qaReviewAttachments: EntityRepo<QaReviewAttachment>;
+  proposedTestCases: ProposedTestCaseRepo;
 }

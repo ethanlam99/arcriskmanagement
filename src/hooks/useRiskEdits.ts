@@ -63,15 +63,17 @@ export function useUpdateRiskEditStage() {
       actorId,
       fromStage,
       extraPayload,
+      extraUpdate,
     }: {
       id: string;
       stage: RiskEditStage;
       actorId: string;
       fromStage: RiskEditStage;
       extraPayload?: Record<string, unknown>;
+      extraUpdate?: Partial<RiskEdit>;
     }) =>
       Promise.all([
-        repo.riskEdits.update(id, { current_stage: stage }),
+        repo.riskEdits.update(id, { current_stage: stage, ...extraUpdate }),
         repo.auditLog.append({
           actor_id:     actorId,
           action:       'risk_edit.stage_transition',

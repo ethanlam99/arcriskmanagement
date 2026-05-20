@@ -46,6 +46,7 @@ export interface RiskEdit {
   created_at: string;
   updated_at: string;
   rejection_notes?: string;
+  cases_reviewed?: boolean;       // v0.4.1: gate for Send to AI UAT
 }
 
 export interface RiskEditVersion {
@@ -86,6 +87,18 @@ export interface UatReport {
   summary: UatReportSummary;
   screenshot_refs: string[];
   generated_at: string;
+}
+
+export interface ProposedTestCase {
+  id: string;
+  risk_edit_id: string;
+  description: string;
+  input: Record<string, unknown>;
+  expected: Record<string, unknown>;
+  source: 'ai' | 'human';
+  included_in_run: boolean;
+  proposed_by: string;          // 'system' for AI-generated, userId for human-added
+  created_at: string;
 }
 
 export interface UatRun {

@@ -7,6 +7,7 @@ import { useRiskEdits } from '@/hooks/useRiskEdits';
 import { useAllUatRuns } from '@/hooks/useUatRuns';
 import { useRepository } from '@/data/RepositoryProvider';
 import { runUat } from '@/integrations/uatRunner';
+import { ensureProposedCasesForReadyForUat } from '@/integrations/testCaseProposer';
 import { Button } from '@/components/ui/Button';
 import { StageBadge } from '@/components/shared/StageBadge';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
@@ -283,8 +284,9 @@ export function UatWorkspacePage() {
     setUnsticking(true);
     try {
       await repo.riskEdits.update(editId, {
-        current_stage: 'ready_for_uat',
-        updated_at:    new Date().toISOString(),
+        current_stage:   'ready_for_uat',
+        updated_at:      new Date().toISOString(),
+        cases_reviewed:  false,
       } as Partial<RiskEdit>);
       await repo.auditLog.append({
         actor_id:     currentUser.id,
@@ -295,6 +297,15 @@ export function UatWorkspacePage() {
       });
       qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
       const edit = allEdits.find((e) => e.id === editId);
+      // Re-propose cases only if none exist yet (idempotent helper).
+      if (edit) {
+        try {
+          await ensureProposedCasesForReadyForUat(repo, edit);
+        } catch {
+          // Swallow — admin can still recover; tester can manually add cases.
+        }
+        qc.invalidateQueries({ queryKey: ['arc', 'proposed_test_cases', editId] });
+      }
       showOutcomeToast({
         ok: true,
         kind: 'unstuck',
@@ -393,10 +404,13 @@ export function UatWorkspacePage() {
       });
     } catch (err) {
       await repo.uatRuns.update(run.id, { status: 'failed' } as Partial<typeof run>);
-      // Roll the edit back so the tester can retry — orphan-on-failure fix
+      // Roll the edit back so the tester can retry — orphan-on-failure fix.
+      // Reset cases_reviewed so the tester explicitly re-confirms the case
+      // list before the retry transmits. Existing curated cases are preserved.
       await repo.riskEdits.update(editId, {
-        current_stage: 'ready_for_uat',
-        updated_at:    new Date().toISOString(),
+        current_stage:   'ready_for_uat',
+        updated_at:      new Date().toISOString(),
+        cases_reviewed:  false,
       } as Partial<RiskEdit>);
       await repo.auditLog.append({
         actor_id:     'system',
@@ -405,7 +419,16 @@ export function UatWorkspacePage() {
         entity_id:    run.id,
         payload_json: { risk_edit_id: editId, error: String(err) },
       });
-      const displayId = allEdits.find((e) => e.id === editId)?.edit_id_display ?? editId;
+      const edit = allEdits.find((e) => e.id === editId);
+      if (edit) {
+        try {
+          await ensureProposedCasesForReadyForUat(repo, edit);
+        } catch {
+          // Swallow — tester can manually add cases.
+        }
+        qc.invalidateQueries({ queryKey: ['arc', 'proposed_test_cases', editId] });
+      }
+      const displayId = edit?.edit_id_display ?? editId;
       showOutcomeToast({ ok: false, displayId, error: String(err) });
       throw err;
     } finally {

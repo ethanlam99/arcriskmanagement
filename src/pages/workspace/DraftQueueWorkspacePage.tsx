@@ -4,7 +4,8 @@ import { Inbox } from 'lucide-react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRiskEdits, useUpdateRiskEditStage } from '@/hooks/useRiskEdits';
 import { useRepository } from '@/data/RepositoryProvider';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ensureProposedCasesForReadyForUat } from '@/integrations/testCaseProposer';
 import { Button } from '@/components/ui/Button';
 import { StageBadge } from '@/components/shared/StageBadge';
 import { UserAvatar } from '@/components/shared/UserAvatar';
@@ -67,6 +68,7 @@ function EditListItem({
 export function DraftQueueWorkspacePage() {
   const { currentUser, role } = useAuth();
   const repo = useRepository();
+  const qc   = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -112,12 +114,21 @@ export function DraftQueueWorkspacePage() {
 
   async function handleSendForUat() {
     if (!currentUser || !selectedEdit) return;
-    await stageTransition.mutateAsync({
-      id:        selectedEdit.id,
-      stage:     'ready_for_uat',
-      actorId:   currentUser.id,
-      fromStage: selectedEdit.current_stage,
+    const updated = await stageTransition.mutateAsync({
+      id:          selectedEdit.id,
+      stage:       'ready_for_uat',
+      actorId:     currentUser.id,
+      fromStage:   selectedEdit.current_stage,
+      extraUpdate: { cases_reviewed: false },
     });
+    // Eager AI test-case proposal. Sequential after the stage update so a
+    // proposer failure doesn't block the transition itself.
+    try {
+      await ensureProposedCasesForReadyForUat(repo, updated);
+    } catch {
+      // Swallow — tester can still manually add cases.
+    }
+    qc.invalidateQueries({ queryKey: ['arc', 'proposed_test_cases', selectedEdit.id] });
     setShowConfirm(false);
   }
 
