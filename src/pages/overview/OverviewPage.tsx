@@ -238,9 +238,9 @@ function ModuleMiniCard({
   return (
     <div
       onClick={() => navigate(`/engine-modules/${module.id}`)}
-      className="rounded-xl border border-arc-200 bg-white shadow-sm p-1.5 text-left hover:border-forest-500 hover:shadow-md transition-all duration-150 group cursor-pointer"
+      className="rounded-xl border border-arc-200 bg-white shadow-sm p-1.5 text-left hover:border-forest-500 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 group cursor-pointer"
     >
-      <div className="bg-arc-100 rounded-lg p-5 flex flex-col gap-3 min-h-[160px]">
+      <div className="bg-arc-100 group-hover:bg-arc-50 rounded-lg p-5 flex flex-col gap-3 min-h-[160px] transition-colors duration-200">
         <div className="flex items-start justify-between gap-3">
           <p className="font-mono text-sm font-semibold text-arc-900 group-hover:text-arc-700 truncate">
             {module.module_name}

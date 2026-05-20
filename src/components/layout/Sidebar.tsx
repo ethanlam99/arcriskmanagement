@@ -142,7 +142,7 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="w-56 shrink-0 bg-arc-900 flex flex-col h-full">
+      <aside className="w-64 shrink-0 bg-arc-900 flex flex-col h-full">
         {/* Logo */}
         <Link
           to="/overview"
