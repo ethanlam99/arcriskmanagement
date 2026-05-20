@@ -1,12 +1,16 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { History, Send, ChevronUp, MessageSquarePlus } from 'lucide-react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useEngineModules } from '@/hooks/useEngineModules';
+import { useCreateRiskEdit } from '@/hooks/useRiskEdits';
+import { useRiskEdits } from '@/hooks/useRiskEdits';
 import { consultOnEdit } from '@/integrations/editConsultant';
 import { UserAvatar } from '@/components/shared/UserAvatar';
-import type { OverviewChatThread, OverviewChatMessage } from '@/types';
+import { Button } from '@/components/ui/Button';
+import type { OverviewChatThread, OverviewChatMessage, EngineModule } from '@/types';
 
 function formatTimeShort(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -17,6 +21,62 @@ function formatTimeShort(iso: string): string {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
+}
+
+function DraftPreviewCard({
+  msg,
+  modules,
+  alreadyCreated,
+  onCreate,
+  onRefine,
+  creating,
+}: {
+  msg: OverviewChatMessage;
+  modules: EngineModule[];
+  alreadyCreated: boolean;
+  onCreate: () => void;
+  onRefine: () => void;
+  creating: boolean;
+}) {
+  const module = modules.find((m) => m.id === msg.suggested_module_id);
+  return (
+    <div className="flex gap-2">
+      <div className="shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-full bg-forest-500 flex items-center justify-center text-white text-[10px] font-semibold">
+          AI
+        </div>
+      </div>
+      <div className="flex-1 rounded-xl border border-forest-200 bg-forest-50/60 p-4 max-w-[80%]">
+        <p className="text-xs font-semibold text-forest-700 uppercase tracking-wide mb-2">
+          Draft preview
+        </p>
+        <div className="space-y-2 text-sm">
+          <div>
+            <span className="text-xs text-arc-500">Title</span>
+            <p className="font-medium text-arc-900">{msg.suggested_title}</p>
+          </div>
+          <div>
+            <span className="text-xs text-arc-500">Module</span>
+            <p className="font-mono text-xs text-arc-900">
+              {module?.module_name ?? msg.suggested_module_id ?? 'Unknown module'}
+            </p>
+          </div>
+          <div>
+            <span className="text-xs text-arc-500">Brief</span>
+            <p className="text-arc-700 leading-relaxed text-xs">{msg.suggested_brief}</p>
+          </div>
+        </div>
+        {alreadyCreated ? (
+          <p className="mt-3 text-xs font-medium text-forest-700">Draft already created from this thread.</p>
+        ) : (
+          <div className="flex gap-2 mt-4">
+            <Button size="sm" onClick={onCreate} loading={creating}>Create draft</Button>
+            <Button size="sm" variant="secondary" onClick={onRefine} disabled={creating}>Refine</Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function MessageBubble({
@@ -61,13 +121,17 @@ function MessageBubble({
 
 export function OverviewChat() {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const repo = useRepository();
   const qc   = useQueryClient();
   const { data: modules = [] } = useEngineModules();
+  const { data: allEdits = [] } = useRiskEdits();
+  const createEdit = useCreateRiskEdit();
 
   const [expanded, setExpanded] = useState(false);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -142,6 +206,7 @@ export function OverviewChat() {
         updated_at: new Date().toISOString(),
       });
       qc.invalidateQueries({ queryKey: ['arc', 'overview_chat_messages', activeThreadId] });
+      qc.invalidateQueries({ queryKey: ['arc', 'overview_chat_messages', 'all'] });
       qc.invalidateQueries({ queryKey: ['arc', 'overview_chat_threads', currentUser.id] });
     } finally {
       setSending(false);
@@ -161,11 +226,105 @@ export function OverviewChat() {
     setDraft('');
   }
 
+  // ── Thread labels: resulting edit title, else first user message snippet ──
+  // We need first-user-message lookups across past threads. Fetch all
+  // overview chat messages once and build a map. Cheap at demo scale.
+  const { data: allMessages = [] } = useQuery({
+    queryKey: ['arc', 'overview_chat_messages', 'all'],
+    queryFn:  () => repo.overviewChatMessages.list(),
+  });
+
+  const firstUserByThread = useMemo(() => {
+    const map: Record<string, string> = {};
+    const sorted = [...allMessages].sort((a, b) => a.created_at.localeCompare(b.created_at));
+    for (const m of sorted) {
+      if (m.role !== 'user') continue;
+      if (map[m.thread_id]) continue;
+      map[m.thread_id] = m.content;
+    }
+    return map;
+  }, [allMessages]);
+
   function threadLabel(t: OverviewChatThread): string {
-    // Use first user message snippet as the label. If thread has a resulting
-    // edit, the label is overridden upstream (Issue 2B).
-    // (Synchronous best-effort — we don't await here; the dropdown is informational.)
+    if (t.resulting_risk_edit_id) {
+      const edit = allEdits.find((e) => e.id === t.resulting_risk_edit_id);
+      if (edit) return `✓ ${edit.title}`;
+    }
+    const snippet = firstUserByThread[t.id];
+    if (snippet) {
+      return snippet.length > 40 ? snippet.slice(0, 40) + '…' : snippet;
+    }
     return `Thread · ${formatTimeShort(t.updated_at)}`;
+  }
+
+  // ── Active thread + preview-card state ──────────────────────────────────────
+  const activeThread = threads.find((t) => t.id === threadId) ?? null;
+  const lastAssistant = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      if (messages[i].role === 'assistant') return messages[i];
+    }
+    return null;
+  }, [messages]);
+
+  const lastIsPreview =
+    !!lastAssistant?.suggested_title &&
+    !!lastAssistant?.suggested_brief &&
+    !!lastAssistant?.suggested_module_id;
+
+  async function handleCreateDraft() {
+    if (!currentUser || !activeThread || !lastAssistant || !lastIsPreview) return;
+    setCreating(true);
+    try {
+      const now = new Date().toISOString();
+      const edit = await createEdit.mutateAsync({
+        title:                  lastAssistant.suggested_title!,
+        natural_language_brief: lastAssistant.suggested_brief!,
+        target_module_id:       lastAssistant.suggested_module_id!,
+        current_stage:          'draft',
+        created_by:             currentUser.id,
+        updated_at:             now,
+      });
+
+      await repo.overviewChatThreads.update(activeThread.id, {
+        resulting_risk_edit_id: edit.id,
+        updated_at:             now,
+      });
+      await repo.auditLog.append({
+        actor_id:     currentUser.id,
+        action:       'risk_edit.created_via_chat',
+        entity_type:  'risk_edit',
+        entity_id:    edit.id,
+        payload_json: {
+          thread_id: activeThread.id,
+          module_id: lastAssistant.suggested_module_id,
+          title:     lastAssistant.suggested_title,
+        },
+      });
+      qc.invalidateQueries({ queryKey: ['arc', 'overview_chat_threads', currentUser.id] });
+      qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
+
+      // Reset the chatbox to compact for the next session, then navigate.
+      setExpanded(false);
+      navigate(`/workspace/draft-queue?edit=${edit.id}`);
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleRefine() {
+    if (!activeThread) return;
+    // Append an assistant message inviting refinement. The next user message
+    // will go back through consultOnEdit and produce a fresh proposal.
+    await repo.overviewChatMessages.create({
+      thread_id: activeThread.id,
+      role:      'assistant',
+      content:   'Tell me what to change about the proposal.',
+    } as Omit<OverviewChatMessage, 'id' | 'created_at'>);
+    await repo.overviewChatThreads.update(activeThread.id, {
+      updated_at: new Date().toISOString(),
+    });
+    qc.invalidateQueries({ queryKey: ['arc', 'overview_chat_messages', activeThread.id] });
+    qc.invalidateQueries({ queryKey: ['arc', 'overview_chat_messages', 'all'] });
   }
 
   if (!currentUser) return null;
@@ -293,14 +452,40 @@ export function OverviewChat() {
             </div>
           </div>
         ) : (
-          messages.map((m) => (
-            <MessageBubble
-              key={m.id}
-              msg={m}
-              userName={currentUser.name}
-              userSeed={currentUser.avatar_seed}
-            />
-          ))
+          messages.map((m) => {
+            // Render preview card in place of the bubble when the message has
+            // a full proposal AND it is the latest assistant message AND no
+            // draft has been created yet from this thread.
+            const isPreviewable =
+              m.role === 'assistant' &&
+              !!m.suggested_title &&
+              !!m.suggested_brief &&
+              !!m.suggested_module_id;
+            const isLatestPreviewable =
+              isPreviewable && lastAssistant?.id === m.id && lastIsPreview;
+
+            if (isLatestPreviewable) {
+              return (
+                <DraftPreviewCard
+                  key={m.id}
+                  msg={m}
+                  modules={modules}
+                  alreadyCreated={!!activeThread?.resulting_risk_edit_id}
+                  onCreate={handleCreateDraft}
+                  onRefine={handleRefine}
+                  creating={creating}
+                />
+              );
+            }
+            return (
+              <MessageBubble
+                key={m.id}
+                msg={m}
+                userName={currentUser.name}
+                userSeed={currentUser.avatar_seed}
+              />
+            );
+          })
         )}
         {sending && (
           <div className="flex gap-2">
