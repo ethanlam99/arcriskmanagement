@@ -1,90 +1,197 @@
 {
-  "app_name": "ARC",
-  "app_tagline": "AI-Enabled Governance for Intelligent Strategy",
+  "app": {
+    "name": "ARC",
+    "tagline": "AI Risk Control",
+    "footer_credit": "built by Ethan · for Webank · Phase 1 POC"
+  },
   "nav": {
-    "home": "Home",
-    "engine_modules": "Engine Modules",
-    "strategy_changes": "Strategy Changes",
-    "preview_changelog": "Preview Changelog",
-    "confirmed_changelog": "Confirmed Changelog",
-    "it_handoff_log": "IT Handoff Log",
-    "audit_log": "Audit Log"
+    "overview":              "Overview",
+    "workspace":             "Workspace",
+    "workspace_draft_queue": "Draft & Queue",
+    "workspace_uat":         "UAT",
+    "workspace_qa":          "QA Review",
+    "risk_edits":            "Risk Edits",
+    "engine_modules":        "Engine Modules",
+    "changelog":             "Changelog",
+    "it_handoff":            "IT Handoff",
+    "reports":               "Reports",
+    "reset_demo":            "Reset Demo Data",
+    "back":                  "Back",
+    "forward":               "Forward"
   },
   "auth": {
-    "sign_in_as": "Sign in as",
-    "sign_out": "Sign out",
+    "sign_in_as":     "Sign in as",
+    "sign_out":       "Sign out",
     "select_persona": "Select a persona to continue",
-    "role_risk_analyst": "Risk Analyst",
-    "role_tester": "Tester",
-    "role_admin": "Admin"
+    "signed_in_as":   "Signed in as"
+  },
+  "role": {
+    "risk_analyst": "Risk Analyst",
+    "risk_lead":    "Risk Lead",
+    "tester":       "Tester",
+    "testing_lead": "Testing Lead",
+    "it_team":      "IT Team",
+    "admin":        "Admin"
   },
   "stage": {
-    "draft": "Draft",
-    "ready_for_uat": "Ready for AI UAT",
-    "uat_in_progress": "AI UAT in Progress",
-    "qa_review": "QA Review",
-    "approved_for_it": "Approved for IT",
-    "sent_to_it": "Sent to IT",
-    "rejected": "Rejected"
-  },
-  "home": {
-    "welcome": "Welcome back, {{name}}",
-    "your_drafts": "Your Drafts",
-    "pending_revisions": "Pending Revisions",
-    "awaiting_review": "Awaiting AI UAT Review",
-    "recent_handoffs": "Recent Handoffs",
-    "no_items": "Nothing here yet."
-  },
-  "engine_modules": {
-    "title": "Engine Modules",
-    "description": "Browse the SQL modules that make up the risk engine. Editing happens via a Strategy Change.",
-    "last_updated": "Last updated",
-    "updated_by": "by {{name}}",
-    "open_change": "Create change request"
-  },
-  "strategy_changes": {
-    "title": "Strategy Changes",
-    "new_change": "New Change",
-    "filter_stage": "Filter by stage",
-    "filter_module": "Filter by module",
-    "all_stages": "All stages",
-    "all_modules": "All modules",
-    "no_results": "No strategy changes match the current filters.",
-    "created_by": "Created by",
-    "target_module": "Target module",
-    "stage": "Stage",
-    "created_at": "Created"
-  },
-  "change_detail": {
-    "tab_brief": "Brief & AI Chat",
-    "tab_sql": "SQL Editor",
-    "tab_uat": "AI UAT Report",
-    "tab_qa": "QA Review",
-    "tab_audit": "Audit Trail",
-    "send_for_uat": "Send for AI UAT",
-    "confirm_changes": "Confirm & Save Changes",
-    "brief_placeholder": "Describe the change in plain language…",
-    "chat_placeholder": "Ask the AI to refine, clarify, or revise…",
-    "version_history": "Version history",
-    "coming_soon": "Coming in a future round."
-  },
-  "admin": {
-    "reset_demo": "Reset Demo Data",
-    "reset_confirm": "This will clear all localStorage data and reseed from fixture. This cannot be undone.",
-    "reset_success": "Demo data reset successfully."
+    "draft":           "Draft",
+    "ready_for_uat":   "AI UAT Review",
+    "uat_in_progress": "UAT Running",
+    "qa_review":       "QA Review",
+    "approved":        "Approved",
+    "sent_to_it":      "Sent to IT",
+    "live":            "Live",
+    "rejected":        "Rejected"
   },
   "common": {
-    "save": "Save",
-    "cancel": "Cancel",
+    "save":    "Save",
+    "cancel":  "Cancel",
     "confirm": "Confirm",
+    "close":   "Close",
+    "back":    "Back",
+    "next":    "Next",
+    "open":    "Open",
+    "send":    "Send",
+    "delete":  "Delete",
+    "edit":    "Edit",
+    "view":    "View",
     "loading": "Loading…",
-    "error": "Something went wrong.",
-    "view": "View",
-    "edit": "Edit",
-    "delete": "Delete",
-    "export_csv": "Export CSV",
-    "by": "by",
-    "at": "at",
-    "unknown_user": "Unknown user"
+    "empty":   "No items",
+    "error":   "Something went wrong."
+  },
+  "overview": {
+    "at_a_glance":      "At a Glance",
+    "start_new_edit":   "Start a new risk edit",
+    "chat_placeholder": "What would you like to edit today?",
+    "browse_modules":   "Or browse modules to start from",
+    "stat_drafts":      "Drafts in progress",
+    "stat_uat":         "Queued for UAT",
+    "stat_qa":          "In QA review",
+    "stat_live":        "Live this month"
+  },
+  "chat": {
+    "placeholder":         "What would you like to edit today?",
+    "expand":              "Expand chat",
+    "collapse":            "Collapse chat",
+    "send":                "Send",
+    "history":             "History",
+    "new_chat":            "New chat",
+    "create_draft":        "Create draft",
+    "refine":              "Refine",
+    "draft_preview":       "Draft preview",
+    "draft_preview_title": "Suggested title",
+    "draft_preview_brief": "Suggested brief",
+    "draft_preview_module":"Target module",
+    "draft_preview_open":  "Open in workspace",
+    "draft_preview_discard":"Discard"
+  },
+  "risk_edits": {
+    "title":           "Risk Edits",
+    "new_edit":        "New Risk Edit",
+    "filter_stage":    "Filter by stage",
+    "filter_module":   "Filter by module",
+    "all_stages":      "All stages",
+    "all_modules":     "All modules",
+    "col_id":          "ID",
+    "col_title":       "Title",
+    "col_module":      "Target module",
+    "col_stage":       "Stage",
+    "col_author":      "Author",
+    "col_updated":     "Updated",
+    "empty":           "No risk edits match the current filters.",
+    "open_workspace":  "Open Workspace →",
+    "create_title":    "Create a new risk edit",
+    "field_title":     "Title",
+    "field_brief":     "Brief",
+    "field_module":    "Target module",
+    "create_submit":   "Create draft"
+  },
+  "workspace": {
+    "title":           "Workspace",
+    "tab_draft_queue": "Draft & Queue",
+    "tab_uat":         "UAT",
+    "tab_qa":          "QA Review",
+    "empty_no_selection": "Select an edit on the left to begin.",
+    "send_for_uat":    "Send for UAT",
+    "draft": {
+      "section_drafts": "Drafts",
+      "section_queued": "Queued for UAT",
+      "empty_drafts":   "No drafts yet.",
+      "empty_queued":   "Nothing queued for UAT yet."
+    },
+    "uat": {
+      "review_queue_heading":          "AI UAT Review Queue",
+      "review_queue_subheading_one":   "{{count}} edit awaiting test case review",
+      "review_queue_subheading_other": "{{count}} edits awaiting test case review",
+      "running_heading":               "UAT Running",
+      "running_empty":                 "Nothing is running.",
+      "queued_empty":                  "Nothing queued for review.",
+      "proposed_cases_heading":        "Proposed test cases",
+      "propose_new_case":              "+ Propose new test case",
+      "mark_reviewed":                 "Mark reviewed",
+      "cases_reviewed":                "Cases reviewed ✓",
+      "send_to_ai_uat":                "Send to AI UAT",
+      "send_selected_to_ai_uat":       "Send selected to AI UAT ({{count}})",
+      "unlock":                        "Unlock",
+      "context_attachments":           "AI context attachments",
+      "task_list":                     "AI task list",
+      "elapsed":                       "Elapsed"
+    },
+    "qa": {
+      "approve":         "Approve",
+      "reject":          "Reject",
+      "section_review":  "Awaiting QA review",
+      "empty":           "Nothing awaiting QA right now.",
+      "uat_pass_label":  "UAT pass",
+      "uat_fail_label":  "UAT fail"
+    }
+  },
+  "changelog": {
+    "title":            "Changelog",
+    "tab_uat_queue":    "UAT Queue",
+    "tab_approved":     "Approved Pool",
+    "tab_proposed":     "Proposed Packets",
+    "tab_confirmed":    "Confirmed",
+    "bundle_packet":    "Bundle packet",
+    "confirm_packet":   "Confirm packet",
+    "empty":            "Nothing here yet."
+  },
+  "engine_modules": {
+    "title":            "Engine Modules",
+    "open_in_workspace":"Open in workspace",
+    "last_updated":     "Last updated"
+  },
+  "it_handoff": {
+    "title":            "IT Handoff",
+    "col_packet":       "Packet",
+    "col_confirmed_at": "Confirmed",
+    "col_sent_at":      "Sent",
+    "col_live_at":      "Live",
+    "mark_live":        "Mark live",
+    "empty":            "Nothing handed off yet."
+  },
+  "login": {
+    "title":              "Sign in to ARC",
+    "subtitle":           "Select a persona to continue",
+    "sign_in_button":     "Sign in as {{name}}"
+  },
+  "confirm": {
+    "default_title":   "Are you sure?",
+    "default_confirm": "Confirm",
+    "default_cancel":  "Cancel"
+  },
+  "toast": {
+    "uat_completion": "UAT complete — {{displayId}} moved to QA Review.",
+    "uat_failed":     "UAT failed for {{displayId}} — back in queue for retry.",
+    "uat_unstuck":    "{{displayId}} returned to queue for retry.",
+    "draft_created":  "Draft created — opened in workspace.",
+    "qa_approved":    "{{displayId}} approved.",
+    "qa_rejected":    "{{displayId}} sent back to draft."
+  },
+  "settings": {
+    "language":    "Language",
+    "theme":       "Theme",
+    "theme_light": "Light",
+    "theme_dark":  "Dark"
   }
 }
