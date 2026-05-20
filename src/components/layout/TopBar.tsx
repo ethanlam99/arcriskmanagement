@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavHistory } from './NavHistoryProvider';
 import { LanguageToggle } from './LanguageToggle';
+import { ThemeToggle } from './ThemeToggle';
 
 interface TopBarProps {
   breadcrumb?: ReactNode;
@@ -43,6 +44,7 @@ export function TopBar({ breadcrumb, actions }: TopBarProps) {
       <div className="flex items-center gap-2">
         {actions}
         <LanguageToggle />
+        <ThemeToggle />
       </div>
     </header>
   );
