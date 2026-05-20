@@ -145,10 +145,10 @@ export function AttachmentUploader({
           onDrop={onDrop}
           className={`rounded-lg border border-dashed transition-colors px-3 py-4 text-center ${
             isDragOver
-              ? 'border-arc-500 bg-arc-100'
+              ? 'border-arc-500 dark:border-arc-dark-500 bg-arc-100 dark:bg-arc-dark-100'
               : limitReached
-              ? 'border-arc-200 bg-arc-100/40 opacity-60'
-              : 'border-arc-200 bg-white hover:border-arc-300'
+              ? 'border-arc-200 dark:border-arc-dark-200 bg-arc-100/40 dark:bg-arc-dark-100/40 opacity-60'
+              : 'border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 hover:border-arc-300'
           }`}
         >
           <input
@@ -166,32 +166,32 @@ export function AttachmentUploader({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={busy || limitReached}
-            className="text-xs font-medium text-arc-500 hover:text-arc-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-xs font-medium text-arc-500 dark:text-arc-dark-500 hover:text-arc-700 dark:hover:text-arc-dark-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {busy ? 'Uploading…' : limitReached ? 'Limit reached' : 'Choose files or drag here'}
           </button>
-          <p className="text-[11px] text-arc-500 mt-1">
+          <p className="text-[11px] text-arc-500 dark:text-arc-dark-500 mt-1">
             Image or PDF · ≤ {formatSize(maxSizeBytes)} each · {attachments.length}/{maxFiles} used
           </p>
         </div>
       )}
 
       {error && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+        <div className="rounded-md border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-900/40 px-3 py-2 text-xs text-rose-700 dark:text-rose-300">
           {error}
         </div>
       )}
 
       {attachments.length === 0 ? (
-        <p className="text-xs text-arc-500 italic">No attachments yet.</p>
+        <p className="text-xs text-arc-500 dark:text-arc-dark-500 italic">No attachments yet.</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {attachments.map((a) => (
             <li
               key={a.id}
-              className="flex items-center gap-2 rounded-md border border-arc-200 bg-white px-2.5 py-1.5"
+              className="flex items-center gap-2 rounded-md border border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 px-2.5 py-1.5"
             >
-              <span className="text-arc-500 shrink-0" aria-hidden>
+              <span className="text-arc-500 dark:text-arc-dark-500 shrink-0" aria-hidden>
                 {a.mime_type.startsWith('image/') ? (
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.5-4.5a2 2 0 012.8 0L16 16m-2-2l1.5-1.5a2 2 0 012.8 0L20 14m-12 6h8a4 4 0 004-4V8a4 4 0 00-4-4H8a4 4 0 00-4 4v8a4 4 0 004 4z" />
@@ -203,8 +203,8 @@ export function AttachmentUploader({
                 )}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-arc-900 truncate">{a.filename}</p>
-                <p className="text-[11px] text-arc-500">
+                <p className="text-xs font-medium text-arc-900 dark:text-arc-dark-700 truncate">{a.filename}</p>
+                <p className="text-[11px] text-arc-500 dark:text-arc-dark-500">
                   {formatSize(a.size_bytes)} · <UploaderName userId={a.uploaded_by} /> ·{' '}
                   {new Date(a.uploaded_at).toLocaleDateString('en-GB', {
                     day: 'numeric',
@@ -218,7 +218,7 @@ export function AttachmentUploader({
                 <button
                   type="button"
                   onClick={() => void onRemove(a.id)}
-                  className="shrink-0 text-arc-500 hover:text-rose-600 transition-colors text-sm leading-none px-1"
+                  className="shrink-0 text-arc-500 dark:text-arc-dark-500 hover:text-rose-600 transition-colors text-sm leading-none px-1"
                   aria-label={`Remove ${a.filename}`}
                   title="Remove"
                 >

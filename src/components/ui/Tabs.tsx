@@ -31,7 +31,7 @@ export function TabList({ children, className = '' }: TabListProps) {
   return (
     <div
       role="tablist"
-      className={`flex border-b border-arc-200 gap-0 ${className}`}
+      className={`flex border-b border-arc-200 dark:border-arc-dark-200 gap-0 ${className}`}
     >
       {children}
     </div>
@@ -58,16 +58,16 @@ export function TabTrigger({ id, disabled = false, children }: TabTriggerProps) 
       className={`
         px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
         ${isActive
-          ? 'border-arc-500 text-arc-700'
+          ? 'border-arc-500 dark:border-arc-dark-500 text-arc-700 dark:text-arc-dark-700'
           : disabled
-          ? 'border-transparent text-arc-200 cursor-not-allowed'
-          : 'border-transparent text-arc-500 hover:text-arc-900 hover:border-arc-300 cursor-pointer'
+          ? 'border-transparent text-arc-200 dark:text-arc-dark-300 cursor-not-allowed'
+          : 'border-transparent text-arc-500 dark:text-arc-dark-500 hover:text-arc-900 dark:hover:text-arc-dark-700 hover:border-arc-300 cursor-pointer'
         }
       `}
     >
       {children}
       {disabled && (
-        <span className="ml-1.5 text-xs text-arc-200">(soon)</span>
+        <span className="ml-1.5 text-xs text-arc-200 dark:text-arc-dark-300">(soon)</span>
       )}
     </button>
   );

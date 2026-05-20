@@ -40,7 +40,7 @@ export function LanguageToggle() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="h-7 px-2 inline-flex items-center gap-1 rounded-md text-xs font-medium text-arc-700 hover:bg-arc-100 transition-colors"
+        className="h-7 px-2 inline-flex items-center gap-1 rounded-md text-xs font-medium text-arc-700 dark:text-arc-dark-700 hover:bg-arc-100 dark:hover:bg-arc-dark-50 transition-colors"
       >
         <span>{LANG_SHORT_LABELS[current]}</span>
         <ChevronDown className="w-3 h-3" />
@@ -48,7 +48,7 @@ export function LanguageToggle() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full mt-1 z-50 min-w-[10rem] bg-white border border-arc-200 rounded-md shadow-card py-1"
+          className="absolute right-0 top-full mt-1 z-50 min-w-[10rem] bg-white dark:bg-arc-dark-100 border border-arc-200 dark:border-arc-dark-200 rounded-md shadow-card py-1"
         >
           {SUPPORTED_LANGS.map((lang) => (
             <button
@@ -56,8 +56,8 @@ export function LanguageToggle() {
               type="button"
               role="menuitem"
               onClick={() => pick(lang)}
-              className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-arc-100 transition-colors ${
-                lang === current ? 'text-arc-900 font-medium' : 'text-arc-700'
+              className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-arc-100 dark:hover:bg-arc-dark-50 transition-colors ${
+                lang === current ? 'text-arc-900 dark:text-arc-dark-700 font-medium' : 'text-arc-700 dark:text-arc-dark-700'
               }`}
             >
               <span>{LANG_LABELS[lang]}</span>

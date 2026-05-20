@@ -22,9 +22,9 @@ type Annotations     = Record<string, string>;
 type Reviewed        = Record<string, boolean>;
 
 function statusColor(status: TestCaseStatus): string {
-  if (status === 'passed')  return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-  if (status === 'failed')  return 'bg-rose-50 text-rose-700 border-rose-200';
-  return 'bg-amber-50 text-amber-700 border-amber-200';
+  if (status === 'passed')  return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/50';
+  if (status === 'failed')  return 'bg-rose-50 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900/50';
+  return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
 }
 
 function ReviewableTestCaseRow({
@@ -62,10 +62,10 @@ function ReviewableTestCaseRow({
   return (
     <>
       <tr
-        className={`border-b border-arc-200 transition-colors duration-150 ${isReviewed ? 'bg-emerald-50/30' : ''} hover:bg-arc-200`}
+        className={`border-b border-arc-200 dark:border-arc-dark-200 transition-colors duration-150 ${isReviewed ? 'bg-emerald-50/30' : ''} hover:bg-arc-200 dark:hover:bg-arc-dark-200`}
       >
-        <td className="px-4 py-2.5 font-mono text-xs text-arc-500">{tc.id}</td>
-        <td className="px-4 py-2.5 text-sm text-arc-900 cursor-pointer" onClick={() => setExpanded((e) => !e)}>
+        <td className="px-4 py-2.5 font-mono text-xs text-arc-500 dark:text-arc-dark-500">{tc.id}</td>
+        <td className="px-4 py-2.5 text-sm text-arc-900 dark:text-arc-dark-700 cursor-pointer" onClick={() => setExpanded((e) => !e)}>
           {tc.description}
         </td>
         <td className="px-4 py-2.5">
@@ -77,7 +77,7 @@ function ReviewableTestCaseRow({
             <select
               value={displayStatus}
               onChange={(e) => onStatusOverride(e.target.value as TestCaseStatus)}
-              className="text-xs border border-arc-200 rounded-lg px-2 py-1 bg-white text-arc-900 focus:outline-none focus:ring-1 focus:ring-arc-500"
+              className="text-xs border border-arc-200 dark:border-arc-dark-200 rounded-lg px-2 py-1 bg-white dark:bg-arc-dark-100 text-arc-900 dark:text-arc-dark-700 focus:outline-none focus:ring-1 focus:ring-arc-500"
             >
               <option value="passed">{t('workspace.qa.status_passed')}</option>
               <option value="failed">{t('workspace.qa.status_failed')}</option>
@@ -97,8 +97,8 @@ function ReviewableTestCaseRow({
               onClick={onToggleReviewed}
               className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-lg border transition-colors ${
                 isReviewed
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                  : 'bg-white border-arc-200 text-arc-500 hover:border-arc-500 hover:text-arc-700'
+                  ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
+                  : 'bg-white dark:bg-arc-dark-100 border-arc-200 dark:border-arc-dark-200 text-arc-500 dark:text-arc-dark-500 hover:border-arc-500 dark:hover:border-arc-dark-300 hover:text-arc-700 dark:hover:text-arc-dark-700'
               }`}
             >
               {isReviewed ? t('workspace.qa.reviewed') : t('workspace.qa.mark_reviewed')}
@@ -107,16 +107,16 @@ function ReviewableTestCaseRow({
         )}
       </tr>
       {expanded && (
-        <tr className="border-b border-arc-200 bg-arc-100">
+        <tr className="border-b border-arc-200 dark:border-arc-dark-200 bg-arc-100 dark:bg-arc-dark-100">
           <td colSpan={readonly ? 4 : 5} className="px-6 py-4">
             <div className="grid grid-cols-3 gap-4 text-xs mb-3">
               {[
-                { label: t('workspace.qa.input'),    data: tc.input,    cls: 'bg-white border-arc-200 text-arc-900' },
-                { label: t('workspace.qa.expected'), data: tc.expected, cls: 'bg-white border-arc-200 text-arc-900' },
-                { label: t('workspace.qa.actual'),   data: tc.actual,   cls: tc.status === 'failed' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-white border-arc-200 text-arc-900' },
+                { label: t('workspace.qa.input'),    data: tc.input,    cls: 'bg-white dark:bg-arc-dark-100 border-arc-200 dark:border-arc-dark-200 text-arc-900 dark:text-arc-dark-700' },
+                { label: t('workspace.qa.expected'), data: tc.expected, cls: 'bg-white dark:bg-arc-dark-100 border-arc-200 dark:border-arc-dark-200 text-arc-900 dark:text-arc-dark-700' },
+                { label: t('workspace.qa.actual'),   data: tc.actual,   cls: tc.status === 'failed' ? 'bg-rose-50 dark:bg-rose-900/40 border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-200' : 'bg-white dark:bg-arc-dark-100 border-arc-200 dark:border-arc-dark-200 text-arc-900 dark:text-arc-dark-700' },
               ].map(({ label, data, cls }) => (
                 <div key={label}>
-                  <p className="font-semibold text-arc-500 mb-1.5">{label}</p>
+                  <p className="font-semibold text-arc-500 dark:text-arc-dark-500 mb-1.5">{label}</p>
                   <pre className={`border rounded-lg px-3 py-2 font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed ${cls}`}>
                     {JSON.stringify(data, null, 2)}
                   </pre>
@@ -124,16 +124,16 @@ function ReviewableTestCaseRow({
               ))}
             </div>
             <div>
-              <p className="text-xs font-semibold text-arc-500 mb-1.5">
+              <p className="text-xs font-semibold text-arc-500 dark:text-arc-dark-500 mb-1.5">
                 {readonly ? t('workspace.qa.annotation') : t('workspace.qa.annotation_optional')}
               </p>
               {readonly ? (
                 annotation ? (
-                  <p className="text-xs text-arc-900 bg-white border border-arc-200 rounded-lg px-3 py-2 leading-relaxed">
+                  <p className="text-xs text-arc-900 dark:text-arc-dark-700 bg-white dark:bg-arc-dark-100 border border-arc-200 dark:border-arc-dark-200 rounded-lg px-3 py-2 leading-relaxed">
                     {annotation}
                   </p>
                 ) : (
-                  <p className="text-xs text-arc-500 italic">{t('workspace.qa.no_annotation')}</p>
+                  <p className="text-xs text-arc-500 dark:text-arc-dark-500 italic">{t('workspace.qa.no_annotation')}</p>
                 )
               ) : (
                 <Textarea
@@ -147,10 +147,10 @@ function ReviewableTestCaseRow({
             </div>
 
             <div className="mt-3">
-              <p className="text-xs font-semibold text-arc-500 mb-1.5">
+              <p className="text-xs font-semibold text-arc-500 dark:text-arc-dark-500 mb-1.5">
                 {t('workspace.qa.supporting_evidence')}
                 {!readonly && (
-                  <span className="ml-1.5 font-normal text-arc-500">
+                  <span className="ml-1.5 font-normal text-arc-500 dark:text-arc-dark-500">
                     {t('workspace.qa.evidence_help')}
                   </span>
                 )}
@@ -324,12 +324,12 @@ export function QaTab({ change }: QaTabProps) {
   }
 
   if (runLoading) {
-    return <div className="flex h-full items-center justify-center text-arc-500 text-sm">{t('common.loading')}</div>;
+    return <div className="flex h-full items-center justify-center text-arc-500 dark:text-arc-dark-500 text-sm">{t('common.loading')}</div>;
   }
 
   if (!run || !run.ai_report_json) {
     return (
-      <div className="flex h-full items-center justify-center flex-col gap-2 text-arc-500">
+      <div className="flex h-full items-center justify-center flex-col gap-2 text-arc-500 dark:text-arc-dark-500">
         <p className="text-sm">{t('workspace.qa.no_report')}</p>
       </div>
     );
@@ -358,8 +358,8 @@ export function QaTab({ change }: QaTabProps) {
   return (
     <>
       <div className="flex flex-col h-full overflow-hidden">
-        <div className="px-6 py-3 border-b border-arc-200 bg-amber-50 shrink-0">
-          <p className="text-xs text-amber-800 leading-relaxed">
+        <div className="px-6 py-3 border-b border-arc-200 dark:border-arc-dark-200 bg-amber-50 dark:bg-amber-900/30 shrink-0">
+          <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
             <span className="font-semibold">{t('workspace.qa.review_header', { title: change.title })}</span>
             {canAct && t('workspace.qa.review_header_can_act')}
             {isTerminal && t('workspace.qa.review_header_terminal')}
@@ -368,15 +368,15 @@ export function QaTab({ change }: QaTabProps) {
 
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-5xl mx-auto px-6 py-5">
-            <div className="rounded-xl border border-arc-200 overflow-hidden bg-white">
+            <div className="rounded-xl border border-arc-200 dark:border-arc-dark-200 overflow-hidden bg-white dark:bg-arc-dark-100">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-arc-200 bg-arc-100">
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.qa.col_id')}</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.qa.col_description')}</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.qa.col_status')}</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.qa.col_frontend')}</th>
-                    {canAct && <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.qa.col_review')}</th>}
+                  <tr className="border-b border-arc-200 dark:border-arc-dark-200 bg-arc-100 dark:bg-arc-dark-100">
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">{t('workspace.qa.col_id')}</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">{t('workspace.qa.col_description')}</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">{t('workspace.qa.col_status')}</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">{t('workspace.qa.col_frontend')}</th>
+                    {canAct && <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">{t('workspace.qa.col_review')}</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -403,8 +403,8 @@ export function QaTab({ change }: QaTabProps) {
         </div>
 
         {canAct && (
-          <div className="shrink-0 border-t border-arc-200 bg-white px-6 py-4 flex items-center justify-between gap-4">
-            <p className="text-xs text-arc-500">
+          <div className="shrink-0 border-t border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 px-6 py-4 flex items-center justify-between gap-4">
+            <p className="text-xs text-arc-500 dark:text-arc-dark-500">
               {t('workspace.qa.summary', {
                 passed: passedCount,
                 total: testCases.length,
@@ -418,7 +418,7 @@ export function QaTab({ change }: QaTabProps) {
               <Button
                 variant="secondary"
                 size="sm"
-                className="border-rose-200 text-rose-600 hover:bg-rose-50"
+                className="border-rose-200 dark:border-rose-900/50 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/50"
                 onClick={() => setShowRejectModal(true)}
               >
                 {t('workspace.qa.reject_return')}
@@ -439,7 +439,7 @@ export function QaTab({ change }: QaTabProps) {
       </div>
 
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-arc-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">
+        <div className="fixed bottom-6 right-6 z-50 bg-arc-900 dark:bg-arc-dark-900 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">
           {toast}
         </div>
       )}
@@ -457,11 +457,11 @@ export function QaTab({ change }: QaTabProps) {
 
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-arc-900/40 backdrop-blur-sm" onClick={() => setShowRejectModal(false)} />
-          <div className="relative bg-white rounded-xl border border-arc-200 w-full max-w-md mx-4 p-6 shadow-lg">
-            <h2 className="text-base font-semibold text-arc-900 mb-1">{t('workspace.qa.reject_modal_title')}</h2>
-            <p className="text-xs text-arc-500 mb-4">{t('workspace.qa.reject_modal_desc')}</p>
-            <label className="block text-xs font-medium text-arc-900 mb-1.5">
+          <div className="absolute inset-0 bg-arc-900/40 dark:bg-arc-dark-900/60 backdrop-blur-sm" onClick={() => setShowRejectModal(false)} />
+          <div className="relative bg-white dark:bg-arc-dark-100 rounded-xl border border-arc-200 dark:border-arc-dark-200 w-full max-w-md mx-4 p-6 shadow-lg">
+            <h2 className="text-base font-semibold text-arc-900 dark:text-arc-dark-700 mb-1">{t('workspace.qa.reject_modal_title')}</h2>
+            <p className="text-xs text-arc-500 dark:text-arc-dark-500 mb-4">{t('workspace.qa.reject_modal_desc')}</p>
+            <label className="block text-xs font-medium text-arc-900 dark:text-arc-dark-700 mb-1.5">
               {t('workspace.qa.rejection_notes')} <span className="text-rose-500">*</span>
             </label>
             <Textarea

@@ -43,11 +43,11 @@ export function CreateRiskEditModal({ defaultModuleId, onClose }: CreateRiskEdit
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-arc-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-xl border border-arc-200 w-full max-w-lg mx-4 p-6 shadow-lg">
+      <div className="absolute inset-0 bg-arc-900/40 dark:bg-arc-dark-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white dark:bg-arc-dark-100 rounded-xl border border-arc-200 dark:border-arc-dark-200 w-full max-w-lg mx-4 p-6 shadow-lg">
         <div className="mb-5">
-          <h2 className="text-base font-semibold text-arc-900">{t('risk_edits.create_title')}</h2>
-          <p className="text-xs text-arc-500 mt-0.5">{t('risk_edits.create_subtitle')}</p>
+          <h2 className="text-base font-semibold text-arc-900 dark:text-arc-dark-700">{t('risk_edits.create_title')}</h2>
+          <p className="text-xs text-arc-500 dark:text-arc-dark-500 mt-0.5">{t('risk_edits.create_subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

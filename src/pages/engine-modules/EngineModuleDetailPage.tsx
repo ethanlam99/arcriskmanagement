@@ -30,14 +30,14 @@ export function EngineModuleDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center text-arc-500 text-sm">{t('common.loading')}</div>
+      <div className="flex h-full items-center justify-center text-arc-500 dark:text-arc-dark-500 text-sm">{t('common.loading')}</div>
     );
   }
 
   if (!module) {
     return (
       <div className="flex h-full items-center justify-center flex-col gap-3">
-        <p className="text-arc-900 font-medium">{t('engine_modules.module_not_found')}</p>
+        <p className="text-arc-900 dark:text-arc-dark-700 font-medium">{t('engine_modules.module_not_found')}</p>
         <Button variant="secondary" size="sm" onClick={() => navigate('/overview')}>
           {t('engine_modules.back_to_overview')}
         </Button>
@@ -68,21 +68,21 @@ export function EngineModuleDetailPage() {
           }
         />
 
-        <div className="px-6 py-4 border-b border-arc-200 bg-white shrink-0">
+        <div className="px-6 py-4 border-b border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 shrink-0">
           <div className="flex items-start justify-between gap-6">
             <div className="min-w-0">
-              <h1 className="text-base font-semibold text-arc-900 font-mono">
+              <h1 className="text-base font-semibold text-arc-900 dark:text-arc-dark-700 font-mono">
                 {module.module_name}.sql
               </h1>
-              <p className="text-sm text-arc-500 mt-0.5 leading-relaxed">{module.description}</p>
+              <p className="text-sm text-arc-500 dark:text-arc-dark-500 mt-0.5 leading-relaxed">{module.description}</p>
             </div>
-            <div className="shrink-0 flex items-center gap-6 text-xs text-arc-500">
+            <div className="shrink-0 flex items-center gap-6 text-xs text-arc-500 dark:text-arc-dark-500">
               <div className="text-right">
-                <p className="text-arc-500 font-medium">{lineCount}</p>
+                <p className="text-arc-500 dark:text-arc-dark-500 font-medium">{lineCount}</p>
                 <p>{t('engine_modules.lines')}</p>
               </div>
               <div className="text-right">
-                <p className="text-arc-500 font-medium">
+                <p className="text-arc-500 dark:text-arc-dark-500 font-medium">
                   {new Date(module.updated_at).toLocaleDateString('en-GB', {
                     day: 'numeric',
                     month: 'short',
@@ -93,7 +93,7 @@ export function EngineModuleDetailPage() {
               </div>
               {updatedByUser && (
                 <div className="text-right">
-                  <p className="text-arc-500 font-medium">{updatedByUser.name}</p>
+                  <p className="text-arc-500 dark:text-arc-dark-500 font-medium">{updatedByUser.name}</p>
                   <p>{t('engine_modules.updated_by')}</p>
                 </div>
               )}
@@ -101,7 +101,7 @@ export function EngineModuleDetailPage() {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 bg-arc-900">
+        <div className="flex-1 min-h-0 bg-arc-900 dark:bg-arc-dark-900">
           <Editor
             height="100%"
             language="sql"

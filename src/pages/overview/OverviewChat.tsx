@@ -44,32 +44,32 @@ function DraftPreviewCard({
   return (
     <div className="flex gap-2">
       <div className="shrink-0 mt-0.5">
-        <div className="w-7 h-7 rounded-full bg-forest-500 flex items-center justify-center text-white text-[10px] font-semibold">
+        <div className="w-7 h-7 rounded-full bg-forest-500 dark:bg-forest-dark-500 flex items-center justify-center text-white text-[10px] font-semibold">
           AI
         </div>
       </div>
-      <div className="flex-1 rounded-xl border border-forest-200 bg-forest-50/60 p-4 max-w-[80%]">
-        <p className="text-xs font-semibold text-forest-700 uppercase tracking-wide mb-2">
+      <div className="flex-1 rounded-xl border border-forest-200 dark:border-forest-dark-700 bg-forest-50/60 dark:bg-forest-dark-700/20 p-4 max-w-[80%]">
+        <p className="text-xs font-semibold text-forest-700 dark:text-forest-dark-700 uppercase tracking-wide mb-2">
           {t('chat.draft_preview')}
         </p>
         <div className="space-y-2 text-sm">
           <div>
-            <span className="text-xs text-arc-500">{t('chat.draft_preview_title')}</span>
-            <p className="font-medium text-arc-900">{msg.suggested_title}</p>
+            <span className="text-xs text-arc-500 dark:text-arc-dark-500">{t('chat.draft_preview_title')}</span>
+            <p className="font-medium text-arc-900 dark:text-arc-dark-700">{msg.suggested_title}</p>
           </div>
           <div>
-            <span className="text-xs text-arc-500">{t('chat.draft_preview_module')}</span>
-            <p className="font-mono text-xs text-arc-900">
+            <span className="text-xs text-arc-500 dark:text-arc-dark-500">{t('chat.draft_preview_module')}</span>
+            <p className="font-mono text-xs text-arc-900 dark:text-arc-dark-700">
               {module?.module_name ?? msg.suggested_module_id ?? t('chat.draft_unknown_module')}
             </p>
           </div>
           <div>
-            <span className="text-xs text-arc-500">{t('chat.draft_preview_brief')}</span>
-            <p className="text-arc-700 leading-relaxed text-xs">{msg.suggested_brief}</p>
+            <span className="text-xs text-arc-500 dark:text-arc-dark-500">{t('chat.draft_preview_brief')}</span>
+            <p className="text-arc-700 dark:text-arc-dark-700 leading-relaxed text-xs">{msg.suggested_brief}</p>
           </div>
         </div>
         {alreadyCreated ? (
-          <p className="mt-3 text-xs font-medium text-forest-700">{t('chat.draft_already_created')}</p>
+          <p className="mt-3 text-xs font-medium text-forest-700 dark:text-forest-dark-700">{t('chat.draft_already_created')}</p>
         ) : (
           <div className="flex gap-2 mt-4">
             <Button size="sm" onClick={onCreate} loading={creating}>{t('chat.create_draft')}</Button>
@@ -97,7 +97,7 @@ function MessageBubble({
         {isUser ? (
           <UserAvatar seed={userSeed} name={userName} size="sm" />
         ) : (
-          <div className="w-7 h-7 rounded-full bg-forest-500 flex items-center justify-center text-white text-[10px] font-semibold">
+          <div className="w-7 h-7 rounded-full bg-forest-500 dark:bg-forest-dark-500 flex items-center justify-center text-white text-[10px] font-semibold">
             AI
           </div>
         )}
@@ -105,8 +105,8 @@ function MessageBubble({
       <div
         className={`max-w-[80%] rounded-lg px-3 py-2 text-sm leading-relaxed ${
           isUser
-            ? 'bg-arc-900 text-white'
-            : 'bg-arc-100 text-arc-900'
+            ? 'bg-arc-900 dark:bg-arc-dark-900 text-white'
+            : 'bg-arc-100 dark:bg-arc-dark-100 text-arc-900 dark:text-arc-dark-700'
         }`}
       >
         {msg.content.split('**').map((part, i) =>
@@ -325,13 +325,13 @@ export function OverviewChat() {
   // ── Compact (collapsed) ─────────────────────────────────────────────────────
   if (!expanded) {
     return (
-      <div className="rounded-xl border border-arc-200 bg-white shadow-sm p-4">
+      <div className="rounded-xl border border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 shadow-sm p-4">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
-            <h3 className="text-lg font-semibold text-arc-900 leading-tight">
+            <h3 className="text-lg font-semibold text-arc-900 dark:text-arc-dark-700 leading-tight">
               {t('chat.header_title')}
             </h3>
-            <p className="text-xs text-arc-500 mt-0.5 leading-relaxed">
+            <p className="text-xs text-arc-500 dark:text-arc-dark-500 mt-0.5 leading-relaxed">
               {t('chat.header_subtitle')}
             </p>
           </div>
@@ -339,16 +339,16 @@ export function OverviewChat() {
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="w-full flex items-center gap-2.5 bg-arc-100 hover:bg-arc-200 transition-colors rounded-lg px-3 py-2.5 text-left"
+          className="w-full flex items-center gap-2.5 bg-arc-100 dark:bg-arc-dark-100 hover:bg-arc-200 dark:hover:bg-arc-dark-200 transition-colors rounded-lg px-3 py-2.5 text-left"
         >
-          <MessageSquarePlus className="w-4 h-4 text-arc-500 shrink-0" />
-          <span className="text-sm text-arc-500 flex-1">{t('chat.placeholder')}</span>
-          <span className="inline-flex items-center justify-center h-7 px-3 rounded-full bg-forest-600 text-white text-xs font-medium">
+          <MessageSquarePlus className="w-4 h-4 text-arc-500 dark:text-arc-dark-500 shrink-0" />
+          <span className="text-sm text-arc-500 dark:text-arc-dark-500 flex-1">{t('chat.placeholder')}</span>
+          <span className="inline-flex items-center justify-center h-7 px-3 rounded-full bg-forest-600 dark:bg-forest-dark-600 text-white text-xs font-medium">
             {t('chat.send')}
           </span>
         </button>
         {threads.length > 0 && (
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-arc-500">
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-arc-500 dark:text-arc-dark-500">
             <History className="w-3 h-3" />
             <button
               type="button"
@@ -356,7 +356,7 @@ export function OverviewChat() {
                 setExpanded(true);
                 setHistoryOpen(true);
               }}
-              className="font-medium hover:text-arc-700 transition-colors"
+              className="font-medium hover:text-arc-700 dark:hover:text-arc-dark-700 transition-colors"
             >
               {t('chat.history_count', { count: threads.length })}
             </button>
@@ -368,11 +368,11 @@ export function OverviewChat() {
 
   // ── Expanded (full chat) ────────────────────────────────────────────────────
   return (
-    <div className="rounded-xl border border-arc-200 bg-white shadow-sm flex flex-col transition-all duration-200" style={{ minHeight: '450px' }}>
-      <div className="flex items-center justify-between px-4 py-3 border-b border-arc-200">
+    <div className="rounded-xl border border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 shadow-sm flex flex-col transition-all duration-200" style={{ minHeight: '450px' }}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-arc-200 dark:border-arc-dark-200">
         <div>
-          <h3 className="text-sm font-semibold text-arc-900">{t('chat.header_title')}</h3>
-          <p className="text-[11px] text-arc-500">
+          <h3 className="text-sm font-semibold text-arc-900 dark:text-arc-dark-700">{t('chat.header_title')}</h3>
+          <p className="text-[11px] text-arc-500 dark:text-arc-dark-500">
             {threadId ? t('chat.conversation_in_progress') : t('chat.new_conversation')}
           </p>
         </div>
@@ -381,28 +381,28 @@ export function OverviewChat() {
             <button
               type="button"
               onClick={() => setHistoryOpen((v) => !v)}
-              className="p-1.5 rounded-md hover:bg-arc-100 text-arc-500 hover:text-arc-700 transition-colors"
+              className="p-1.5 rounded-md hover:bg-arc-100 dark:hover:bg-arc-dark-50 text-arc-500 dark:text-arc-dark-500 hover:text-arc-700 dark:hover:text-arc-dark-700 transition-colors"
               aria-label={t('chat.history')}
               title={t('chat.history')}
             >
               <History className="w-4 h-4" />
             </button>
             {historyOpen && (
-              <div className="absolute right-0 top-full mt-1 w-72 max-h-72 overflow-y-auto bg-white border border-arc-200 rounded-lg shadow-lg z-10">
-                <div className="px-3 py-2 border-b border-arc-200 flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-arc-500 uppercase tracking-wide">
+              <div className="absolute right-0 top-full mt-1 w-72 max-h-72 overflow-y-auto bg-white dark:bg-arc-dark-100 border border-arc-200 dark:border-arc-dark-200 rounded-lg shadow-lg z-10">
+                <div className="px-3 py-2 border-b border-arc-200 dark:border-arc-dark-200 flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">
                     {t('chat.past_threads')}
                   </span>
                   <button
                     type="button"
                     onClick={startNewThread}
-                    className="text-[11px] font-medium text-forest-600 hover:text-forest-700"
+                    className="text-[11px] font-medium text-forest-600 dark:text-forest-dark-700 hover:text-forest-700 dark:hover:text-forest-dark-700"
                   >
                     {t('chat.new')}
                   </button>
                 </div>
                 {threads.length === 0 ? (
-                  <p className="px-3 py-3 text-xs text-arc-500 italic">{t('chat.no_past_threads')}</p>
+                  <p className="px-3 py-3 text-xs text-arc-500 dark:text-arc-dark-500 italic">{t('chat.no_past_threads')}</p>
                 ) : (
                   <ul>
                     {threads.map((th) => (
@@ -410,12 +410,12 @@ export function OverviewChat() {
                         <button
                           type="button"
                           onClick={() => loadThread(th)}
-                          className={`w-full text-left px-3 py-2 hover:bg-arc-100 transition-colors ${
-                            th.id === threadId ? 'bg-arc-100' : ''
+                          className={`w-full text-left px-3 py-2 hover:bg-arc-100 dark:hover:bg-arc-dark-50 transition-colors ${
+                            th.id === threadId ? 'bg-arc-100 dark:bg-arc-dark-100' : ''
                           }`}
                         >
-                          <p className="text-xs font-medium text-arc-900 truncate">{threadLabel(th)}</p>
-                          <p className="text-[10px] text-arc-500 mt-0.5">{new Date(th.updated_at).toLocaleString()}</p>
+                          <p className="text-xs font-medium text-arc-900 dark:text-arc-dark-700 truncate">{threadLabel(th)}</p>
+                          <p className="text-[10px] text-arc-500 dark:text-arc-dark-500 mt-0.5">{new Date(th.updated_at).toLocaleString()}</p>
                         </button>
                       </li>
                     ))}
@@ -427,7 +427,7 @@ export function OverviewChat() {
           <button
             type="button"
             onClick={() => setExpanded(false)}
-            className="p-1.5 rounded-md hover:bg-arc-100 text-arc-500 hover:text-arc-700 transition-colors"
+            className="p-1.5 rounded-md hover:bg-arc-100 dark:hover:bg-arc-dark-50 text-arc-500 dark:text-arc-dark-500 hover:text-arc-700 dark:hover:text-arc-dark-700 transition-colors"
             aria-label={t('chat.collapse')}
             title={t('chat.collapse')}
           >
@@ -440,8 +440,8 @@ export function OverviewChat() {
         {messages.length === 0 ? (
           <div className="flex-1 flex items-center justify-center text-center px-6">
             <div>
-              <p className="text-sm text-arc-700 mb-1">{t('chat.empty_prompt_title')}</p>
-              <p className="text-xs text-arc-500 leading-relaxed">
+              <p className="text-sm text-arc-700 dark:text-arc-dark-700 mb-1">{t('chat.empty_prompt_title')}</p>
+              <p className="text-xs text-arc-500 dark:text-arc-dark-500 leading-relaxed">
                 {t('chat.empty_prompt_examples')}
               </p>
             </div>
@@ -481,17 +481,17 @@ export function OverviewChat() {
         )}
         {sending && (
           <div className="flex gap-2">
-            <div className="w-7 h-7 rounded-full bg-forest-500 flex items-center justify-center text-white text-[10px] font-semibold shrink-0">AI</div>
-            <div className="bg-arc-100 rounded-lg px-3 py-2 text-sm text-arc-500 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-arc-500 rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
-              <span className="w-1.5 h-1.5 bg-arc-500 rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-              <span className="w-1.5 h-1.5 bg-arc-500 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+            <div className="w-7 h-7 rounded-full bg-forest-500 dark:bg-forest-dark-500 flex items-center justify-center text-white text-[10px] font-semibold shrink-0">AI</div>
+            <div className="bg-arc-100 dark:bg-arc-dark-100 rounded-lg px-3 py-2 text-sm text-arc-500 dark:text-arc-dark-500 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-arc-500 dark:bg-arc-dark-500 rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 bg-arc-500 dark:bg-arc-dark-500 rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 bg-arc-500 dark:bg-arc-dark-500 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
             </div>
           </div>
         )}
       </div>
 
-      <div className="px-4 py-3 border-t border-arc-200">
+      <div className="px-4 py-3 border-t border-arc-200 dark:border-arc-dark-200">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -505,12 +505,12 @@ export function OverviewChat() {
             onChange={(e) => setDraft(e.target.value)}
             placeholder={t('chat.placeholder')}
             disabled={sending}
-            className="flex-1 rounded-lg border border-arc-200 bg-arc-100 px-3 py-2 text-sm focus:outline-none focus:border-forest-500 focus:bg-white transition-colors disabled:opacity-60"
+            className="flex-1 rounded-lg border border-arc-200 dark:border-arc-dark-200 bg-arc-100 dark:bg-arc-dark-100 px-3 py-2 text-sm focus:outline-none focus:border-forest-500 focus:bg-white transition-colors disabled:opacity-60"
           />
           <button
             type="submit"
             disabled={!draft.trim() || sending}
-            className="inline-flex items-center justify-center h-9 px-4 rounded-full bg-forest-600 text-white text-sm font-medium hover:bg-forest-700 disabled:bg-arc-300 transition-colors"
+            className="inline-flex items-center justify-center h-9 px-4 rounded-full bg-forest-600 dark:bg-forest-dark-600 text-white text-sm font-medium hover:bg-forest-700 dark:hover:bg-forest-dark-700 disabled:bg-arc-300 transition-colors"
             aria-label={t('chat.send')}
           >
             <Send className="w-4 h-4" />

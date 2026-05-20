@@ -60,8 +60,8 @@ const BOTTOM_ITEMS: NavItem[] = [
 
 const linkBase =
   'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors';
-const linkInactive = 'text-arc-200 hover:bg-arc-700 hover:text-white';
-const linkActive   = 'bg-forest-500 text-white';
+const linkInactive = 'text-arc-200 dark:text-arc-dark-300 hover:bg-arc-700 dark:hover:bg-arc-dark-200 hover:text-white';
+const linkActive   = 'bg-forest-500 dark:bg-forest-dark-500 text-white';
 
 function PrimaryNavLink({ item }: { item: NavItem }) {
   const { t } = useTranslation();
@@ -106,7 +106,7 @@ function WorkspaceNav() {
       </button>
 
       {open && (
-        <div className="flex flex-col gap-0.5 ml-6 pl-3 border-l border-arc-700">
+        <div className="flex flex-col gap-0.5 ml-6 pl-3 border-l border-arc-700 dark:border-arc-dark-200">
           {WORKSPACE_CHILDREN.map((c) => (
             <NavLink
               key={c.to}
@@ -144,11 +144,11 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="w-64 shrink-0 bg-arc-900 flex flex-col h-full">
+      <aside className="w-64 shrink-0 bg-arc-900 dark:bg-arc-dark-900 flex flex-col h-full">
         {/* Logo */}
         <Link
           to="/overview"
-          className="block px-4 py-5 border-b border-arc-700 hover:bg-arc-800 transition-colors"
+          className="block px-4 py-5 border-b border-arc-700 dark:border-arc-dark-200 hover:bg-arc-800 dark:hover:bg-arc-dark-200 transition-colors"
           aria-label={t('app.logo_back_to_overview')}
         >
           <div className="flex items-center gap-3">
@@ -157,7 +157,7 @@ export function Sidebar() {
               <span className="text-white font-semibold text-sm tracking-wide block">
                 {t('app.name')}
               </span>
-              <span className="text-arc-200 text-xs leading-tight">{t('app.tagline')}</span>
+              <span className="text-arc-200 dark:text-arc-dark-300 text-xs leading-tight">{t('app.tagline')}</span>
             </div>
           </div>
         </Link>
@@ -169,7 +169,7 @@ export function Sidebar() {
           <PrimaryNavLink item={RISK_EDITS_ITEM} />
 
           <div className="mt-4 mb-1 px-3">
-            <span className="text-xs text-arc-200 uppercase tracking-wider font-medium">
+            <span className="text-xs text-arc-200 dark:text-arc-dark-300 uppercase tracking-wider font-medium">
               {t('nav.reports')}
             </span>
           </div>
@@ -180,11 +180,11 @@ export function Sidebar() {
         </nav>
 
         {/* Footer — user + actions */}
-        <div className="border-t border-arc-700 px-3 py-3 flex flex-col gap-2">
+        <div className="border-t border-arc-700 dark:border-arc-dark-200 px-3 py-3 flex flex-col gap-2">
           {currentUser?.role === 'admin' && (
             <button
               onClick={() => setShowResetModal(true)}
-              className="w-full text-left flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-amber-300 hover:bg-arc-700 transition-colors"
+              className="w-full text-left flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-amber-300 hover:bg-arc-700 dark:hover:bg-arc-dark-200 transition-colors"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -198,13 +198,13 @@ export function Sidebar() {
               <UserAvatar seed={currentUser.avatar_seed} name={currentUser.name} size="sm" />
               <div className="flex-1 min-w-0">
                 <p className="text-white text-xs font-medium truncate">{currentUser.name}</p>
-                <p className="text-arc-200 text-xs truncate">{t(`role.${currentUser.role}`)}</p>
+                <p className="text-arc-200 dark:text-arc-dark-300 text-xs truncate">{t(`role.${currentUser.role}`)}</p>
               </div>
               <button
                 onClick={handleSignOut}
                 title={t('nav.sign_out')}
                 aria-label={t('nav.sign_out')}
-                className="text-arc-200 hover:text-white transition-colors"
+                className="text-arc-200 dark:text-arc-dark-300 hover:text-white transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

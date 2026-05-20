@@ -55,13 +55,13 @@ type StageKey = Extract<
 >;
 
 const STAGE_CARDS: { key: StageKey; labelKey: string; color: string }[] = [
-  { key: 'draft',           labelKey: 'overview.stage_card_draft',      color: 'text-arc-500'    },
+  { key: 'draft',           labelKey: 'overview.stage_card_draft',      color: 'text-arc-500 dark:text-arc-dark-500'    },
   { key: 'ready_for_uat',   labelKey: 'overview.stage_card_uat_queue',  color: 'text-amber-600'  },
   { key: 'uat_in_progress', labelKey: 'overview.stage_card_in_uat',     color: 'text-amber-600'  },
   { key: 'qa_review',       labelKey: 'overview.stage_card_qa_review',  color: 'text-amber-600'  },
   { key: 'approved',        labelKey: 'overview.stage_card_approved',   color: 'text-emerald-600' },
   { key: 'sent_to_it',      labelKey: 'overview.stage_card_sent_to_it', color: 'text-emerald-600' },
-  { key: 'live',            labelKey: 'overview.stage_card_live',       color: 'text-forest-600' },
+  { key: 'live',            labelKey: 'overview.stage_card_live',       color: 'text-forest-600 dark:text-forest-dark-700' },
 ];
 
 function StatBox({
@@ -72,15 +72,15 @@ function StatBox({
   return (
     <button
       onClick={onClick}
-      className={`rounded-xl border bg-white shadow-sm p-1.5 text-center transition-all duration-150 ${
+      className={`rounded-xl border bg-white dark:bg-arc-dark-100 shadow-sm p-1.5 text-center transition-all duration-150 ${
         isActive
-          ? 'border-arc-500 ring-1 ring-arc-500'
-          : 'border-arc-200 hover:border-forest-500 hover:bg-white hover:shadow-md'
+          ? 'border-arc-500 dark:border-arc-dark-500 ring-1 ring-arc-500 dark:ring-arc-dark-500'
+          : 'border-arc-200 dark:border-arc-dark-200 hover:border-forest-500 dark:hover:border-amber-accent-400 hover:bg-white dark:hover:bg-arc-dark-100 hover:shadow-md'
       }`}
     >
-      <div className="bg-arc-100 rounded-lg px-3 py-2">
+      <div className="bg-arc-100 dark:bg-arc-dark-100 rounded-lg px-3 py-2">
         <p className={`text-2xl font-bold tabular-nums ${color}`}>{value}</p>
-        <p className="text-xs text-arc-500 mt-0.5">{label}</p>
+        <p className="text-xs text-arc-500 dark:text-arc-dark-500 mt-0.5">{label}</p>
       </div>
     </button>
   );
@@ -99,9 +99,9 @@ function StageExpansionPanel({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="mt-3 rounded-xl border border-arc-200 bg-white shadow-sm overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-arc-200 flex items-center justify-between">
-        <p className="text-sm font-semibold text-arc-900">
+    <div className="mt-3 rounded-xl border border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 shadow-sm overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-arc-200 dark:border-arc-dark-200 flex items-center justify-between">
+        <p className="text-sm font-semibold text-arc-900 dark:text-arc-dark-700">
           {t('overview.stage_panel_subheader', {
             count: edits.length,
             stageLabel,
@@ -109,7 +109,7 @@ function StageExpansionPanel({
         </p>
         <button
           onClick={onClose}
-          className="text-arc-500 hover:text-arc-900 transition-colors"
+          className="text-arc-500 dark:text-arc-dark-500 hover:text-arc-900 dark:hover:text-arc-dark-700 transition-colors"
           title={t('overview.stage_panel_collapse')}
           aria-label={t('overview.stage_panel_collapse')}
         >
@@ -120,10 +120,10 @@ function StageExpansionPanel({
       </div>
 
       {edits.length === 0 ? (
-        <p className="px-4 py-6 text-center text-sm text-arc-500">{t('overview.stage_panel_no_edits')}</p>
+        <p className="px-4 py-6 text-center text-sm text-arc-500 dark:text-arc-dark-500">{t('overview.stage_panel_no_edits')}</p>
       ) : (
         <table className="w-full text-sm">
-          <thead className="bg-arc-100 text-xs text-arc-500 uppercase tracking-wide">
+          <thead className="bg-arc-100 dark:bg-arc-dark-100 text-xs text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">
             <tr>
               <th className="text-left font-medium px-4 py-2 w-28">{t('overview.stage_panel_col_id')}</th>
               <th className="text-left font-medium px-4 py-2">{t('overview.stage_panel_col_title')}</th>
@@ -132,30 +132,30 @@ function StageExpansionPanel({
               <th className="text-right font-medium px-4 py-2 w-44">{/* action */}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-arc-200">
+          <tbody className="divide-y divide-arc-200 dark:divide-arc-dark-200">
             {edits.map((e) => {
               const author = userMap[e.created_by];
               return (
-                <tr key={e.id} className="hover:bg-arc-100">
-                  <td className="px-4 py-2 font-mono text-xs text-arc-900">{e.edit_id_display}</td>
-                  <td className="px-4 py-2 text-arc-900 truncate">{e.title}</td>
+                <tr key={e.id} className="hover:bg-arc-100 dark:hover:bg-arc-dark-50">
+                  <td className="px-4 py-2 font-mono text-xs text-arc-900 dark:text-arc-dark-700">{e.edit_id_display}</td>
+                  <td className="px-4 py-2 text-arc-900 dark:text-arc-dark-700 truncate">{e.title}</td>
                   <td className="px-4 py-2">
                     {author ? (
                       <span className="inline-flex items-center gap-2">
                         <UserAvatar seed={author.avatar_seed} name={author.name} size="sm" />
-                        <span className="text-arc-900">{author.name}</span>
+                        <span className="text-arc-900 dark:text-arc-dark-700">{author.name}</span>
                       </span>
                     ) : (
-                      <span className="text-arc-500">—</span>
+                      <span className="text-arc-500 dark:text-arc-dark-500">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-arc-500 tabular-nums">
+                  <td className="px-4 py-2 text-arc-500 dark:text-arc-dark-500 tabular-nums">
                     {formatTimeSince(e.updated_at)}
                   </td>
                   <td className="px-4 py-2 text-right">
                     <Link
                       to={workspaceUrl(e)}
-                      className="text-xs font-medium text-arc-500 hover:text-arc-900 transition-colors"
+                      className="text-xs font-medium text-arc-500 dark:text-arc-dark-500 hover:text-arc-900 dark:hover:text-arc-dark-700 transition-colors"
                     >
                       {t('overview.stage_panel_open_workspace')}
                     </Link>
@@ -179,11 +179,11 @@ function EditRow({ change, onClick }: { change: RiskEdit; onClick: () => void })
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-between py-2.5 px-1 hover:bg-arc-200 rounded-lg transition-colors duration-150 text-left group"
+      className="w-full flex items-center justify-between py-2.5 px-1 hover:bg-arc-200 dark:hover:bg-arc-dark-200 rounded-lg transition-colors duration-150 text-left group"
     >
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-arc-900 truncate group-hover:text-arc-700">{change.title}</p>
-        <p className="text-xs text-arc-500 mt-0.5 font-mono truncate">
+        <p className="text-sm font-medium text-arc-900 dark:text-arc-dark-700 truncate group-hover:text-arc-700 dark:group-hover:text-arc-dark-700">{change.title}</p>
+        <p className="text-xs text-arc-500 dark:text-arc-dark-500 mt-0.5 font-mono truncate">
           {module?.module_name ?? change.target_module_id} · {change.edit_id_display}
         </p>
       </div>
@@ -204,21 +204,21 @@ function Panel({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="rounded-xl border border-arc-200 bg-white shadow-sm overflow-hidden flex flex-col">
-      <div className="px-4 py-3 border-b border-arc-200 flex items-center justify-between">
-        <p className="text-sm font-semibold text-arc-900">{title}</p>
-        <span className="text-xs text-arc-500">{t('overview.items', { count })}</span>
+    <div className="rounded-xl border border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 shadow-sm overflow-hidden flex flex-col">
+      <div className="px-4 py-3 border-b border-arc-200 dark:border-arc-dark-200 flex items-center justify-between">
+        <p className="text-sm font-semibold text-arc-900 dark:text-arc-dark-700">{title}</p>
+        <span className="text-xs text-arc-500 dark:text-arc-dark-500">{t('overview.items', { count })}</span>
       </div>
       <div className="flex-1 px-4 py-1">
         {count === 0 ? (
-          <p className="text-sm text-arc-500 py-4 text-center">{empty}</p>
+          <p className="text-sm text-arc-500 dark:text-arc-dark-500 py-4 text-center">{empty}</p>
         ) : (
-          <div className="divide-y divide-arc-200">{children}</div>
+          <div className="divide-y divide-arc-200 dark:divide-arc-dark-200">{children}</div>
         )}
       </div>
       {linkTo && linkLabel && (
-        <div className="px-4 py-2.5 border-t border-arc-200">
-          <Link to={linkTo} className="text-xs text-arc-500 hover:text-arc-900 font-medium transition-colors">
+        <div className="px-4 py-2.5 border-t border-arc-200 dark:border-arc-dark-200">
+          <Link to={linkTo} className="text-xs text-arc-500 dark:text-arc-dark-500 hover:text-arc-900 dark:hover:text-arc-dark-700 font-medium transition-colors">
             {linkLabel}
           </Link>
         </div>
@@ -242,20 +242,20 @@ function ModuleMiniCard({
   return (
     <div
       onClick={() => navigate(`/engine-modules/${module.id}`)}
-      className="rounded-xl border border-arc-200 bg-white shadow-sm p-1.5 text-left hover:border-forest-500 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 group cursor-pointer"
+      className="rounded-xl border border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 shadow-sm p-1.5 text-left hover:border-forest-500 dark:hover:border-amber-accent-400 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 group cursor-pointer"
     >
-      <div className="bg-arc-100 group-hover:bg-arc-50 rounded-lg p-5 flex flex-col gap-3 min-h-[160px] transition-colors duration-200">
+      <div className="bg-arc-100 dark:bg-arc-dark-100 group-hover:bg-arc-50 dark:group-hover:bg-arc-dark-50 rounded-lg p-5 flex flex-col gap-3 min-h-[160px] transition-colors duration-200">
         <div className="flex items-start justify-between gap-3">
-          <p className="font-mono text-sm font-semibold text-arc-900 group-hover:text-arc-700 truncate">
+          <p className="font-mono text-sm font-semibold text-arc-900 dark:text-arc-dark-700 group-hover:text-arc-700 dark:group-hover:text-arc-dark-700 truncate">
             {module.module_name}
           </p>
-          <span className="shrink-0 text-xs text-arc-500 font-mono">
+          <span className="shrink-0 text-xs text-arc-500 dark:text-arc-dark-500 font-mono">
             {t('overview.module_lines_short', { count: lines })}
           </span>
         </div>
-        <p className="text-xs text-arc-500 line-clamp-3 leading-relaxed flex-1">{module.description}</p>
+        <p className="text-xs text-arc-500 dark:text-arc-dark-500 line-clamp-3 leading-relaxed flex-1">{module.description}</p>
         <div className="flex items-center justify-between gap-2 pt-1">
-          <p className="text-xs text-arc-500">
+          <p className="text-xs text-arc-500 dark:text-arc-dark-500">
             {t('overview.module_updated', { date: fmtDate(module.updated_at) })}
           </p>
           {canCreate && (
@@ -360,10 +360,10 @@ export function OverviewPage() {
           {/* Welcome strip */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-semibold text-arc-900">
+              <h1 className="text-xl font-semibold text-arc-900 dark:text-arc-dark-700">
                 {t('overview.welcome_back', { name: currentUser?.name ?? '' })}
               </h1>
-              <p className="text-sm text-arc-500 mt-0.5">
+              <p className="text-sm text-arc-500 dark:text-arc-dark-500 mt-0.5">
                 {roleLabel} · {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
             </div>
@@ -372,11 +372,11 @@ export function OverviewPage() {
           {/* Pipeline stats */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide">
+              <p className="text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">
                 {t('overview.pipeline_glance')}
               </p>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-arc-500 tabular-nums">
+                <span className="text-xs text-arc-500 dark:text-arc-dark-500 tabular-nums">
                   {lastUpdated
                     ? t('overview.last_updated', { ts: fmtClock(lastUpdated) })
                     : t('overview.last_updated_unknown')}
@@ -385,7 +385,7 @@ export function OverviewPage() {
                   onClick={handleRefresh}
                   title={t('overview.refresh_now')}
                   aria-label={t('overview.refresh_now')}
-                  className="text-arc-500 hover:text-arc-900 transition-colors p-1 rounded hover:bg-arc-100"
+                  className="text-arc-500 dark:text-arc-dark-500 hover:text-arc-900 dark:hover:text-arc-dark-700 transition-colors p-1 rounded hover:bg-arc-100 dark:hover:bg-arc-dark-50"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -421,7 +421,7 @@ export function OverviewPage() {
 
           {/* Role-specific action panels */}
           <div>
-            <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">
+            <p className="text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide mb-3">
               {t('overview.your_queue')}
             </p>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -502,14 +502,14 @@ export function OverviewPage() {
                     {confirmedPackets.slice(0, 5).map((pkt) => (
                       <button key={pkt.id}
                         onClick={() => navigate('/it-handoff-log')}
-                        className="w-full flex items-start justify-between py-2.5 px-1 hover:bg-arc-200 rounded-lg transition-colors duration-150 text-left group">
+                        className="w-full flex items-start justify-between py-2.5 px-1 hover:bg-arc-200 dark:hover:bg-arc-dark-200 rounded-lg transition-colors duration-150 text-left group">
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-arc-900 group-hover:text-arc-700 truncate">{pkt.name}</p>
+                          <p className="text-sm font-medium text-arc-900 dark:text-arc-dark-700 group-hover:text-arc-700 dark:group-hover:text-arc-dark-700 truncate">{pkt.name}</p>
                           {pkt.description && (
-                            <p className="text-xs text-arc-500 mt-0.5 truncate">{pkt.description}</p>
+                            <p className="text-xs text-arc-500 dark:text-arc-dark-500 mt-0.5 truncate">{pkt.description}</p>
                           )}
                         </div>
-                        <span className="ml-3 shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                        <span className="ml-3 shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/50">
                           {t('overview.confirmed')}
                         </span>
                       </button>
@@ -550,9 +550,9 @@ export function OverviewPage() {
                     linkTo="/it-handoff-log" linkLabel={t('overview.go_to_it_handoff')}>
                     {confirmedPackets.slice(0, 5).map((pkt) => (
                       <button key={pkt.id} onClick={() => navigate('/it-handoff-log')}
-                        className="w-full flex items-start justify-between py-2.5 px-1 hover:bg-arc-200 rounded-lg transition-colors duration-150 text-left group">
-                        <p className="text-sm font-medium text-arc-900 group-hover:text-arc-700 truncate">{pkt.name}</p>
-                        <span className="ml-3 shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                        className="w-full flex items-start justify-between py-2.5 px-1 hover:bg-arc-200 dark:hover:bg-arc-dark-200 rounded-lg transition-colors duration-150 text-left group">
+                        <p className="text-sm font-medium text-arc-900 dark:text-arc-dark-700 group-hover:text-arc-700 dark:group-hover:text-arc-dark-700 truncate">{pkt.name}</p>
+                        <span className="ml-3 shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/50">
                           {t('overview.confirmed')}
                         </span>
                       </button>
@@ -566,7 +566,7 @@ export function OverviewPage() {
           {/* Create a new risk edit — chatbox + module browser */}
           {canCreateRiskEdit && (
             <div>
-              <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">
+              <p className="text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide mb-3">
                 {t('overview.start_new_edit')}
               </p>
               <OverviewChat />
@@ -575,7 +575,7 @@ export function OverviewPage() {
 
           {/* Engine modules — full grid, no separate listing page */}
           <div>
-            <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">
+            <p className="text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide mb-3">
               {canCreateRiskEdit ? t('overview.browse_modules') : t('overview.engine_modules')}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -15,8 +15,8 @@ export function TopBar({ breadcrumb, actions }: TopBarProps) {
   const { t } = useTranslation();
 
   return (
-    <header className="h-12 shrink-0 bg-white border-b border-arc-200 flex items-center justify-between px-5">
-      <div className="flex items-center gap-3 text-sm text-arc-500">
+    <header className="h-12 shrink-0 bg-white dark:bg-arc-dark-100 border-b border-arc-200 dark:border-arc-dark-200 flex items-center justify-between px-5">
+      <div className="flex items-center gap-3 text-sm text-arc-500 dark:text-arc-dark-500">
         <div className="flex items-center gap-0.5">
           <button
             type="button"
@@ -24,7 +24,7 @@ export function TopBar({ breadcrumb, actions }: TopBarProps) {
             disabled={!canGoBack}
             aria-label={t('nav.back')}
             title={t('nav.back')}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-arc-500 hover:bg-arc-100 hover:text-arc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-arc-500 dark:text-arc-dark-500 hover:bg-arc-100 dark:hover:bg-arc-dark-50 hover:text-arc-900 dark:hover:text-arc-dark-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -34,7 +34,7 @@ export function TopBar({ breadcrumb, actions }: TopBarProps) {
             disabled={!canGoForward}
             aria-label={t('nav.forward')}
             title={t('nav.forward')}
-            className="w-7 h-7 flex items-center justify-center rounded-md text-arc-500 hover:bg-arc-100 hover:text-arc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-arc-500 dark:text-arc-dark-500 hover:bg-arc-100 dark:hover:bg-arc-dark-50 hover:text-arc-900 dark:hover:text-arc-dark-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -55,8 +55,8 @@ export function Breadcrumb({ items }: { items: { label: string; to?: string }[] 
     <nav className="flex items-center gap-1.5">
       {items.map((item, i) => (
         <span key={i} className="flex items-center gap-1.5">
-          {i > 0 && <span className="text-arc-500">/</span>}
-          <span className={i === items.length - 1 ? 'text-arc-900 font-medium' : 'text-arc-500'}>
+          {i > 0 && <span className="text-arc-500 dark:text-arc-dark-500">/</span>}
+          <span className={i === items.length - 1 ? 'text-arc-900 dark:text-arc-dark-700 font-medium' : 'text-arc-500 dark:text-arc-dark-500'}>
             {item.label}
           </span>
         </span>

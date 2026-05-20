@@ -131,16 +131,16 @@ function AuditPanel({ editId, userMap }: { editId: string; userMap: Record<strin
   const { data: entries = [], isLoading } = useAuditLog({ entity_type: 'risk_edit', entity_id: editId });
   const sorted = [...entries].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 6);
 
-  if (isLoading) return <p className="text-xs text-arc-500 py-2">{t('common.loading')}</p>;
-  if (sorted.length === 0) return <p className="text-xs text-arc-500 py-2">{t('risk_edits.no_audit')}</p>;
+  if (isLoading) return <p className="text-xs text-arc-500 dark:text-arc-dark-500 py-2">{t('common.loading')}</p>;
+  if (sorted.length === 0) return <p className="text-xs text-arc-500 dark:text-arc-dark-500 py-2">{t('risk_edits.no_audit')}</p>;
 
   return (
     <div className="flex flex-col gap-1.5">
       {sorted.map((entry) => (
         <div key={entry.id} className="flex items-start gap-2.5 text-xs">
           <span className="w-1.5 h-1.5 rounded-full bg-arc-300 mt-1.5 shrink-0" />
-          <span className="text-arc-900 font-medium min-w-0">{fmtAction(entry)}</span>
-          <span className="text-arc-500 shrink-0 ml-auto pl-4">
+          <span className="text-arc-900 dark:text-arc-dark-700 font-medium min-w-0">{fmtAction(entry)}</span>
+          <span className="text-arc-500 dark:text-arc-dark-500 shrink-0 ml-auto pl-4">
             {userMap[entry.actor_id] ?? entry.actor_id} · {fmtDateTime(entry.created_at)}
           </span>
         </div>
@@ -198,7 +198,7 @@ function StageTimeline({ edit, nowMs }: { edit: RiskEdit; nowMs: number }) {
   const { t } = useTranslation();
   const { data: audit = [], isLoading } = useAuditLog({ entity_type: 'risk_edit', entity_id: edit.id });
 
-  if (isLoading) return <p className="text-xs text-arc-500">{t('risk_edits.loading_timeline')}</p>;
+  if (isLoading) return <p className="text-xs text-arc-500 dark:text-arc-dark-500">{t('risk_edits.loading_timeline')}</p>;
 
   const segments = buildTimeline(edit, audit, nowMs);
   const reachedStages = new Set(segments.map((s) => s.stage));
@@ -215,7 +215,7 @@ function StageTimeline({ edit, nowMs }: { edit: RiskEdit; nowMs: number }) {
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex h-3 rounded-md overflow-hidden border border-arc-200 bg-arc-100">
+      <div className="flex h-3 rounded-md overflow-hidden border border-arc-200 dark:border-arc-dark-200 bg-arc-100 dark:bg-arc-dark-100">
         {segments.map((seg, idx) => {
           const dur = Math.max(1, seg.endMs - seg.startMs);
           const widthPct = (dur / totalReachedMs) * reachedShare * 100;
@@ -231,7 +231,7 @@ function StageTimeline({ edit, nowMs }: { edit: RiskEdit; nowMs: number }) {
         {future.map((stage) => (
           <div
             key={`future-${stage}`}
-            className="bg-arc-100/60 h-full border-l border-white"
+            className="bg-arc-100/60 dark:bg-arc-dark-100/60 h-full border-l border-white"
             style={{ width: `${(futureShare / future.length) * 100}%` }}
             title={`${t(`stage.${stage}`)}: ${t('risk_edits.timeline_not_reached')}`}
           />
@@ -243,9 +243,9 @@ function StageTimeline({ edit, nowMs }: { edit: RiskEdit; nowMs: number }) {
           return (
             <span
               key={stage}
-              className={`flex items-center gap-1.5 ${reached ? 'text-arc-700' : 'text-arc-200'}`}
+              className={`flex items-center gap-1.5 ${reached ? 'text-arc-700 dark:text-arc-dark-700' : 'text-arc-200 dark:text-arc-dark-300'}`}
             >
-              <span className={`w-2 h-2 rounded-sm ${reached ? stageBarColor(stage) : 'bg-arc-100'}`} />
+              <span className={`w-2 h-2 rounded-sm ${reached ? stageBarColor(stage) : 'bg-arc-100 dark:bg-arc-dark-100'}`} />
               {t(`stage.${stage}`)}
             </span>
           );
@@ -267,11 +267,11 @@ function AuthorCell({ userId }: { userId: string }) {
     queryKey: ['arc', 'users', userId],
     queryFn: () => repo.users.get(userId),
   });
-  if (!user) return <span className="text-arc-500 text-xs">—</span>;
+  if (!user) return <span className="text-arc-500 dark:text-arc-dark-500 text-xs">—</span>;
   return (
     <div className="flex items-center gap-2">
       <UserAvatar seed={user.avatar_seed} name={user.name} size="sm" />
-      <span className="text-sm text-arc-900">{user.name}</span>
+      <span className="text-sm text-arc-900 dark:text-arc-dark-700">{user.name}</span>
     </div>
   );
 }
@@ -282,7 +282,7 @@ function ModuleCell({ moduleId }: { moduleId: string }) {
     queryKey: ['arc', 'engine_modules', moduleId],
     queryFn: () => repo.engineModules.get(moduleId),
   });
-  return <span className="font-mono text-xs text-arc-700">{mod?.module_name ?? moduleId}</span>;
+  return <span className="font-mono text-xs text-arc-700 dark:text-arc-dark-700">{mod?.module_name ?? moduleId}</span>;
 }
 
 interface RowProps {
@@ -299,19 +299,19 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
   const { t } = useTranslation();
   const colSpan = showFinalTs ? 9 : 8;
   const tAt = terminalAt(edit);
-  const zebra = index % 2 === 0 ? 'bg-white' : 'bg-arc-100/60';
+  const zebra = index % 2 === 0 ? 'bg-white dark:bg-arc-dark-100' : 'bg-arc-100/60 dark:bg-arc-dark-100/60';
 
   return (
     <>
       <tr
-        className={`border-b border-arc-200 ${zebra} hover:bg-arc-200 transition-colors duration-150 cursor-pointer`}
+        className={`border-b border-arc-200 dark:border-arc-dark-200 ${zebra} hover:bg-arc-200 dark:hover:bg-arc-dark-200 transition-colors duration-150 cursor-pointer`}
         onClick={onToggle}
       >
         <td className="px-4 py-3 w-32">
-          <span className="font-mono text-xs text-arc-700">{edit.edit_id_display}</span>
+          <span className="font-mono text-xs text-arc-700 dark:text-arc-dark-700">{edit.edit_id_display}</span>
         </td>
         <td className="px-4 py-3">
-          <span className="font-medium text-arc-900">{edit.title}</span>
+          <span className="font-medium text-arc-900 dark:text-arc-dark-700">{edit.title}</span>
         </td>
         <td className="px-4 py-3 w-36">
           <StageBadge stage={edit.current_stage} />
@@ -323,43 +323,43 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
           <AuthorCell userId={edit.created_by} />
         </td>
         <td className="px-4 py-3 w-28">
-          <span className="text-xs text-arc-700 font-mono whitespace-nowrap">
+          <span className="text-xs text-arc-700 dark:text-arc-dark-700 font-mono whitespace-nowrap">
             {fmtRelative(sinceUpdateMs(edit, nowMs))}
           </span>
         </td>
         <td className="px-4 py-3 w-28">
-          <span className="text-xs text-arc-700 font-mono whitespace-nowrap">
+          <span className="text-xs text-arc-700 dark:text-arc-dark-700 font-mono whitespace-nowrap">
             {fmtRelative(totalElapsedMs(edit, nowMs))}
           </span>
         </td>
         {showFinalTs && (
           <td className="px-4 py-3 w-32">
-            <span className="text-xs text-arc-700 font-mono whitespace-nowrap">
+            <span className="text-xs text-arc-700 dark:text-arc-dark-700 font-mono whitespace-nowrap">
               {tAt ? fmtDate(tAt) : '—'}
             </span>
           </td>
         )}
-        <td className="px-4 py-3 w-8 text-arc-700 text-xs text-right">
+        <td className="px-4 py-3 w-8 text-arc-700 dark:text-arc-dark-700 text-xs text-right">
           {isOpen ? '▲' : '▼'}
         </td>
       </tr>
 
       {isOpen && (
-        <tr className="border-b border-arc-200 bg-arc-100">
+        <tr className="border-b border-arc-200 dark:border-arc-dark-200 bg-arc-100 dark:bg-arc-dark-100">
           <td colSpan={colSpan} className="px-6 py-4">
             <div className="flex flex-col gap-5">
               <div className="flex gap-8">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-2">
+                  <p className="text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide mb-2">
                     {t('risk_edits.edit_brief')}
                   </p>
-                  <p className="text-xs text-arc-900 leading-relaxed line-clamp-3">
-                    {edit.natural_language_brief || <span className="text-arc-500 italic">{t('risk_edits.no_brief')}</span>}
+                  <p className="text-xs text-arc-900 dark:text-arc-dark-700 leading-relaxed line-clamp-3">
+                    {edit.natural_language_brief || <span className="text-arc-500 dark:text-arc-dark-500 italic">{t('risk_edits.no_brief')}</span>}
                   </p>
                 </div>
-                <div className="w-px bg-arc-200 shrink-0" />
+                <div className="w-px bg-arc-200 dark:bg-arc-dark-200 shrink-0" />
                 <div className="flex-[2] min-w-0">
-                  <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-2">
+                  <p className="text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide mb-2">
                     {t('risk_edits.recent_activity')}
                   </p>
                   <AuditPanel editId={edit.id} userMap={userMap} />
@@ -368,7 +368,7 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
                   <Link
                     to={workspaceUrl(edit)}
                     onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-arc-900 text-white text-xs font-medium hover:bg-arc-700 transition-colors"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-arc-900 dark:bg-arc-dark-900 text-white text-xs font-medium hover:bg-arc-700 dark:hover:bg-arc-dark-200 transition-colors"
                   >
                     {t('risk_edits.open_workspace')}
                   </Link>
@@ -376,7 +376,7 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-2">
+                <p className="text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide mb-2">
                   {t('risk_edits.stage_timeline')}
                 </p>
                 <StageTimeline edit={edit} nowMs={nowMs} />
@@ -405,12 +405,12 @@ function HeaderCell({
   const active = sort.key === sortKey;
   return (
     <th
-      className={`px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide cursor-pointer select-none transition-colors ${width ?? ''} ${active ? 'text-arc-700' : 'text-arc-500 hover:text-arc-700'}`}
+      className={`px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide cursor-pointer select-none transition-colors ${width ?? ''} ${active ? 'text-arc-700 dark:text-arc-dark-700' : 'text-arc-500 dark:text-arc-dark-500 hover:text-arc-700 dark:hover:text-arc-dark-700'}`}
       onClick={() => onSort(sortKey)}
     >
       <span className="inline-flex items-center gap-1">
         {label}
-        {active && <span className="text-arc-700">{sort.dir === 'asc' ? '▲' : '▼'}</span>}
+        {active && <span className="text-arc-700 dark:text-arc-dark-700">{sort.dir === 'asc' ? '▲' : '▼'}</span>}
       </span>
     </th>
   );
@@ -461,10 +461,10 @@ function EditsTable({
   const { t } = useTranslation();
   const [expandedEditId, setExpandedEditId] = useState<string | null>(null);
   return (
-    <div className="bg-white rounded-xl border border-arc-200 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-arc-dark-100 rounded-xl border border-arc-200 dark:border-arc-dark-200 shadow-sm overflow-hidden">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-arc-200 bg-arc-100">
+          <tr className="border-b border-arc-200 dark:border-arc-dark-200 bg-arc-100 dark:bg-arc-dark-100">
             <HeaderCell label={t('risk_edits.col_id')}             width="w-32" sortKey="id"            sort={sort} onSort={onSort} />
             <HeaderCell label={t('risk_edits.col_title')}                       sortKey="title"         sort={sort} onSort={onSort} />
             <HeaderCell label={t('risk_edits.col_stage')}          width="w-36" sortKey="stage"         sort={sort} onSort={onSort} />
@@ -590,8 +590,8 @@ export function RiskEditsPage() {
         <div className="flex-1 overflow-y-auto p-6">
           <div className="max-w-6xl mx-auto">
             <div className="mb-5">
-              <h1 className="text-xl font-semibold text-arc-900">{t('risk_edits.title')}</h1>
-              <p className="text-sm text-arc-500 mt-0.5">{t('risk_edits.subtitle')}</p>
+              <h1 className="text-xl font-semibold text-arc-900 dark:text-arc-dark-700">{t('risk_edits.title')}</h1>
+              <p className="text-sm text-arc-500 dark:text-arc-dark-500 mt-0.5">{t('risk_edits.subtitle')}</p>
             </div>
 
             <div className="flex flex-wrap gap-3 mb-5 items-center">
@@ -634,21 +634,21 @@ export function RiskEditsPage() {
             </div>
 
             {isLoading ? (
-              <div className="bg-white rounded-xl border border-arc-200 shadow-sm py-16 text-center text-arc-500 text-sm">
+              <div className="bg-white dark:bg-arc-dark-100 rounded-xl border border-arc-200 dark:border-arc-dark-200 shadow-sm py-16 text-center text-arc-500 dark:text-arc-dark-500 text-sm">
                 {t('common.loading')}
               </div>
             ) : (
               <div className="flex flex-col gap-6">
                 <section>
                   <div className="flex items-baseline justify-between mb-2">
-                    <h2 className="text-sm font-semibold text-arc-900">
+                    <h2 className="text-sm font-semibold text-arc-900 dark:text-arc-dark-700">
                       {t('risk_edits.section_active')}{' '}
-                      <span className="text-arc-500 font-normal">({sortedActive.length})</span>
+                      <span className="text-arc-500 dark:text-arc-dark-500 font-normal">({sortedActive.length})</span>
                     </h2>
-                    <p className="text-xs text-arc-500">{t('risk_edits.section_active_sub')}</p>
+                    <p className="text-xs text-arc-500 dark:text-arc-dark-500">{t('risk_edits.section_active_sub')}</p>
                   </div>
                   {sortedActive.length === 0 ? (
-                    <div className="bg-white rounded-xl border border-arc-200 shadow-sm py-10 text-center text-arc-500 text-sm">
+                    <div className="bg-white dark:bg-arc-dark-100 rounded-xl border border-arc-200 dark:border-arc-dark-200 shadow-sm py-10 text-center text-arc-500 dark:text-arc-dark-500 text-sm">
                       {t('risk_edits.empty_active')}
                     </div>
                   ) : (
@@ -665,14 +665,14 @@ export function RiskEditsPage() {
 
                 <section>
                   <div className="flex items-baseline justify-between mb-2">
-                    <h2 className="text-sm font-semibold text-arc-900">
+                    <h2 className="text-sm font-semibold text-arc-900 dark:text-arc-dark-700">
                       {t('risk_edits.section_archived')}{' '}
-                      <span className="text-arc-500 font-normal">({sortedArchived.length})</span>
+                      <span className="text-arc-500 dark:text-arc-dark-500 font-normal">({sortedArchived.length})</span>
                     </h2>
-                    <p className="text-xs text-arc-500">{t('risk_edits.section_archived_sub')}</p>
+                    <p className="text-xs text-arc-500 dark:text-arc-dark-500">{t('risk_edits.section_archived_sub')}</p>
                   </div>
                   {sortedArchived.length === 0 ? (
-                    <div className="bg-white rounded-xl border border-arc-200 shadow-sm py-10 text-center text-arc-500 text-sm">
+                    <div className="bg-white dark:bg-arc-dark-100 rounded-xl border border-arc-200 dark:border-arc-dark-200 shadow-sm py-10 text-center text-arc-500 dark:text-arc-dark-500 text-sm">
                       {t('risk_edits.empty_archived')}
                     </div>
                   ) : (

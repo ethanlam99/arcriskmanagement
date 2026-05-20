@@ -80,8 +80,8 @@ function AiTaskList({
                 isDone
                   ? 'bg-emerald-500 text-white'
                   : isActive
-                  ? 'bg-white border border-arc-500'
-                  : 'bg-white border border-arc-200'
+                  ? 'bg-white dark:bg-arc-dark-100 border border-arc-500 dark:border-arc-dark-500'
+                  : 'bg-white dark:bg-arc-dark-100 border border-arc-200 dark:border-arc-dark-200'
               }`}
             >
               {isDone ? (
@@ -89,18 +89,18 @@ function AiTaskList({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               ) : isActive ? (
-                <span className="w-2 h-2 rounded-full border border-arc-500 border-t-transparent animate-spin" />
+                <span className="w-2 h-2 rounded-full border border-arc-500 dark:border-arc-dark-500 border-t-transparent animate-spin" />
               ) : null}
             </span>
             <span
               className={
                 isDone
-                  ? 'text-arc-500 line-through'
+                  ? 'text-arc-500 dark:text-arc-dark-500 line-through'
                   : isActive
-                  ? 'text-arc-900 font-medium'
+                  ? 'text-arc-900 dark:text-arc-dark-700 font-medium'
                   : isPending
-                  ? 'text-arc-200'
-                  : 'text-arc-500'
+                  ? 'text-arc-200 dark:text-arc-dark-300'
+                  : 'text-arc-500 dark:text-arc-dark-500'
               }
             >
               {t(labelKey)}
@@ -126,34 +126,34 @@ function ProposedCaseRow({
   const { t } = useTranslation();
   const isHuman = proposed.source === 'human';
   return (
-    <li className={`rounded-lg border border-arc-200 bg-white px-3 py-2.5 flex items-start gap-2.5 transition-opacity ${locked ? 'opacity-60' : ''}`}>
+    <li className={`rounded-lg border border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 px-3 py-2.5 flex items-start gap-2.5 transition-opacity ${locked ? 'opacity-60' : ''}`}>
       <input
         type="checkbox"
         checked={proposed.included_in_run}
         onChange={onToggleInclude}
         disabled={locked}
-        className="mt-0.5 rounded border-arc-300 shrink-0"
+        className="mt-0.5 rounded border-arc-300 dark:border-arc-dark-300 shrink-0"
         aria-label={proposed.included_in_run ? t('workspace.uat.case_exclude_aria') : t('workspace.uat.case_include_aria')}
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-xs font-medium text-arc-900 leading-snug">{proposed.description}</p>
+          <p className="text-xs font-medium text-arc-900 dark:text-arc-dark-700 leading-snug">{proposed.description}</p>
           <span className={`text-[10px] font-semibold uppercase tracking-wide shrink-0 ${
-            isHuman ? 'text-forest-600' : 'text-arc-500'
+            isHuman ? 'text-forest-600 dark:text-forest-dark-700' : 'text-arc-500 dark:text-arc-dark-500'
           }`}>
             {isHuman ? t('workspace.uat.case_source_human') : t('workspace.uat.case_source_ai')}
           </span>
         </div>
         <div className="mt-1.5 grid grid-cols-2 gap-2 text-[10px] font-mono">
-          <div className="bg-arc-100 rounded px-1.5 py-1 overflow-hidden">
-            <span className="block text-arc-500 mb-0.5">{t('workspace.uat.case_input')}</span>
-            <span className="block text-arc-700 truncate" title={JSON.stringify(proposed.input)}>
+          <div className="bg-arc-100 dark:bg-arc-dark-100 rounded px-1.5 py-1 overflow-hidden">
+            <span className="block text-arc-500 dark:text-arc-dark-500 mb-0.5">{t('workspace.uat.case_input')}</span>
+            <span className="block text-arc-700 dark:text-arc-dark-700 truncate" title={JSON.stringify(proposed.input)}>
               {JSON.stringify(proposed.input)}
             </span>
           </div>
-          <div className="bg-arc-100 rounded px-1.5 py-1 overflow-hidden">
-            <span className="block text-arc-500 mb-0.5">{t('workspace.uat.case_expected')}</span>
-            <span className="block text-arc-700 truncate" title={JSON.stringify(proposed.expected)}>
+          <div className="bg-arc-100 dark:bg-arc-dark-100 rounded px-1.5 py-1 overflow-hidden">
+            <span className="block text-arc-500 dark:text-arc-dark-500 mb-0.5">{t('workspace.uat.case_expected')}</span>
+            <span className="block text-arc-700 dark:text-arc-dark-700 truncate" title={JSON.stringify(proposed.expected)}>
               {JSON.stringify(proposed.expected)}
             </span>
           </div>
@@ -164,7 +164,7 @@ function ProposedCaseRow({
           type="button"
           onClick={onRemove}
           disabled={locked}
-          className="shrink-0 mt-0.5 text-arc-400 hover:text-rose-500 disabled:text-arc-200 transition-colors"
+          className="shrink-0 mt-0.5 text-arc-400 dark:text-arc-dark-500 hover:text-rose-500 disabled:text-arc-200 transition-colors"
           aria-label={t('workspace.uat.case_remove_aria')}
         >
           <Trash2 className="w-3.5 h-3.5" />
@@ -218,33 +218,33 @@ function AddCaseForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-2 rounded-lg border border-arc-200 bg-white px-3 py-3 flex flex-col gap-2.5">
+    <form onSubmit={handleSubmit} className="mt-2 rounded-lg border border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 px-3 py-3 flex flex-col gap-2.5">
       <label className="block">
-        <span className="block text-[11px] font-semibold text-arc-500 uppercase tracking-wide mb-1">{t('workspace.uat.add_case_description')}</span>
+        <span className="block text-[11px] font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide mb-1">{t('workspace.uat.add_case_description')}</span>
         <input
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder={t('workspace.uat.add_case_description_placeholder')}
-          className="w-full rounded-md border border-arc-200 px-2 py-1.5 text-xs focus:outline-none focus:border-forest-500"
+          className="w-full rounded-md border border-arc-200 dark:border-arc-dark-200 px-2 py-1.5 text-xs focus:outline-none focus:border-forest-500"
         />
       </label>
       <label className="block">
-        <span className="block text-[11px] font-semibold text-arc-500 uppercase tracking-wide mb-1">{t('workspace.uat.add_case_input')}</span>
+        <span className="block text-[11px] font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide mb-1">{t('workspace.uat.add_case_input')}</span>
         <textarea
           value={inputJson}
           onChange={(e) => setInputJson(e.target.value)}
           rows={3}
-          className="w-full rounded-md border border-arc-200 px-2 py-1.5 text-[11px] font-mono focus:outline-none focus:border-forest-500"
+          className="w-full rounded-md border border-arc-200 dark:border-arc-dark-200 px-2 py-1.5 text-[11px] font-mono focus:outline-none focus:border-forest-500"
         />
       </label>
       <label className="block">
-        <span className="block text-[11px] font-semibold text-arc-500 uppercase tracking-wide mb-1">{t('workspace.uat.add_case_expected')}</span>
+        <span className="block text-[11px] font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide mb-1">{t('workspace.uat.add_case_expected')}</span>
         <textarea
           value={expectedJson}
           onChange={(e) => setExpectedJson(e.target.value)}
           rows={3}
-          className="w-full rounded-md border border-arc-200 px-2 py-1.5 text-[11px] font-mono focus:outline-none focus:border-forest-500"
+          className="w-full rounded-md border border-arc-200 dark:border-arc-dark-200 px-2 py-1.5 text-[11px] font-mono focus:outline-none focus:border-forest-500"
         />
       </label>
       {error && <p className="text-[11px] text-rose-600">{error}</p>}
@@ -252,14 +252,14 @@ function AddCaseForm({
         <button
           type="button"
           onClick={onCancel}
-          className="text-xs px-2.5 py-1 rounded-md text-arc-700 hover:bg-arc-100 transition-colors"
+          className="text-xs px-2.5 py-1 rounded-md text-arc-700 dark:text-arc-dark-700 hover:bg-arc-100 dark:hover:bg-arc-dark-50 transition-colors"
         >
           {t('workspace.uat.add_case_cancel')}
         </button>
         <button
           type="submit"
           disabled={submitting}
-          className="text-xs px-2.5 py-1 rounded-md bg-forest-600 text-white hover:bg-forest-700 disabled:bg-arc-300 transition-colors"
+          className="text-xs px-2.5 py-1 rounded-md bg-forest-600 dark:bg-forest-dark-600 text-white hover:bg-forest-700 dark:hover:bg-forest-dark-700 disabled:bg-arc-300 transition-colors"
         >
           {submitting ? t('workspace.uat.add_case_submitting') : t('workspace.uat.add_case_submit')}
         </button>
@@ -373,14 +373,14 @@ function ProposedCasesSection({
 
   return (
     <section>
-      <h3 className="text-xs font-semibold text-arc-900 uppercase tracking-wide mb-2">
+      <h3 className="text-xs font-semibold text-arc-900 dark:text-arc-dark-700 uppercase tracking-wide mb-2">
         {t('workspace.uat.proposed_cases_heading')}
       </h3>
-      <p className="text-xs text-arc-500 mb-3 leading-relaxed">
+      <p className="text-xs text-arc-500 dark:text-arc-dark-500 mb-3 leading-relaxed">
         {t('workspace.uat.proposed_cases_help')}
       </p>
       {cases.length === 0 ? (
-        <p className="text-xs text-arc-500 italic">{t('workspace.uat.no_proposed_cases')}</p>
+        <p className="text-xs text-arc-500 dark:text-arc-dark-500 italic">{t('workspace.uat.no_proposed_cases')}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {cases.map((c) => (
@@ -399,7 +399,7 @@ function ProposedCasesSection({
           type="button"
           onClick={() => setShowAddCase(true)}
           disabled={casesLocked}
-          className="mt-2 text-xs font-medium text-forest-600 hover:text-forest-700 disabled:text-arc-300"
+          className="mt-2 text-xs font-medium text-forest-600 dark:text-forest-dark-700 hover:text-forest-700 dark:hover:text-forest-dark-700 disabled:text-arc-300"
         >
           {t('workspace.uat.propose_new_case')}
         </button>
@@ -416,7 +416,7 @@ function ProposedCasesSection({
               type="button"
               onClick={() => setShowReviewConfirm(true)}
               disabled={markingReviewed || includedCount === 0}
-              className="w-full rounded-lg bg-arc-900 text-white text-sm font-medium py-2 disabled:bg-arc-300 hover:bg-arc-700 transition-colors"
+              className="w-full rounded-lg bg-arc-900 dark:bg-arc-dark-900 text-white text-sm font-medium py-2 disabled:bg-arc-300 hover:bg-arc-700 dark:hover:bg-arc-dark-200 transition-colors"
               title={includedCount === 0 ? t('workspace.uat.include_at_least_one') : undefined}
             >
               {t('workspace.uat.mark_reviewed')}
@@ -427,7 +427,7 @@ function ProposedCasesSection({
                 type="button"
                 onClick={handleSendClick}
                 disabled={sendingFromPanel || includedCount === 0}
-                className="w-full rounded-lg bg-forest-600 text-white text-sm font-medium py-2 disabled:bg-arc-300 hover:bg-forest-700 transition-colors"
+                className="w-full rounded-lg bg-forest-600 dark:bg-forest-dark-600 text-white text-sm font-medium py-2 disabled:bg-arc-300 hover:bg-forest-700 dark:hover:bg-forest-dark-700 transition-colors"
               >
                 {sendingFromPanel ? t('workspace.uat.sending') : t('workspace.uat.send_for_ai_uat_report')}
               </button>
@@ -435,7 +435,7 @@ function ProposedCasesSection({
                 type="button"
                 onClick={handleUnlock}
                 disabled={sendingFromPanel || unlocking}
-                className="mt-2 w-full text-center text-xs text-arc-500 hover:text-arc-700 disabled:text-arc-300 transition-colors"
+                className="mt-2 w-full text-center text-xs text-arc-500 dark:text-arc-dark-500 hover:text-arc-700 dark:hover:text-arc-dark-700 disabled:text-arc-300 transition-colors"
               >
                 {unlocking ? t('workspace.uat.unlocking') : t('workspace.uat.unlock_cases')}
               </button>
@@ -513,12 +513,12 @@ function UatContextPanel({
       : 'done';
 
   return (
-    <div className="bg-arc-100/60 border-t border-arc-200 px-5 py-5">
+    <div className="bg-arc-100/60 dark:bg-arc-dark-100/60 border-t border-arc-200 dark:border-arc-dark-200 px-5 py-5">
       <div className="flex items-center justify-end mb-3">
         <button
           type="button"
           onClick={onClose}
-          className="text-xs font-medium text-arc-500 hover:text-arc-700 transition-colors"
+          className="text-xs font-medium text-arc-500 dark:text-arc-dark-500 hover:text-arc-700 dark:hover:text-arc-dark-700 transition-colors"
         >
           {t('workspace.uat.panel_hide')}
         </button>
@@ -529,10 +529,10 @@ function UatContextPanel({
         </div>
         <div className="lg:col-span-1 order-1 lg:order-2 flex flex-col gap-5">
           <section>
-            <h3 className="text-xs font-semibold text-arc-900 uppercase tracking-wide mb-1">
+            <h3 className="text-xs font-semibold text-arc-900 dark:text-arc-dark-700 uppercase tracking-wide mb-1">
               {t('workspace.uat.context_attachments')}
             </h3>
-            <p className="text-xs text-arc-500 mb-3 leading-relaxed">
+            <p className="text-xs text-arc-500 dark:text-arc-dark-500 mb-3 leading-relaxed">
               {locked
                 ? t('workspace.uat.context_attachments_locked')
                 : t('workspace.uat.context_attachments_open')}
@@ -546,23 +546,23 @@ function UatContextPanel({
           </section>
 
           <section>
-            <h3 className="text-xs font-semibold text-arc-900 uppercase tracking-wide mb-2">
+            <h3 className="text-xs font-semibold text-arc-900 dark:text-arc-dark-700 uppercase tracking-wide mb-2">
               {t('workspace.uat.task_list')}
             </h3>
-            <div className="rounded-lg border border-arc-200 bg-white px-3 py-3">
+            <div className="rounded-lg border border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 px-3 py-3">
               <AiTaskList mode={mode} startedAt={edit.updated_at} />
               {mode === 'queued' && (
-                <p className="mt-3 pt-2.5 border-t border-arc-200 text-[11px] text-arc-500">
+                <p className="mt-3 pt-2.5 border-t border-arc-200 dark:border-arc-dark-200 text-[11px] text-arc-500 dark:text-arc-dark-500">
                   {t('workspace.uat.task_waiting')}
                 </p>
               )}
               {mode === 'running' && (
-                <p className="mt-3 pt-2.5 border-t border-arc-200 text-[11px] text-arc-500">
+                <p className="mt-3 pt-2.5 border-t border-arc-200 dark:border-arc-dark-200 text-[11px] text-arc-500 dark:text-arc-dark-500">
                   <ElapsedTimer updatedAt={edit.updated_at} />
                 </p>
               )}
               {mode === 'done' && (
-                <p className="mt-3 pt-2.5 border-t border-arc-200 text-[11px] text-emerald-600">
+                <p className="mt-3 pt-2.5 border-t border-arc-200 dark:border-arc-dark-200 text-[11px] text-emerald-600">
                   {t('workspace.uat.task_done')}
                 </p>
               )}
@@ -812,8 +812,8 @@ export function UatWorkspacePage() {
           <section>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h2 className="text-sm font-semibold text-arc-900">{t('workspace.uat.review_queue_heading')}</h2>
-                <p className="text-xs text-arc-500 mt-0.5">{reviewQueueSubheading()}</p>
+                <h2 className="text-sm font-semibold text-arc-900 dark:text-arc-dark-700">{t('workspace.uat.review_queue_heading')}</h2>
+                <p className="text-xs text-arc-500 dark:text-arc-dark-500 mt-0.5">{reviewQueueSubheading()}</p>
               </div>
               {canAct && selectedIds.length > 0 && (() => {
                 const reviewedIds = selectedIds.filter((id) => {
@@ -836,31 +836,31 @@ export function UatWorkspacePage() {
             </div>
 
             {queued.length === 0 ? (
-              <div className="rounded-xl border border-arc-200 shadow-sm bg-white flex items-center justify-center py-12 flex-col gap-3 text-arc-500">
-                <Beaker className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
+              <div className="rounded-xl border border-arc-200 dark:border-arc-dark-200 shadow-sm bg-white dark:bg-arc-dark-100 flex items-center justify-center py-12 flex-col gap-3 text-arc-500 dark:text-arc-dark-500">
+                <Beaker className="w-12 h-12 text-arc-500 dark:text-arc-dark-500" strokeWidth={1.5} />
                 <p className="text-sm">{t('workspace.uat.no_edits_review')}</p>
-                <p className="text-xs text-center max-w-xs text-arc-500">
+                <p className="text-xs text-center max-w-xs text-arc-500 dark:text-arc-dark-500">
                   {t('workspace.uat.no_edits_review_help')}
                 </p>
               </div>
             ) : (
-              <div className="rounded-xl border border-arc-200 shadow-sm overflow-hidden bg-white">
+              <div className="rounded-xl border border-arc-200 dark:border-arc-dark-200 shadow-sm overflow-hidden bg-white dark:bg-arc-dark-100">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-arc-200 bg-arc-100">
+                    <tr className="border-b border-arc-200 dark:border-arc-dark-200 bg-arc-100 dark:bg-arc-dark-100">
                       {canAct && (
                         <th className="px-4 py-2.5 w-10">
                           <input
                             type="checkbox"
                             checked={selected.size === queued.length && queued.length > 0}
                             onChange={toggleAll}
-                            className="rounded border-arc-300"
+                            className="rounded border-arc-300 dark:border-arc-dark-300"
                           />
                         </th>
                       )}
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.uat.col_edit')}</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.uat.col_module')}</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.uat.col_queued')}</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">{t('workspace.uat.col_edit')}</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">{t('workspace.uat.col_module')}</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">{t('workspace.uat.col_queued')}</th>
                       {canAct && <th className="px-4 py-2.5 w-44" />}
                     </tr>
                   </thead>
@@ -873,8 +873,8 @@ export function UatWorkspacePage() {
                         <Fragment key={edit.id}>
                           <tr
                             onClick={() => setOpenEditId(isOpen ? null : edit.id)}
-                            className={`border-b border-arc-200 cursor-pointer transition-colors duration-150 ${
-                              isOpen ? 'bg-arc-200' : 'hover:bg-arc-200'
+                            className={`border-b border-arc-200 dark:border-arc-dark-200 cursor-pointer transition-colors duration-150 ${
+                              isOpen ? 'bg-arc-200 dark:bg-arc-dark-200' : 'hover:bg-arc-200 dark:hover:bg-arc-dark-200'
                             }`}
                           >
                             {canAct && (
@@ -884,16 +884,16 @@ export function UatWorkspacePage() {
                                   checked={selected.has(edit.id)}
                                   onChange={() => toggleSelect(edit.id)}
                                   disabled={isTriggering || triggering.size > 0}
-                                  className="rounded border-arc-300"
+                                  className="rounded border-arc-300 dark:border-arc-dark-300"
                                 />
                               </td>
                             )}
                             <td className="px-4 py-3">
-                              <p className="font-medium text-arc-900">{edit.title}</p>
-                              <p className="text-xs font-mono text-arc-500 mt-0.5">{edit.edit_id_display}</p>
+                              <p className="font-medium text-arc-900 dark:text-arc-dark-700">{edit.title}</p>
+                              <p className="text-xs font-mono text-arc-500 dark:text-arc-dark-500 mt-0.5">{edit.edit_id_display}</p>
                             </td>
-                            <td className="px-4 py-3 font-mono text-xs text-arc-500">{edit.target_module_id}</td>
-                            <td className="px-4 py-3 text-xs text-arc-500">
+                            <td className="px-4 py-3 font-mono text-xs text-arc-500 dark:text-arc-dark-500">{edit.target_module_id}</td>
+                            <td className="px-4 py-3 text-xs text-arc-500 dark:text-arc-dark-500">
                               {new Date(edit.updated_at).toLocaleDateString('en-GB', {
                                 day: 'numeric', month: 'short',
                               })}
@@ -901,8 +901,8 @@ export function UatWorkspacePage() {
                             {canAct && (
                               <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                                 {isTriggering ? (
-                                  <span className="flex items-center gap-1.5 text-xs text-arc-500">
-                                    <span className="w-3 h-3 border border-arc-500 border-t-transparent rounded-full animate-spin" />
+                                  <span className="flex items-center gap-1.5 text-xs text-arc-500 dark:text-arc-dark-500">
+                                    <span className="w-3 h-3 border border-arc-500 dark:border-arc-dark-500 border-t-transparent rounded-full animate-spin" />
                                     {t('workspace.uat.triggering')}
                                   </span>
                                 ) : (
@@ -920,7 +920,7 @@ export function UatWorkspacePage() {
                             )}
                           </tr>
                           {isOpen && (
-                            <tr className="border-b border-arc-200 last:border-0">
+                            <tr className="border-b border-arc-200 dark:border-arc-dark-200 last:border-0">
                               <td colSpan={colCount} className="p-0">
                                 <UatContextPanel
                                   edit={edit}
@@ -939,7 +939,7 @@ export function UatWorkspacePage() {
             )}
 
             {!canAct && queued.length > 0 && (
-              <p className="mt-2 text-xs text-arc-500">
+              <p className="mt-2 text-xs text-arc-500 dark:text-arc-dark-500">
                 {t('workspace.uat.only_testers')}
               </p>
             )}
@@ -948,22 +948,22 @@ export function UatWorkspacePage() {
           {/* ── Section 2: UAT Running ── */}
           <section>
             <div className="mb-3">
-              <h2 className="text-sm font-semibold text-arc-900">{t('workspace.uat.running_heading')}</h2>
-              <p className="text-xs text-arc-500 mt-0.5">{runningSubheading()}</p>
+              <h2 className="text-sm font-semibold text-arc-900 dark:text-arc-dark-700">{t('workspace.uat.running_heading')}</h2>
+              <p className="text-xs text-arc-500 dark:text-arc-dark-500 mt-0.5">{runningSubheading()}</p>
             </div>
 
             {running.length === 0 ? (
-              <div className="rounded-xl border border-arc-200 shadow-sm bg-white flex items-center justify-center py-12 flex-col gap-3 text-arc-500">
-                <Beaker className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
+              <div className="rounded-xl border border-arc-200 dark:border-arc-dark-200 shadow-sm bg-white dark:bg-arc-dark-100 flex items-center justify-center py-12 flex-col gap-3 text-arc-500 dark:text-arc-dark-500">
+                <Beaker className="w-12 h-12 text-arc-500 dark:text-arc-dark-500" strokeWidth={1.5} />
                 <p className="text-sm">{t('workspace.uat.no_runs')}</p>
               </div>
             ) : (
-              <div className="rounded-xl border border-arc-200 shadow-sm overflow-hidden bg-white">
+              <div className="rounded-xl border border-arc-200 dark:border-arc-dark-200 shadow-sm overflow-hidden bg-white dark:bg-arc-dark-100">
                 {running.map((edit) => {
                   const isOpen = openEditId === edit.id;
                   const orphan = isOrphaned(edit.id);
                   const rowClass = `w-full text-left px-5 py-4 flex items-center gap-4 transition-colors duration-150 ${
-                    isOpen ? 'bg-arc-200' : 'hover:bg-arc-200'
+                    isOpen ? 'bg-arc-200 dark:bg-arc-dark-200' : 'hover:bg-arc-200 dark:hover:bg-arc-dark-200'
                   }`;
 
                   const row = orphan ? (() => {
@@ -975,8 +975,8 @@ export function UatWorkspacePage() {
                       >
                         <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" strokeWidth={2} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-arc-900 truncate">{edit.title}</p>
-                          <p className="text-xs font-mono text-arc-500 mt-0.5">
+                          <p className="text-sm font-medium text-arc-900 dark:text-arc-dark-700 truncate">{edit.title}</p>
+                          <p className="text-xs font-mono text-arc-500 dark:text-arc-dark-500 mt-0.5">
                             {edit.edit_id_display} · {edit.target_module_id}
                           </p>
                         </div>
@@ -985,7 +985,7 @@ export function UatWorkspacePage() {
                             ? t('workspace.uat.uat_run_failed_stuck', { elapsed: formatElapsed(run.started_at) })
                             : t('workspace.uat.uat_run_failed_stuck_unknown')}
                         </span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 shrink-0">
                           {t('workspace.uat.stuck')}
                         </span>
                         {role === 'admin' && (
@@ -1007,14 +1007,14 @@ export function UatWorkspacePage() {
                       onClick={() => setOpenEditId(isOpen ? null : edit.id)}
                       className={rowClass}
                     >
-                      <div className="w-5 h-5 border-2 border-arc-500 border-t-transparent rounded-full animate-spin shrink-0" />
+                      <div className="w-5 h-5 border-2 border-arc-500 dark:border-arc-dark-500 border-t-transparent rounded-full animate-spin shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-arc-900 truncate">{edit.title}</p>
-                        <p className="text-xs font-mono text-arc-500 mt-0.5">
+                        <p className="text-sm font-medium text-arc-900 dark:text-arc-dark-700 truncate">{edit.title}</p>
+                        <p className="text-xs font-mono text-arc-500 dark:text-arc-dark-500 mt-0.5">
                           {edit.edit_id_display} · {edit.target_module_id}
                         </p>
                       </div>
-                      <span className="text-xs text-arc-500 font-medium shrink-0">
+                      <span className="text-xs text-arc-500 dark:text-arc-dark-500 font-medium shrink-0">
                         {t('workspace.uat.ai_generating')} <ElapsedTimer updatedAt={edit.updated_at} />
                       </span>
                       <StageBadge stage={edit.current_stage} />
@@ -1022,7 +1022,7 @@ export function UatWorkspacePage() {
                   );
 
                   return (
-                    <div key={edit.id} className="border-b border-arc-200 last:border-0">
+                    <div key={edit.id} className="border-b border-arc-200 dark:border-arc-dark-200 last:border-0">
                       {row}
                       {isOpen && (
                         <UatContextPanel
@@ -1042,7 +1042,7 @@ export function UatWorkspacePage() {
       </div>
 
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-50 ${toast.ok ? 'bg-arc-900' : 'bg-rose-900'} text-white text-sm px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-3`}>
+        <div className={`fixed bottom-6 right-6 z-50 ${toast.ok ? 'bg-arc-900 dark:bg-arc-dark-900' : 'bg-rose-900 dark:bg-rose-900'} text-white text-sm px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-3`}>
           <span>
             {toast.ok && toast.kind === 'completion'
               ? t('toast.uat_completion', { displayId: toast.displayId })
@@ -1055,7 +1055,7 @@ export function UatWorkspacePage() {
           {toast.ok && toast.kind === 'completion' && (
             <Link
               to={`/workspace/qa?edit=${toast.editId}`}
-              className="text-forest-100 hover:text-white font-medium underline-offset-2 hover:underline"
+              className="text-forest-100 dark:text-forest-dark-700 hover:text-white font-medium underline-offset-2 hover:underline"
               onClick={() => setToast(null)}
             >
               {t('toast.open_arrow')}

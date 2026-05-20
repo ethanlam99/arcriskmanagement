@@ -166,8 +166,8 @@ function ApprovedPoolTab() {
   return (
     <>
       <div className="flex flex-col h-full overflow-hidden">
-        <div className="px-6 py-3 border-b border-arc-200 bg-white flex items-center justify-between gap-4 shrink-0">
-          <p className="text-xs text-arc-500">
+        <div className="px-6 py-3 border-b border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 flex items-center justify-between gap-4 shrink-0">
+          <p className="text-xs text-arc-500 dark:text-arc-dark-500">
             {unbundled.length === 0
               ? t('changelog.approved_no_available')
               : t('changelog.approved_count', { count: unbundled.length })}
@@ -185,47 +185,47 @@ function ApprovedPoolTab() {
 
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center py-16 text-arc-500 text-sm">{t('common.loading')}</div>
+            <div className="flex items-center justify-center py-16 text-arc-500 dark:text-arc-dark-500 text-sm">{t('common.loading')}</div>
           ) : unbundled.length === 0 ? (
-            <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-500 px-6 text-center">
-              <PackageOpen className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
+            <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-500 dark:text-arc-dark-500 px-6 text-center">
+              <PackageOpen className="w-12 h-12 text-arc-500 dark:text-arc-dark-500" strokeWidth={1.5} />
               <p className="text-sm max-w-sm">{t('changelog.approved_empty')}</p>
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-arc-200 bg-arc-100 sticky top-0">
+                <tr className="border-b border-arc-200 dark:border-arc-dark-200 bg-arc-100 dark:bg-arc-dark-100 sticky top-0">
                   {canAct && (
                     <th className="px-4 py-2.5 w-10">
                       <input type="checkbox"
                         checked={selected.size === unbundled.length && unbundled.length > 0}
                         onChange={toggleAll}
-                        className="rounded border-arc-300" />
+                        className="rounded border-arc-300 dark:border-arc-dark-300" />
                     </th>
                   )}
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('changelog.col_change')}</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('changelog.col_module')}</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('changelog.col_author')}</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('changelog.col_approved')}</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">{t('changelog.col_change')}</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">{t('changelog.col_module')}</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">{t('changelog.col_author')}</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">{t('changelog.col_approved')}</th>
                 </tr>
               </thead>
               <tbody>
                 {unbundled.map((c) => (
-                  <tr key={c.id} className="border-b border-arc-200 last:border-0 transition-colors duration-150 odd:bg-white even:bg-arc-100/40 hover:bg-arc-200">
+                  <tr key={c.id} className="border-b border-arc-200 dark:border-arc-dark-200 last:border-0 transition-colors duration-150 odd:bg-white even:bg-arc-100/40 hover:bg-arc-200 dark:hover:bg-arc-dark-200">
                     {canAct && (
                       <td className="px-4 py-3">
                         <input type="checkbox" checked={selected.has(c.id)}
                           onChange={() => toggleSelect(c.id)}
-                          className="rounded border-arc-300" />
+                          className="rounded border-arc-300 dark:border-arc-dark-300" />
                       </td>
                     )}
                     <td className="px-4 py-3">
-                      <span className="text-arc-900 font-medium">{c.title}</span>
-                      <p className="text-xs font-mono text-arc-500 mt-0.5">{c.edit_id_display}</p>
+                      <span className="text-arc-900 dark:text-arc-dark-700 font-medium">{c.title}</span>
+                      <p className="text-xs font-mono text-arc-500 dark:text-arc-dark-500 mt-0.5">{c.edit_id_display}</p>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-arc-500">{c.target_module_id}</td>
-                    <td className="px-4 py-3 text-xs text-arc-500">{userMap[c.created_by] ?? c.created_by}</td>
-                    <td className="px-4 py-3 text-xs text-arc-500">{fmt(c.updated_at)}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-arc-500 dark:text-arc-dark-500">{c.target_module_id}</td>
+                    <td className="px-4 py-3 text-xs text-arc-500 dark:text-arc-dark-500">{userMap[c.created_by] ?? c.created_by}</td>
+                    <td className="px-4 py-3 text-xs text-arc-500 dark:text-arc-dark-500">{fmt(c.updated_at)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -235,20 +235,20 @@ function ApprovedPoolTab() {
       </div>
 
       {showCreateModal && (
-        <div className="fixed inset-0 z-40 bg-arc-900/30 flex items-center justify-center p-6">
-          <div className="bg-white rounded-xl border border-arc-200 shadow-xl w-full max-w-md p-6 flex flex-col gap-4">
+        <div className="fixed inset-0 z-40 bg-arc-900/30 dark:bg-arc-dark-900/60 flex items-center justify-center p-6">
+          <div className="bg-white dark:bg-arc-dark-100 rounded-xl border border-arc-200 dark:border-arc-dark-200 shadow-xl w-full max-w-md p-6 flex flex-col gap-4">
             <div>
-              <h3 className="font-semibold text-arc-900 mb-0.5">{t('changelog.create_packet_title')}</h3>
-              <p className="text-xs text-arc-500">
+              <h3 className="font-semibold text-arc-900 dark:text-arc-dark-700 mb-0.5">{t('changelog.create_packet_title')}</h3>
+              <p className="text-xs text-arc-500 dark:text-arc-dark-500">
                 {t('changelog.create_packet_bundling', { count: selected.size })}
               </p>
             </div>
             <div>
-              <label className="text-xs font-medium text-arc-500 mb-1.5 block">
+              <label className="text-xs font-medium text-arc-500 dark:text-arc-dark-500 mb-1.5 block">
                 {t('changelog.packet_name')} <span className="text-rose-500">*</span>
               </label>
               <input
-                className="w-full border border-arc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-arc-500 transition-colors"
+                className="w-full border border-arc-200 dark:border-arc-dark-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-arc-500 transition-colors"
                 placeholder={t('changelog.packet_name_placeholder')}
                 value={newPacketName}
                 onChange={(e) => setNewPacketName(e.target.value)}
@@ -256,9 +256,9 @@ function ApprovedPoolTab() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-arc-500 mb-1.5 block">{t('changelog.packet_description')}</label>
+              <label className="text-xs font-medium text-arc-500 dark:text-arc-dark-500 mb-1.5 block">{t('changelog.packet_description')}</label>
               <textarea
-                className="w-full border border-arc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-arc-500 transition-colors resize-none"
+                className="w-full border border-arc-200 dark:border-arc-dark-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-arc-500 transition-colors resize-none"
                 rows={3}
                 placeholder={t('changelog.packet_description_placeholder')}
                 value={newPacketDescription}
@@ -404,8 +404,8 @@ function ProposedPacketsTab() {
   return (
     <>
       <div className="flex flex-col h-full overflow-hidden">
-        <div className="px-6 py-3 border-b border-arc-200 bg-white flex items-center gap-4 shrink-0">
-          <p className="text-xs text-arc-500">
+        <div className="px-6 py-3 border-b border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 flex items-center gap-4 shrink-0">
+          <p className="text-xs text-arc-500 dark:text-arc-dark-500">
             {packets.length === 0
               ? t('changelog.proposed_no_awaiting')
               : t('changelog.proposed_count', { count: packets.length })}
@@ -414,10 +414,10 @@ function ProposedPacketsTab() {
 
         <div className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
-            <div className="flex items-center justify-center py-16 text-arc-500 text-sm">{t('common.loading')}</div>
+            <div className="flex items-center justify-center py-16 text-arc-500 dark:text-arc-dark-500 text-sm">{t('common.loading')}</div>
           ) : packets.length === 0 ? (
-            <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-500">
-              <Package className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
+            <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-500 dark:text-arc-dark-500">
+              <Package className="w-12 h-12 text-arc-500 dark:text-arc-dark-500" strokeWidth={1.5} />
               <p className="text-sm">{t('changelog.no_proposed_packets')}</p>
               <p className="text-xs text-center max-w-xs">{t('changelog.no_proposed_create')}</p>
             </div>
@@ -427,20 +427,20 @@ function ProposedPacketsTab() {
                 const edits  = getPacketEdits(pkt.id);
                 const isOpen = expanded.has(pkt.id);
                 return (
-                  <div key={pkt.id} className="rounded-xl border border-arc-200 bg-white shadow-sm overflow-hidden">
+                  <div key={pkt.id} className="rounded-xl border border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 shadow-sm overflow-hidden">
                     <div className="px-5 py-4 flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50">
                             {t('changelog.status_proposed')}
                           </span>
-                          <span className="text-xs text-arc-500">{t('changelog.edits_count', { count: edits.length })}</span>
+                          <span className="text-xs text-arc-500 dark:text-arc-dark-500">{t('changelog.edits_count', { count: edits.length })}</span>
                         </div>
-                        <h3 className="font-semibold text-arc-900">{pkt.name}</h3>
+                        <h3 className="font-semibold text-arc-900 dark:text-arc-dark-700">{pkt.name}</h3>
                         {pkt.description && (
-                          <p className="text-xs text-arc-500 mt-0.5 leading-relaxed">{pkt.description}</p>
+                          <p className="text-xs text-arc-500 dark:text-arc-dark-500 mt-0.5 leading-relaxed">{pkt.description}</p>
                         )}
-                        <p className="text-xs text-arc-500 mt-1">
+                        <p className="text-xs text-arc-500 dark:text-arc-dark-500 mt-1">
                           {t('changelog.proposed_by', {
                             name: userMap[pkt.created_by] ?? pkt.created_by,
                             date: fmt(pkt.created_at),
@@ -450,7 +450,7 @@ function ProposedPacketsTab() {
                       <div className="flex items-center gap-2 shrink-0">
                         <button
                           onClick={() => toggleExpand(pkt.id)}
-                          className="text-xs text-arc-500 hover:text-arc-900 transition-colors px-2 py-1 rounded border border-arc-200 hover:border-arc-500"
+                          className="text-xs text-arc-500 dark:text-arc-dark-500 hover:text-arc-900 dark:hover:text-arc-dark-700 transition-colors px-2 py-1 rounded border border-arc-200 dark:border-arc-dark-200 hover:border-arc-500 dark:hover:border-arc-dark-300"
                         >
                           {isOpen ? t('changelog.hide_edits') : t('changelog.show_edits')}
                         </button>
@@ -466,7 +466,7 @@ function ProposedPacketsTab() {
                             <Button
                               size="sm"
                               variant="secondary"
-                              className="!border-rose-500 !text-rose-600 hover:!bg-rose-50 active:!bg-rose-100"
+                              className="!border-rose-500 dark:border-rose-500 !text-rose-600 hover:!bg-rose-50 dark:bg-rose-900/40 active:!bg-rose-100 dark:bg-rose-900/50"
                               onClick={() => { setShowReject(pkt); setRejectNotes(''); }}
                             >
                               {t('changelog.reject_packet')}
@@ -477,15 +477,15 @@ function ProposedPacketsTab() {
                     </div>
 
                     {isOpen && (
-                      <div className="border-t border-arc-200 divide-y divide-arc-200 bg-arc-100">
+                      <div className="border-t border-arc-200 dark:border-arc-dark-200 divide-y divide-arc-200 dark:divide-arc-dark-200 bg-arc-100 dark:bg-arc-dark-100">
                         {edits.length === 0 ? (
-                          <p className="px-5 py-3 text-xs text-arc-500">{t('changelog.no_edits_attached')}</p>
+                          <p className="px-5 py-3 text-xs text-arc-500 dark:text-arc-dark-500">{t('changelog.no_edits_attached')}</p>
                         ) : (
                           edits.map((e) => (
                             <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-4">
                               <div className="min-w-0">
-                                <span className="text-sm font-medium text-arc-900 truncate block">{e.title}</span>
-                                <span className="text-xs font-mono text-arc-500">{e.edit_id_display} · {e.target_module_id}</span>
+                                <span className="text-sm font-medium text-arc-900 dark:text-arc-dark-700 truncate block">{e.title}</span>
+                                <span className="text-xs font-mono text-arc-500 dark:text-arc-dark-500">{e.edit_id_display} · {e.target_module_id}</span>
                               </div>
                               <StageBadge stage={e.current_stage} />
                             </div>
@@ -521,19 +521,19 @@ function ProposedPacketsTab() {
       {showReject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
-            className="absolute inset-0 bg-arc-900/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-arc-900/40 dark:bg-arc-dark-900/60 backdrop-blur-sm"
             onClick={() => { if (!submitting) { setShowReject(null); setRejectNotes(''); } }}
           />
-          <div className="relative bg-white rounded-xl border border-arc-200 shadow-lg w-full max-w-md mx-4 p-6">
-            <h2 className="text-base font-semibold text-arc-900 mb-2">{t('changelog.reject_packet_modal_title')}</h2>
-            <p className="text-sm text-arc-500 mb-4">
+          <div className="relative bg-white dark:bg-arc-dark-100 rounded-xl border border-arc-200 dark:border-arc-dark-200 shadow-lg w-full max-w-md mx-4 p-6">
+            <h2 className="text-base font-semibold text-arc-900 dark:text-arc-dark-700 mb-2">{t('changelog.reject_packet_modal_title')}</h2>
+            <p className="text-sm text-arc-500 dark:text-arc-dark-500 mb-4">
               {t('changelog.reject_packet_modal', { name: showReject.name })}
             </p>
-            <label className="text-xs font-medium text-arc-500 mb-1.5 block">
+            <label className="text-xs font-medium text-arc-500 dark:text-arc-dark-500 mb-1.5 block">
               {t('workspace.qa.rejection_notes')} <span className="text-rose-500">*</span>
             </label>
             <textarea
-              className="w-full border border-arc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-arc-500 transition-colors resize-none mb-4"
+              className="w-full border border-arc-200 dark:border-arc-dark-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-arc-500 transition-colors resize-none mb-4"
               rows={4}
               placeholder={t('changelog.reject_packet_placeholder')}
               value={rejectNotes}
@@ -586,31 +586,31 @@ function PacketSection({
   return (
     <section>
       <header className="flex items-center justify-between mb-2">
-        <h2 className="text-sm font-semibold text-arc-900 uppercase tracking-wide">{title}</h2>
-        <span className="text-xs text-arc-500">{t('changelog.packets_count', { count: packets.length })}</span>
+        <h2 className="text-sm font-semibold text-arc-900 dark:text-arc-dark-700 uppercase tracking-wide">{title}</h2>
+        <span className="text-xs text-arc-500 dark:text-arc-dark-500">{t('changelog.packets_count', { count: packets.length })}</span>
       </header>
       {packets.length === 0 ? (
-        <p className="text-xs text-arc-500 px-1 py-3">{emptyText}</p>
+        <p className="text-xs text-arc-500 dark:text-arc-dark-500 px-1 py-3">{emptyText}</p>
       ) : (
         <div className="flex flex-col gap-3">
           {packets.map((pkt) => {
             const edits  = getPacketEdits(pkt.id);
             const isOpen = expanded.has(pkt.id);
             return (
-              <div key={pkt.id} className="rounded-xl border border-arc-200 bg-white overflow-hidden">
+              <div key={pkt.id} className="rounded-xl border border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 overflow-hidden">
                 <div className="px-5 py-4 flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${badge.className}`}>
                         {badge.label}
                       </span>
-                      <span className="text-xs text-arc-500">{t('changelog.edits_count', { count: edits.length })}</span>
+                      <span className="text-xs text-arc-500 dark:text-arc-dark-500">{t('changelog.edits_count', { count: edits.length })}</span>
                     </div>
-                    <h3 className="font-semibold text-arc-900">{pkt.name}</h3>
+                    <h3 className="font-semibold text-arc-900 dark:text-arc-dark-700">{pkt.name}</h3>
                     {pkt.description && (
-                      <p className="text-xs text-arc-500 mt-0.5 leading-relaxed">{pkt.description}</p>
+                      <p className="text-xs text-arc-500 dark:text-arc-dark-500 mt-0.5 leading-relaxed">{pkt.description}</p>
                     )}
-                    <p className="text-xs text-arc-500 mt-1">
+                    <p className="text-xs text-arc-500 dark:text-arc-dark-500 mt-1">
                       {t('changelog.created_by', {
                         name: userMap[pkt.created_by] ?? pkt.created_by,
                         date: fmt(pkt.created_at),
@@ -631,22 +631,22 @@ function PacketSection({
                   </div>
                   <button
                     onClick={() => onToggle(pkt.id)}
-                    className="shrink-0 text-xs text-arc-500 hover:text-arc-900 transition-colors px-2 py-1 rounded border border-arc-200 hover:border-arc-500"
+                    className="shrink-0 text-xs text-arc-500 dark:text-arc-dark-500 hover:text-arc-900 dark:hover:text-arc-dark-700 transition-colors px-2 py-1 rounded border border-arc-200 dark:border-arc-dark-200 hover:border-arc-500 dark:hover:border-arc-dark-300"
                   >
                     {isOpen ? t('changelog.hide_edits') : t('changelog.show_edits')}
                   </button>
                 </div>
 
                 {isOpen && (
-                  <div className="border-t border-arc-200 divide-y divide-arc-200 bg-white">
+                  <div className="border-t border-arc-200 dark:border-arc-dark-200 divide-y divide-arc-200 dark:divide-arc-dark-200 bg-white dark:bg-arc-dark-100">
                     {edits.length === 0 ? (
-                      <p className="px-5 py-3 text-xs text-arc-500">{t('changelog.no_edits_attached')}</p>
+                      <p className="px-5 py-3 text-xs text-arc-500 dark:text-arc-dark-500">{t('changelog.no_edits_attached')}</p>
                     ) : (
                       edits.map((e) => (
                         <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-4 odd:bg-white even:bg-arc-100/40">
                           <div className="min-w-0">
-                            <span className="text-sm font-medium text-arc-900 truncate block">{e.title}</span>
-                            <span className="text-xs font-mono text-arc-500">{e.edit_id_display} · {e.target_module_id}</span>
+                            <span className="text-sm font-medium text-arc-900 dark:text-arc-dark-700 truncate block">{e.title}</span>
+                            <span className="text-xs font-mono text-arc-500 dark:text-arc-dark-500">{e.edit_id_display} · {e.target_module_id}</span>
                           </div>
                         </div>
                       ))
@@ -703,8 +703,8 @@ function ConfirmedTab() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="px-6 py-3 border-b border-arc-200 bg-white flex items-center justify-between gap-4 shrink-0">
-        <p className="text-xs text-arc-500">
+      <div className="px-6 py-3 border-b border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 flex items-center justify-between gap-4 shrink-0">
+        <p className="text-xs text-arc-500 dark:text-arc-dark-500">
           {totalVisible === 0
             ? t('changelog.confirmed_no_packets')
             : t('changelog.confirmed_count', { sent: sentToIt.length, live: live.length })}
@@ -716,10 +716,10 @@ function ConfirmedTab() {
 
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center py-16 text-arc-500 text-sm">{t('common.loading')}</div>
+          <div className="flex items-center justify-center py-16 text-arc-500 dark:text-arc-dark-500 text-sm">{t('common.loading')}</div>
         ) : totalVisible === 0 ? (
-          <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-500 text-center">
-            <Send className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
+          <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-500 dark:text-arc-dark-500 text-center">
+            <Send className="w-12 h-12 text-arc-500 dark:text-arc-dark-500" strokeWidth={1.5} />
             <p className="text-sm max-w-sm">{t('changelog.confirmed_empty')}</p>
           </div>
         ) : (
@@ -731,7 +731,7 @@ function ConfirmedTab() {
               getPacketEdits={getPacketEdits}
               expanded={expanded}
               onToggle={toggleExpand}
-              badge={{ label: t('changelog.badge_confirmed'), className: 'bg-arc-100 text-arc-700 border-arc-200' }}
+              badge={{ label: t('changelog.badge_confirmed'), className: 'bg-arc-100 dark:bg-arc-dark-100 text-arc-700 dark:text-arc-dark-700 border-arc-200 dark:border-arc-dark-200' }}
               emptyText={t('changelog.section_sent_to_it_empty')}
             />
             <PacketSection
@@ -741,7 +741,7 @@ function ConfirmedTab() {
               getPacketEdits={getPacketEdits}
               expanded={expanded}
               onToggle={toggleExpand}
-              badge={{ label: t('changelog.badge_live'), className: 'bg-emerald-50 text-emerald-700 border-emerald-200' }}
+              badge={{ label: t('changelog.badge_live'), className: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/50' }}
               emptyText={t('changelog.section_live_empty')}
             />
           </div>
@@ -762,12 +762,12 @@ export function ChangelogPage() {
       <TopBar breadcrumb={<Breadcrumb items={[{ label: t('changelog.title') }]} />} />
 
       <Tabs defaultTab="approved" className="flex-1 min-h-0 overflow-hidden">
-        <TabList className="px-6 bg-white shrink-0">
+        <TabList className="px-6 bg-white dark:bg-arc-dark-100 shrink-0">
           <TabTrigger id="approved">{t('changelog.tab_approved')}</TabTrigger>
           <TabTrigger id="proposed">
             {t('changelog.tab_proposed')}
             {proposedPackets.length > 0 && (
-              <span className="ml-2 px-1.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
+              <span className="ml-2 px-1.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
                 {proposedPackets.length}
               </span>
             )}

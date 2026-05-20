@@ -33,14 +33,14 @@ function BriefPanel({
   const [expanded, setExpanded] = useState(change.current_stage === 'draft');
 
   return (
-    <div className="shrink-0 border-b border-arc-200">
+    <div className="shrink-0 border-b border-arc-200 dark:border-arc-dark-200">
       {rejectedReview && change.current_stage === 'draft' && (
-        <div className="px-5 py-2.5 bg-rose-50 border-b border-rose-200 flex items-start gap-2">
+        <div className="px-5 py-2.5 bg-rose-50 dark:bg-rose-900/40 border-b border-rose-200 dark:border-rose-900/50 flex items-start gap-2">
           <svg className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-rose-700">
+            <p className="text-xs font-semibold text-rose-700 dark:text-rose-300">
               {rejectorName
                 ? t('workspace.draft_tab.qa_returned_with_name', {
                     name: rejectorName,
@@ -58,14 +58,14 @@ function BriefPanel({
       )}
 
       <button
-        className="w-full px-5 py-3 flex items-center justify-between bg-arc-100 hover:bg-arc-100 transition-colors text-left"
+        className="w-full px-5 py-3 flex items-center justify-between bg-arc-100 dark:bg-arc-dark-100 hover:bg-arc-100 dark:hover:bg-arc-dark-50 transition-colors text-left"
         onClick={() => setExpanded((e) => !e)}
       >
-        <span className="text-xs font-semibold text-arc-500 uppercase tracking-wide">
+        <span className="text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide">
           {t('workspace.draft_tab.edit_brief')}
         </span>
         <svg
-          className={`w-4 h-4 text-arc-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-arc-500 dark:text-arc-dark-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -73,8 +73,8 @@ function BriefPanel({
       </button>
 
       {expanded && (
-        <div className="px-5 py-3 bg-arc-100 border-t border-arc-200">
-          <p className="text-sm text-arc-900 leading-relaxed">{change.natural_language_brief}</p>
+        <div className="px-5 py-3 bg-arc-100 dark:bg-arc-dark-100 border-t border-arc-200 dark:border-arc-dark-200">
+          <p className="text-sm text-arc-900 dark:text-arc-dark-700 leading-relaxed">{change.natural_language_brief}</p>
         </div>
       )}
     </div>
@@ -90,7 +90,7 @@ function MiniChatMessage({ msg, userSeed }: { msg: ChatMessage; userSeed?: strin
       {isUser ? (
         <UserAvatar seed={userSeed ?? 'U'} size="sm" className="shrink-0 mt-0.5" />
       ) : (
-        <div className="w-6 h-6 shrink-0 mt-0.5 bg-arc-500 rounded-full flex items-center justify-center">
+        <div className="w-6 h-6 shrink-0 mt-0.5 bg-arc-500 dark:bg-arc-dark-500 rounded-full flex items-center justify-center">
           <span className="text-white text-xs font-bold">AI</span>
         </div>
       )}
@@ -98,14 +98,14 @@ function MiniChatMessage({ msg, userSeed }: { msg: ChatMessage; userSeed?: strin
         <div
           className={`px-3 py-2 rounded-xl text-xs leading-relaxed whitespace-pre-wrap ${
             isUser
-              ? 'bg-arc-500 text-white rounded-tr-sm'
-              : 'bg-white border border-arc-200 text-arc-900 rounded-tl-sm'
+              ? 'bg-arc-500 dark:bg-arc-dark-500 text-white rounded-tr-sm'
+              : 'bg-white dark:bg-arc-dark-100 border border-arc-200 dark:border-arc-dark-200 text-arc-900 dark:text-arc-dark-700 rounded-tl-sm'
           }`}
         >
           {msg.content}
         </div>
         {msg.diff_summary && (
-          <p className="text-xs text-arc-500 italic px-1">{msg.diff_summary}</p>
+          <p className="text-xs text-arc-500 dark:text-arc-dark-500 italic px-1">{msg.diff_summary}</p>
         )}
       </div>
     </div>
@@ -301,13 +301,13 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Monaco editor */}
         <div className="flex-1 min-w-0 flex flex-col relative">
-          <div className="h-10 shrink-0 bg-arc-900 border-b border-arc-700 flex items-center justify-between px-4">
+          <div className="h-10 shrink-0 bg-arc-900 dark:bg-arc-dark-900 border-b border-arc-700 dark:border-arc-dark-200 flex items-center justify-between px-4">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-arc-200">
+              <span className="text-xs font-mono text-arc-200 dark:text-arc-dark-300">
                 {module?.module_name ?? '…'}.sql
               </span>
               {latestVersion && (
-                <span className="text-xs text-arc-200 font-mono">· v{latestVersion.version_number}</span>
+                <span className="text-xs text-arc-200 dark:text-arc-dark-300 font-mono">· v{latestVersion.version_number}</span>
               )}
               {(hasManualEdits || pendingSql) && (
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
@@ -316,7 +316,7 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowVersions(!showVersions)}
-                className="text-xs text-arc-200 hover:text-white transition-colors"
+                className="text-xs text-arc-200 dark:text-arc-dark-300 hover:text-white transition-colors"
               >
                 {showVersions ? t('workspace.draft_tab.hide_history') : t('workspace.draft_tab.history')}
               </button>
@@ -329,24 +329,24 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
           </div>
 
           {showVersions && (
-            <div className="absolute right-80 top-10 bottom-0 w-64 bg-white border-l border-arc-200 z-10 overflow-y-auto">
-              <div className="px-4 py-3 border-b border-arc-200">
-                <p className="text-xs font-semibold text-arc-900">{t('workspace.draft_tab.version_history')}</p>
+            <div className="absolute right-80 top-10 bottom-0 w-64 bg-white dark:bg-arc-dark-100 border-l border-arc-200 dark:border-arc-dark-200 z-10 overflow-y-auto">
+              <div className="px-4 py-3 border-b border-arc-200 dark:border-arc-dark-200">
+                <p className="text-xs font-semibold text-arc-900 dark:text-arc-dark-700">{t('workspace.draft_tab.version_history')}</p>
               </div>
               {versions.map((v) => (
                 <button
                   key={v.id}
                   onClick={() => { setEditorSQL(v.sql_after); setShowVersions(false); }}
-                  className="w-full text-left px-4 py-3 border-b border-arc-200 hover:bg-arc-100 transition-colors"
+                  className="w-full text-left px-4 py-3 border-b border-arc-200 dark:border-arc-dark-200 hover:bg-arc-100 dark:hover:bg-arc-dark-50 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-xs font-semibold text-arc-900">v{v.version_number}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${v.source === 'ai_proposal' ? 'bg-arc-100 text-arc-500' : 'bg-amber-50 text-amber-700'}`}>
+                    <span className="text-xs font-semibold text-arc-900 dark:text-arc-dark-700">v{v.version_number}</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${v.source === 'ai_proposal' ? 'bg-arc-100 dark:bg-arc-dark-100 text-arc-500 dark:text-arc-dark-500' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'}`}>
                       {v.source === 'ai_proposal' ? t('workspace.draft_tab.ai_label') : t('workspace.draft_tab.human_label')}
                     </span>
                   </div>
-                  <p className="text-xs text-arc-500 truncate">{v.diff_summary}</p>
-                  <p className="text-xs text-arc-500 mt-0.5 font-mono">
+                  <p className="text-xs text-arc-500 dark:text-arc-dark-500 truncate">{v.diff_summary}</p>
+                  <p className="text-xs text-arc-500 dark:text-arc-dark-500 mt-0.5 font-mono">
                     {new Date(v.created_at).toLocaleDateString()}
                   </p>
                 </button>
@@ -368,6 +368,11 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
                 lineNumbers: 'on',
                 scrollBeyondLastLine: false,
                 wordWrap: 'on',
+                // SQL editor frame is intentionally dark in both light and
+                // dark modes (existing UX: code-editor-style chrome). Monaco
+                // theme stays vs-dark to match that frame. useTheme is held
+                // in scope in case a future polish pass swaps the frame
+                // colors and the editor theme together.
                 theme: 'vs-dark',
                 renderLineHighlight: 'gutter',
                 padding: { top: 12, bottom: 12 },
@@ -379,19 +384,19 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
         </div>
 
         {/* AI chat panel */}
-        <div className="w-80 shrink-0 border-l border-arc-200 flex flex-col bg-arc-100">
-          <div className="h-10 shrink-0 px-4 flex items-center border-b border-arc-200 bg-white">
+        <div className="w-80 shrink-0 border-l border-arc-200 dark:border-arc-dark-200 flex flex-col bg-arc-100 dark:bg-arc-dark-100">
+          <div className="h-10 shrink-0 px-4 flex items-center border-b border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100">
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-arc-500 rounded-full flex items-center justify-center">
+              <div className="w-5 h-5 bg-arc-500 dark:bg-arc-dark-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-xs font-bold">AI</span>
               </div>
-              <span className="text-xs font-semibold text-arc-900">{t('workspace.draft_tab.ai_assistant')}</span>
+              <span className="text-xs font-semibold text-arc-900 dark:text-arc-dark-700">{t('workspace.draft_tab.ai_assistant')}</span>
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
             {messagesLoading ? (
-              <div className="flex items-center justify-center py-8 text-arc-500 text-xs">
+              <div className="flex items-center justify-center py-8 text-arc-500 dark:text-arc-dark-500 text-xs">
                 {t('workspace.draft_tab.loading_conversation')}
               </div>
             ) : (
@@ -402,10 +407,10 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
 
             {isAiLoading && (
               <div className="flex gap-2">
-                <div className="w-6 h-6 bg-arc-500 rounded-full flex items-center justify-center shrink-0">
+                <div className="w-6 h-6 bg-arc-500 dark:bg-arc-dark-500 rounded-full flex items-center justify-center shrink-0">
                   <span className="text-white text-xs font-bold">AI</span>
                 </div>
-                <div className="bg-white border border-arc-200 rounded-xl rounded-tl-sm px-3 py-2">
+                <div className="bg-white dark:bg-arc-dark-100 border border-arc-200 dark:border-arc-dark-200 rounded-xl rounded-tl-sm px-3 py-2">
                   <div className="flex gap-1 items-center h-4">
                     {[0, 150, 300].map((d) => (
                       <div key={d} className="w-1.5 h-1.5 bg-arc-300 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
@@ -418,7 +423,7 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
           </div>
 
           {canEdit ? (
-            <div className="p-3 border-t border-arc-200 bg-white flex flex-col gap-2">
+            <div className="p-3 border-t border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 flex flex-col gap-2">
               <Textarea
                 rows={3}
                 placeholder={t('workspace.draft_tab.chat_placeholder')}
@@ -437,13 +442,13 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
               >
                 {t('workspace.draft_tab.send')}
               </Button>
-              <p className="text-xs text-arc-500 text-center">
+              <p className="text-xs text-arc-500 dark:text-arc-dark-500 text-center">
                 {t('workspace.draft_tab.ai_mock_note')}
               </p>
             </div>
           ) : (
-            <div className="px-4 py-3 border-t border-arc-200 bg-white">
-              <p className="text-xs text-arc-500 text-center">
+            <div className="px-4 py-3 border-t border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100">
+              <p className="text-xs text-arc-500 dark:text-arc-dark-500 text-center">
                 {t('workspace.draft_tab.editing_locked', {
                   stage: t(`stage.${change.current_stage}`),
                 })}

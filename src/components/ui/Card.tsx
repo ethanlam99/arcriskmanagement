@@ -14,7 +14,7 @@ const paddings = {
 export function Card({ padding = 'md', className = '', children, ...props }: CardProps) {
   return (
     <div
-      className={`bg-white border border-arc-200 rounded-xl shadow-sm ${paddings[padding]} ${className}`}
+      className={`bg-white dark:bg-arc-dark-100 border border-arc-200 dark:border-arc-dark-200 rounded-xl shadow-sm ${paddings[padding]} ${className}`}
       {...props}
     >
       {children}
@@ -32,7 +32,7 @@ export function CardHeader({ className = '', children, ...props }: HTMLAttribute
 
 export function CardTitle({ className = '', children, ...props }: HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3 className={`text-sm font-semibold text-arc-900 ${className}`} {...props}>
+    <h3 className={`text-sm font-semibold text-arc-900 dark:text-arc-dark-700 ${className}`} {...props}>
       {children}
     </h3>
   );

@@ -21,6 +21,21 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Dark-mode body bg/text — the html.dark class is toggled by ThemeProvider.
+     Component-level dark: classes cover surfaces, but the body itself needs
+     this rule because no component owns it. */
+  html.dark body {
+    background-color: #0E1310;
+    color: #C5CFC8;
+  }
+
+  html.dark ::-webkit-scrollbar-thumb {
+    background: #243029;
+  }
+  html.dark ::-webkit-scrollbar-thumb:hover {
+    background: #3D4E43;
+  }
+
   code, pre, .font-mono {
     font-family: 'JetBrains Mono', Menlo, monospace;
   }

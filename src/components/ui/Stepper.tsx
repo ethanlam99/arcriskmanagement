@@ -39,28 +39,28 @@ export function Stepper({ currentStage }: StepperProps) {
         const connectorDone = !isRejected && (isLive || current > i + 1);
 
         const circleClass = isRejected
-          ? 'bg-rose-50 border-rose-300 text-rose-400'
+          ? 'bg-rose-50 dark:bg-rose-900/40 border-rose-300 dark:border-rose-700 text-rose-400'
           : done
-          ? 'bg-forest-500 border-forest-500 text-white'
+          ? 'bg-forest-500 dark:bg-forest-dark-500 border-forest-500 dark:border-forest-dark-500 text-white'
           : active
-          ? 'bg-white border-forest-500 text-forest-600'
-          : 'bg-white border-arc-300 text-arc-500';
+          ? 'bg-white dark:bg-arc-dark-100 border-forest-500 dark:border-forest-dark-500 text-forest-600 dark:text-forest-dark-700'
+          : 'bg-white dark:bg-arc-dark-100 border-arc-300 dark:border-arc-dark-300 text-arc-500 dark:text-arc-dark-500';
 
         const labelClass = isRejected
           ? 'text-rose-400'
           : done
-          ? 'text-forest-600'
+          ? 'text-forest-600 dark:text-forest-dark-700'
           : active
-          ? 'text-arc-900 font-semibold'
-          : 'text-arc-500';
+          ? 'text-arc-900 dark:text-arc-dark-700 font-semibold'
+          : 'text-arc-500 dark:text-arc-dark-500';
 
         const subtitleClass = isRejected
           ? 'text-rose-400'
           : done
-          ? 'text-forest-600'
+          ? 'text-forest-600 dark:text-forest-dark-700'
           : active
-          ? 'text-arc-700'
-          : 'text-arc-300';
+          ? 'text-arc-700 dark:text-arc-dark-700'
+          : 'text-arc-300 dark:text-arc-dark-300';
 
         const subtitle = t(stage.subtitleKey);
 
@@ -71,7 +71,7 @@ export function Stepper({ currentStage }: StepperProps) {
                 {active && (
                   <span
                     aria-hidden
-                    className="absolute inset-0 rounded-full border-2 border-forest-500 animate-ping"
+                    className="absolute inset-0 rounded-full border-2 border-forest-500 dark:border-forest-dark-500 animate-ping"
                   />
                 )}
                 <span
@@ -97,7 +97,7 @@ export function Stepper({ currentStage }: StepperProps) {
             {i < STAGES.length - 1 && (
               <div
                 className={`h-0.5 w-10 mx-1 mb-8 transition-colors ${
-                  connectorDone ? 'bg-forest-500' : 'bg-arc-300'
+                  connectorDone ? 'bg-forest-500 dark:bg-forest-dark-500' : 'bg-arc-300'
                 }`}
               />
             )}
@@ -108,7 +108,7 @@ export function Stepper({ currentStage }: StepperProps) {
 
       {isRejected && (
         <div className="ml-4 flex items-center gap-1.5 mb-8">
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50">
             {t('stepper.rejected_label')}
           </span>
         </div>
