@@ -125,7 +125,7 @@ function ProposedCaseRow({
 }) {
   const isHuman = proposed.source === 'human';
   return (
-    <li className="rounded-lg border border-arc-200 bg-white px-3 py-2.5 flex items-start gap-2.5">
+    <li className={`rounded-lg border border-arc-200 bg-white px-3 py-2.5 flex items-start gap-2.5 transition-opacity ${locked ? 'opacity-60' : ''}`}>
       <input
         type="checkbox"
         checked={proposed.included_in_run}
@@ -266,13 +266,29 @@ function AddCaseForm({
   );
 }
 
-function ProposedCasesSection({ edit, locked }: { edit: RiskEdit; locked: boolean }) {
+function ProposedCasesSection({
+  edit,
+  locked,
+  onSendFromDrawer,
+}: {
+  edit: RiskEdit;
+  locked: boolean;
+  onSendFromDrawer: () => Promise<void>;
+}) {
   const { currentUser } = useAuth();
   const repo = useRepository();
   const qc   = useQueryClient();
   const { data: cases = [] } = useProposedTestCases(edit.id);
   const [showAddCase, setShowAddCase] = useState(false);
   const [markingReviewed, setMarkingReviewed] = useState(false);
+  const [showReviewConfirm, setShowReviewConfirm] = useState(false);
+  const [sendingFromDrawer, setSendingFromDrawer] = useState(false);
+  const [unlocking, setUnlocking] = useState(false);
+
+  // Lock controls when the tester has marked cases reviewed OR the edit has
+  // transitioned out of ready_for_uat (existing `locked` prop semantics).
+  const casesLocked = edit.cases_reviewed === true || locked;
+  const includedCount = cases.filter((c) => c.included_in_run).length;
 
   async function toggleInclude(c: ProposedTestCase) {
     await repo.proposedTestCases.update(c.id, { included_in_run: !c.included_in_run });
@@ -306,7 +322,7 @@ function ProposedCasesSection({ edit, locked }: { edit: RiskEdit; locked: boolea
     setShowAddCase(false);
   }
 
-  async function handleMarkReviewed() {
+  async function confirmReview() {
     if (!currentUser || edit.cases_reviewed) return;
     setMarkingReviewed(true);
     try {
@@ -316,11 +332,42 @@ function ProposedCasesSection({ edit, locked }: { edit: RiskEdit; locked: boolea
         action:       'test_cases.marked_reviewed',
         entity_type:  'risk_edit',
         entity_id:    edit.id,
-        payload_json: { case_count: cases.filter((c) => c.included_in_run).length },
+        payload_json: { case_count: includedCount },
+      });
+      qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
+      setShowReviewConfirm(false);
+      // Close any open AddCaseForm so the lock feels deliberate.
+      setShowAddCase(false);
+    } finally {
+      setMarkingReviewed(false);
+    }
+  }
+
+  async function handleUnlock() {
+    if (!currentUser || !edit.cases_reviewed || unlocking) return;
+    setUnlocking(true);
+    try {
+      await repo.riskEdits.update(edit.id, { cases_reviewed: false } as Partial<RiskEdit>);
+      await repo.auditLog.append({
+        actor_id:     currentUser.id,
+        action:       'test_cases.unlocked',
+        entity_type:  'risk_edit',
+        entity_id:    edit.id,
+        payload_json: { case_count: includedCount },
       });
       qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
     } finally {
-      setMarkingReviewed(false);
+      setUnlocking(false);
+    }
+  }
+
+  async function handleSendClick() {
+    if (sendingFromDrawer) return;
+    setSendingFromDrawer(true);
+    try {
+      await onSendFromDrawer();
+    } finally {
+      setSendingFromDrawer(false);
     }
   }
 
@@ -341,7 +388,7 @@ function ProposedCasesSection({ edit, locked }: { edit: RiskEdit; locked: boolea
             <ProposedCaseRow
               key={c.id}
               proposed={c}
-              locked={locked}
+              locked={casesLocked}
               onToggleInclude={() => toggleInclude(c)}
               onRemove={() => removeCase(c)}
             />
@@ -352,7 +399,7 @@ function ProposedCasesSection({ edit, locked }: { edit: RiskEdit; locked: boolea
         <button
           type="button"
           onClick={() => setShowAddCase(true)}
-          disabled={locked}
+          disabled={casesLocked}
           className="mt-2 text-xs font-medium text-forest-600 hover:text-forest-700 disabled:text-arc-300"
         >
           + Propose new test case
@@ -364,14 +411,48 @@ function ProposedCasesSection({ edit, locked }: { edit: RiskEdit; locked: boolea
         />
       )}
       {edit.current_stage === 'ready_for_uat' && (
-        <button
-          type="button"
-          onClick={handleMarkReviewed}
-          disabled={edit.cases_reviewed === true || markingReviewed}
-          className="mt-3 w-full rounded-lg bg-arc-900 text-white text-sm font-medium py-2 disabled:bg-arc-300 hover:bg-arc-700 transition-colors"
-        >
-          {edit.cases_reviewed ? 'Cases reviewed ✓' : markingReviewed ? 'Marking…' : 'Mark reviewed'}
-        </button>
+        <div className="mt-3">
+          {!edit.cases_reviewed ? (
+            <button
+              type="button"
+              onClick={() => setShowReviewConfirm(true)}
+              disabled={markingReviewed || includedCount === 0}
+              className="w-full rounded-lg bg-arc-900 text-white text-sm font-medium py-2 disabled:bg-arc-300 hover:bg-arc-700 transition-colors"
+              title={includedCount === 0 ? 'Include at least one case before locking' : undefined}
+            >
+              Mark reviewed
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleSendClick}
+                disabled={sendingFromDrawer || includedCount === 0}
+                className="w-full rounded-lg bg-forest-600 text-white text-sm font-medium py-2 disabled:bg-arc-300 hover:bg-forest-700 transition-colors"
+              >
+                {sendingFromDrawer ? 'Sending…' : 'Send for AI UAT report'}
+              </button>
+              <button
+                type="button"
+                onClick={handleUnlock}
+                disabled={sendingFromDrawer || unlocking}
+                className="mt-2 w-full text-center text-xs text-arc-500 hover:text-arc-700 disabled:text-arc-300 transition-colors"
+              >
+                {unlocking ? 'Unlocking…' : 'Need to change something? Unlock cases'}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+      {showReviewConfirm && (
+        <ConfirmModal
+          title="Lock test cases for AI UAT?"
+          description={`Lock these ${includedCount} test case${includedCount !== 1 ? 's' : ''} as the final set for AI UAT report generation. After locking you can still send for UAT or unlock to make changes.`}
+          confirmLabel="Lock cases"
+          loading={markingReviewed}
+          onConfirm={confirmReview}
+          onCancel={() => setShowReviewConfirm(false)}
+        />
       )}
     </section>
   );
@@ -380,9 +461,11 @@ function ProposedCasesSection({ edit, locked }: { edit: RiskEdit; locked: boolea
 function UatContextDrawer({
   edit,
   onClose,
+  onSendFromDrawer,
 }: {
   edit: RiskEdit;
   onClose: () => void;
+  onSendFromDrawer: () => Promise<void>;
 }) {
   const { currentUser } = useAuth();
   const repo = useRepository();
@@ -464,7 +547,7 @@ function UatContextDrawer({
           />
         </section>
 
-        <ProposedCasesSection edit={edit} locked={locked} />
+        <ProposedCasesSection edit={edit} locked={locked} onSendFromDrawer={onSendFromDrawer} />
 
         <section>
           <h3 className="text-xs font-semibold text-arc-900 uppercase tracking-wide mb-2">
@@ -966,7 +1049,11 @@ export function UatWorkspacePage() {
       )}
 
       {openEdit && (
-        <UatContextDrawer edit={openEdit} onClose={() => setOpenEditId(null)} />
+        <UatContextDrawer
+          edit={openEdit}
+          onClose={() => setOpenEditId(null)}
+          onSendFromDrawer={() => handleTrigger([openEdit.id])}
+        />
       )}
 
       {confirmUnstickId && (
