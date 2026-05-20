@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
 import { useEngineModules } from '@/hooks/useEngineModules';
 import { useAuditLog } from '@/hooks/useAuditLog';
@@ -15,45 +16,19 @@ import { UserAvatar } from '@/components/shared/UserAvatar';
 import { CreateRiskEditModal } from './CreateRiskEditModal';
 import type { AuditLogEntry, RiskEdit, RiskEditStage, User } from '@/types';
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-
 const ACTIVE_STAGES: RiskEditStage[] = [
   'draft', 'ready_for_uat', 'uat_in_progress', 'qa_review', 'approved', 'sent_to_it',
 ];
 const ARCHIVED_STAGES: RiskEditStage[] = ['live', 'rejected'];
 const TERMINAL_STAGES: ReadonlySet<RiskEditStage> = new Set(['live', 'rejected']);
 
-// Linear happy-path through the pipeline — used by the stage timeline to draw
-// greyed segments for stages that haven't been reached yet. Rejected is a
-// branch, not part of the linear path; handled separately.
 const PIPELINE: RiskEditStage[] = [
   'draft', 'ready_for_uat', 'uat_in_progress', 'qa_review', 'approved', 'sent_to_it', 'live',
 ];
 
-const STAGE_OPTIONS: { value: '' | RiskEditStage; label: string }[] = [
-  { value: '',                label: 'All stages'      },
-  { value: 'draft',           label: 'Draft'           },
-  { value: 'ready_for_uat',   label: 'Ready for UAT'   },
-  { value: 'uat_in_progress', label: 'UAT Running'     },
-  { value: 'qa_review',       label: 'QA Review'       },
-  { value: 'approved',        label: 'Approved'        },
-  { value: 'sent_to_it',      label: 'Sent to IT'      },
-  { value: 'live',            label: 'Live'            },
-  { value: 'rejected',        label: 'Rejected'        },
+const STAGE_FILTER_KEYS: RiskEditStage[] = [
+  'draft', 'ready_for_uat', 'uat_in_progress', 'qa_review', 'approved', 'sent_to_it', 'live', 'rejected',
 ];
-
-const STAGE_LABELS: Record<RiskEditStage, string> = {
-  draft:           'Draft',
-  ready_for_uat:   'Ready for UAT',
-  uat_in_progress: 'UAT Running',
-  qa_review:       'QA Review',
-  approved:        'Approved',
-  sent_to_it:      'Sent to IT',
-  live:            'Live',
-  rejected:        'Rejected',
-};
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function workspaceUrl(edit: RiskEdit): string {
   if (edit.current_stage === 'uat_in_progress') return '/workspace/uat';
@@ -77,7 +52,6 @@ function fmtDate(dateStr: string) {
   });
 }
 
-/** Coarse relative duration for table cells: "3d 4h" / "2h 15m" / "45m" / "just now". */
 function fmtRelative(ms: number): string {
   const clamped = Math.max(0, ms);
   const sec = Math.floor(clamped / 1000);
@@ -92,7 +66,6 @@ function fmtRelative(ms: number): string {
   return remHr > 0 ? `${days}d ${remHr}h` : `${days}d`;
 }
 
-/** Full duration breakdown for timeline tooltips: "2d 6h 15m". */
 function fmtDurationLong(ms: number): string {
   const totalMin = Math.max(0, Math.floor(ms / 60000));
   if (totalMin < 1) return '<1m';
@@ -110,9 +83,6 @@ function isTerminal(stage: RiskEditStage): boolean {
   return TERMINAL_STAGES.has(stage);
 }
 
-// Frozen terminal timestamp uses updated_at as proxy — when an edit transitions
-// to live/rejected, updated_at is written at that moment and nothing mutates
-// it after. Same proxy already used by UatWorkspacePage's ElapsedTimer.
 function terminalAt(edit: RiskEdit): string | null {
   return isTerminal(edit.current_stage) ? edit.updated_at : null;
 }
@@ -129,6 +99,7 @@ function sinceUpdateMs(edit: RiskEdit, nowMs: number): number {
   return Math.max(0, nowMs - new Date(edit.updated_at).getTime());
 }
 
+// Audit log action verbs stay English per brief — these are data, not UI.
 function fmtAction(entry: AuditLogEntry): string {
   const p = entry.payload_json;
   switch (entry.action) {
@@ -155,14 +126,13 @@ function fmtAction(entry: AuditLogEntry): string {
   }
 }
 
-// ── Audit panel ───────────────────────────────────────────────────────────────
-
 function AuditPanel({ editId, userMap }: { editId: string; userMap: Record<string, string> }) {
+  const { t } = useTranslation();
   const { data: entries = [], isLoading } = useAuditLog({ entity_type: 'risk_edit', entity_id: editId });
   const sorted = [...entries].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 6);
 
-  if (isLoading) return <p className="text-xs text-arc-500 py-2">Loading…</p>;
-  if (sorted.length === 0) return <p className="text-xs text-arc-500 py-2">No audit entries yet.</p>;
+  if (isLoading) return <p className="text-xs text-arc-500 py-2">{t('common.loading')}</p>;
+  if (sorted.length === 0) return <p className="text-xs text-arc-500 py-2">{t('risk_edits.no_audit')}</p>;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -179,8 +149,6 @@ function AuditPanel({ editId, userMap }: { editId: string; userMap: Record<strin
   );
 }
 
-// ── Stage timeline ────────────────────────────────────────────────────────────
-
 interface TimelineSegment {
   stage:   RiskEditStage;
   startMs: number;
@@ -196,16 +164,15 @@ function buildTimeline(edit: RiskEdit, audit: AuditLogEntry[], nowMs: number): T
   let segStart = new Date(edit.created_at).getTime();
   const segments: TimelineSegment[] = [];
 
-  for (const t of transitions) {
-    const tMs = new Date(t.created_at).getTime();
-    const to = t.payload_json.to as RiskEditStage | undefined;
+  for (const tx of transitions) {
+    const tMs = new Date(tx.created_at).getTime();
+    const to = tx.payload_json.to as RiskEditStage | undefined;
     segments.push({ stage, startMs: segStart, endMs: tMs });
     if (!to) break;
     stage = to;
     segStart = tMs;
   }
 
-  // Final open segment extends to terminal timestamp or to now (live-ticking)
   const endMs = isTerminal(edit.current_stage)
     ? new Date(edit.updated_at).getTime()
     : nowMs;
@@ -228,9 +195,10 @@ function stageBarColor(stage: RiskEditStage): string {
 }
 
 function StageTimeline({ edit, nowMs }: { edit: RiskEdit; nowMs: number }) {
+  const { t } = useTranslation();
   const { data: audit = [], isLoading } = useAuditLog({ entity_type: 'risk_edit', entity_id: edit.id });
 
-  if (isLoading) return <p className="text-xs text-arc-500">Loading timeline…</p>;
+  if (isLoading) return <p className="text-xs text-arc-500">{t('risk_edits.loading_timeline')}</p>;
 
   const segments = buildTimeline(edit, audit, nowMs);
   const reachedStages = new Set(segments.map((s) => s.stage));
@@ -238,14 +206,10 @@ function StageTimeline({ edit, nowMs }: { edit: RiskEdit; nowMs: number }) {
 
   const lastReachedStage = segments[segments.length - 1].stage;
   const lastReachedIdx = PIPELINE.indexOf(lastReachedStage);
-  // No greyed remainder for rejected branch (terminal off-path)
   const future: RiskEditStage[] = (lastReachedIdx >= 0 && !isTerminal(edit.current_stage))
     ? PIPELINE.slice(lastReachedIdx + 1)
     : [];
 
-  // Reached segments share 70% of the bar width by duration; greyed future
-  // stages share the remaining 30% equally. This keeps the very-short early
-  // segments still visible without the future stages dominating the bar.
   const futureShare  = future.length > 0 ? 0.3 : 0;
   const reachedShare = 1 - futureShare;
 
@@ -260,7 +224,7 @@ function StageTimeline({ edit, nowMs }: { edit: RiskEdit; nowMs: number }) {
               key={`${seg.stage}-${idx}`}
               className={`${stageBarColor(seg.stage)} h-full`}
               style={{ width: `${widthPct}%` }}
-              title={`${STAGE_LABELS[seg.stage]}: ${fmtDurationLong(dur)}`}
+              title={`${t(`stage.${seg.stage}`)}: ${fmtDurationLong(dur)}`}
             />
           );
         })}
@@ -269,7 +233,7 @@ function StageTimeline({ edit, nowMs }: { edit: RiskEdit; nowMs: number }) {
             key={`future-${stage}`}
             className="bg-arc-100/60 h-full border-l border-white"
             style={{ width: `${(futureShare / future.length) * 100}%` }}
-            title={`${STAGE_LABELS[stage]}: not yet reached`}
+            title={`${t(`stage.${stage}`)}: ${t('risk_edits.timeline_not_reached')}`}
           />
         ))}
       </div>
@@ -282,22 +246,20 @@ function StageTimeline({ edit, nowMs }: { edit: RiskEdit; nowMs: number }) {
               className={`flex items-center gap-1.5 ${reached ? 'text-arc-700' : 'text-arc-200'}`}
             >
               <span className={`w-2 h-2 rounded-sm ${reached ? stageBarColor(stage) : 'bg-arc-100'}`} />
-              {STAGE_LABELS[stage]}
+              {t(`stage.${stage}`)}
             </span>
           );
         })}
         {edit.current_stage === 'rejected' && (
           <span className="flex items-center gap-1.5 text-rose-600">
             <span className="w-2 h-2 rounded-sm bg-rose-400" />
-            Rejected
+            {t('stage.rejected')}
           </span>
         )}
       </div>
     </div>
   );
 }
-
-// ── Cells ─────────────────────────────────────────────────────────────────────
 
 function AuthorCell({ userId }: { userId: string }) {
   const repo = useRepository();
@@ -323,8 +285,6 @@ function ModuleCell({ moduleId }: { moduleId: string }) {
   return <span className="font-mono text-xs text-arc-700">{mod?.module_name ?? moduleId}</span>;
 }
 
-// ── Expandable row ────────────────────────────────────────────────────────────
-
 interface RowProps {
   edit:        RiskEdit;
   userMap:     Record<string, string>;
@@ -336,10 +296,9 @@ interface RowProps {
 }
 
 function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }: RowProps) {
+  const { t } = useTranslation();
   const colSpan = showFinalTs ? 9 : 8;
   const tAt = terminalAt(edit);
-  // Explicit zebra rather than CSS odd/even — each row optionally renders a
-  // second expansion <tr>, which would otherwise flip the alternation.
   const zebra = index % 2 === 0 ? 'bg-white' : 'bg-arc-100/60';
 
   return (
@@ -391,14 +350,18 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
             <div className="flex flex-col gap-5">
               <div className="flex gap-8">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-2">Edit brief</p>
+                  <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-2">
+                    {t('risk_edits.edit_brief')}
+                  </p>
                   <p className="text-xs text-arc-900 leading-relaxed line-clamp-3">
-                    {edit.natural_language_brief || <span className="text-arc-500 italic">No brief provided.</span>}
+                    {edit.natural_language_brief || <span className="text-arc-500 italic">{t('risk_edits.no_brief')}</span>}
                   </p>
                 </div>
                 <div className="w-px bg-arc-200 shrink-0" />
                 <div className="flex-[2] min-w-0">
-                  <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-2">Recent Activity</p>
+                  <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-2">
+                    {t('risk_edits.recent_activity')}
+                  </p>
                   <AuditPanel editId={edit.id} userMap={userMap} />
                 </div>
                 <div className="shrink-0 flex flex-col items-end justify-between">
@@ -407,13 +370,15 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
                     onClick={(e) => e.stopPropagation()}
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-arc-900 text-white text-xs font-medium hover:bg-arc-700 transition-colors"
                   >
-                    Open Workspace →
+                    {t('risk_edits.open_workspace')}
                   </Link>
                 </div>
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-2">Stage timeline</p>
+                <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-2">
+                  {t('risk_edits.stage_timeline')}
+                </p>
                 <StageTimeline edit={edit} nowMs={nowMs} />
               </div>
             </div>
@@ -423,8 +388,6 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
     </>
   );
 }
-
-// ── Sort header ───────────────────────────────────────────────────────────────
 
 type SortKey = 'id' | 'title' | 'stage' | 'module' | 'author' | 'since_update' | 'total_elapsed' | 'final_ts';
 type SortDir = 'asc' | 'desc';
@@ -485,8 +448,6 @@ function sortEdits(
   });
 }
 
-// ── Table ─────────────────────────────────────────────────────────────────────
-
 function EditsTable({
   edits, userMap, nowMs, sort, onSort, showFinalTs,
 }: {
@@ -497,21 +458,22 @@ function EditsTable({
   onSort:      (k: SortKey) => void;
   showFinalTs: boolean;
 }) {
+  const { t } = useTranslation();
   const [expandedEditId, setExpandedEditId] = useState<string | null>(null);
   return (
     <div className="bg-white rounded-xl border border-arc-200 shadow-sm overflow-hidden">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-arc-200 bg-arc-100">
-            <HeaderCell label="ID"            width="w-32" sortKey="id"            sort={sort} onSort={onSort} />
-            <HeaderCell label="Title"                       sortKey="title"         sort={sort} onSort={onSort} />
-            <HeaderCell label="Stage"         width="w-36" sortKey="stage"         sort={sort} onSort={onSort} />
-            <HeaderCell label="Module"        width="w-40" sortKey="module"        sort={sort} onSort={onSort} />
-            <HeaderCell label="Author"        width="w-44" sortKey="author"        sort={sort} onSort={onSort} />
-            <HeaderCell label="Since update"  width="w-28" sortKey="since_update"  sort={sort} onSort={onSort} />
-            <HeaderCell label="Total elapsed" width="w-28" sortKey="total_elapsed" sort={sort} onSort={onSort} />
+            <HeaderCell label={t('risk_edits.col_id')}             width="w-32" sortKey="id"            sort={sort} onSort={onSort} />
+            <HeaderCell label={t('risk_edits.col_title')}                       sortKey="title"         sort={sort} onSort={onSort} />
+            <HeaderCell label={t('risk_edits.col_stage')}          width="w-36" sortKey="stage"         sort={sort} onSort={onSort} />
+            <HeaderCell label={t('risk_edits.col_module')}         width="w-40" sortKey="module"        sort={sort} onSort={onSort} />
+            <HeaderCell label={t('risk_edits.col_author')}         width="w-44" sortKey="author"        sort={sort} onSort={onSort} />
+            <HeaderCell label={t('risk_edits.col_since_update')}   width="w-28" sortKey="since_update"  sort={sort} onSort={onSort} />
+            <HeaderCell label={t('risk_edits.col_total_elapsed')}  width="w-28" sortKey="total_elapsed" sort={sort} onSort={onSort} />
             {showFinalTs && (
-              <HeaderCell label="Final stage" width="w-32" sortKey="final_ts" sort={sort} onSort={onSort} />
+              <HeaderCell label={t('risk_edits.col_final_stage')} width="w-32" sortKey="final_ts" sort={sort} onSort={onSort} />
             )}
             <th className="px-4 py-2.5 w-8" />
           </tr>
@@ -535,9 +497,8 @@ function EditsTable({
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
 export function RiskEditsPage() {
+  const { t } = useTranslation();
   const { role } = useAuth();
   const repo = useRepository();
   const { data: modules = [] } = useEngineModules();
@@ -565,14 +526,10 @@ export function RiskEditsPage() {
     [modules],
   );
 
-  // Live-tick "now" so since-update / total-elapsed cells and the current
-  // stage's timeline segment grow in real time. 1s cadence is enough — the
-  // page rerenders only this state, sort/filter memos remain stable unless
-  // the relevant sort key depends on time.
   const [nowMs, setNowMs] = useState(() => Date.now());
   useEffect(() => {
-    const t = setInterval(() => setNowMs(Date.now()), 1000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const filtered = useMemo(() => {
@@ -622,10 +579,10 @@ export function RiskEditsPage() {
     <>
       <div className="flex flex-col h-full overflow-hidden">
         <TopBar
-          breadcrumb={<Breadcrumb items={[{ label: 'Risk Edits' }]} />}
+          breadcrumb={<Breadcrumb items={[{ label: t('risk_edits.title') }]} />}
           actions={
             canCreate ? (
-              <Button size="sm" onClick={() => setShowCreate(true)}>+ New Edit</Button>
+              <Button size="sm" onClick={() => setShowCreate(true)}>{t('risk_edits.new_edit')}</Button>
             ) : undefined
           }
         />
@@ -633,17 +590,15 @@ export function RiskEditsPage() {
         <div className="flex-1 overflow-y-auto p-6">
           <div className="max-w-6xl mx-auto">
             <div className="mb-5">
-              <h1 className="text-xl font-semibold text-arc-900">Risk Edits</h1>
-              <p className="text-sm text-arc-500 mt-0.5">
-                Complete history of every risk engine edit — active work above, terminal stages below.
-              </p>
+              <h1 className="text-xl font-semibold text-arc-900">{t('risk_edits.title')}</h1>
+              <p className="text-sm text-arc-500 mt-0.5">{t('risk_edits.subtitle')}</p>
             </div>
 
             <div className="flex flex-wrap gap-3 mb-5 items-center">
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search title or brief…"
+                placeholder={t('risk_edits.search_placeholder')}
                 className="w-64"
               />
               <Select
@@ -651,8 +606,9 @@ export function RiskEditsPage() {
                 onChange={(e) => setStageFilter(e.target.value as '' | RiskEditStage)}
                 className="w-44"
               >
-                {STAGE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                <option value="">{t('risk_edits.all_stages')}</option>
+                {STAGE_FILTER_KEYS.map((s) => (
+                  <option key={s} value={s}>{t(`stage.${s}`)}</option>
                 ))}
               </Select>
               <Select
@@ -660,7 +616,7 @@ export function RiskEditsPage() {
                 onChange={(e) => setModuleFilter(e.target.value)}
                 className="w-52"
               >
-                <option value="">All modules</option>
+                <option value="">{t('risk_edits.all_modules')}</option>
                 {modules.map((m) => (
                   <option key={m.id} value={m.id}>{m.module_name}</option>
                 ))}
@@ -670,7 +626,7 @@ export function RiskEditsPage() {
                 onChange={(e) => setAuthorFilter(e.target.value)}
                 className="w-48"
               >
-                <option value="">All authors</option>
+                <option value="">{t('risk_edits.all_authors')}</option>
                 {authorOptions.map((u: User) => (
                   <option key={u.id} value={u.id}>{u.name}</option>
                 ))}
@@ -679,21 +635,21 @@ export function RiskEditsPage() {
 
             {isLoading ? (
               <div className="bg-white rounded-xl border border-arc-200 shadow-sm py-16 text-center text-arc-500 text-sm">
-                Loading…
+                {t('common.loading')}
               </div>
             ) : (
               <div className="flex flex-col gap-6">
                 <section>
                   <div className="flex items-baseline justify-between mb-2">
                     <h2 className="text-sm font-semibold text-arc-900">
-                      Active Edits{' '}
+                      {t('risk_edits.section_active')}{' '}
                       <span className="text-arc-500 font-normal">({sortedActive.length})</span>
                     </h2>
-                    <p className="text-xs text-arc-500">Pre-terminal stages</p>
+                    <p className="text-xs text-arc-500">{t('risk_edits.section_active_sub')}</p>
                   </div>
                   {sortedActive.length === 0 ? (
                     <div className="bg-white rounded-xl border border-arc-200 shadow-sm py-10 text-center text-arc-500 text-sm">
-                      No active edits match the current filters.
+                      {t('risk_edits.empty_active')}
                     </div>
                   ) : (
                     <EditsTable
@@ -710,14 +666,14 @@ export function RiskEditsPage() {
                 <section>
                   <div className="flex items-baseline justify-between mb-2">
                     <h2 className="text-sm font-semibold text-arc-900">
-                      Live &amp; Archived Edits{' '}
+                      {t('risk_edits.section_archived')}{' '}
                       <span className="text-arc-500 font-normal">({sortedArchived.length})</span>
                     </h2>
-                    <p className="text-xs text-arc-500">Terminal stages: live, rejected</p>
+                    <p className="text-xs text-arc-500">{t('risk_edits.section_archived_sub')}</p>
                   </div>
                   {sortedArchived.length === 0 ? (
                     <div className="bg-white rounded-xl border border-arc-200 shadow-sm py-10 text-center text-arc-500 text-sm">
-                      No live or archived edits match the current filters.
+                      {t('risk_edits.empty_archived')}
                     </div>
                   ) : (
                     <EditsTable

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/auth/AuthProvider';
 import { useEngineModule } from '@/hooks/useEngineModules';
 import { useRiskEditVersions, useCreateVersion } from '@/hooks/useRiskEdits';
@@ -28,6 +29,7 @@ function BriefPanel({
   rejectedReview: { annotations_json: Record<string, unknown>; decided_at: string } | null;
   rejectorName?: string;
 }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(change.current_stage === 'draft');
 
   return (
@@ -39,8 +41,12 @@ function BriefPanel({
           </svg>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-rose-700">
-              QA returned this change{rejectorName ? ` — ${rejectorName}` : ''},{' '}
-              {new Date(rejectedReview.decided_at).toLocaleDateString()}
+              {rejectorName
+                ? t('workspace.draft_tab.qa_returned_with_name', {
+                    name: rejectorName,
+                    date: new Date(rejectedReview.decided_at).toLocaleDateString(),
+                  })
+                : t('workspace.draft_tab.qa_returned')}
             </p>
             {rejectedReview.annotations_json?.['rejection_notes'] ? (
               <p className="text-xs text-rose-600 mt-0.5 leading-relaxed">
@@ -56,7 +62,7 @@ function BriefPanel({
         onClick={() => setExpanded((e) => !e)}
       >
         <span className="text-xs font-semibold text-arc-500 uppercase tracking-wide">
-          Edit brief
+          {t('workspace.draft_tab.edit_brief')}
         </span>
         <svg
           className={`w-4 h-4 text-arc-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
@@ -109,6 +115,7 @@ function MiniChatMessage({ msg, userSeed }: { msg: ChatMessage; userSeed?: strin
 // ── Main tab ──────────────────────────────────────────────────────────────────
 
 export function DraftQueueTab({ change }: DraftQueueTabProps) {
+  const { t } = useTranslation();
   const { currentUser, role } = useAuth();
   const repo = useRepository();
   const { data: module } = useEngineModule(change.target_module_id);
@@ -142,6 +149,10 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
     setEditorSQL(sql);
   }, [module?.id, versions[0]?.id]);
 
+  // Chat bubble content stays English regardless of language — the AI greeting,
+  // user messages, AI responses, and save-version confirmations are all
+  // conversation content. Chrome around the chat (placeholder, Send button,
+  // History toggle, etc.) translates.
   const uiMessages: ChatMessage[] = messagesLoading
     ? []
     : persistedMessages.length > 0
@@ -261,6 +272,7 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
         source,
       });
 
+      // Confirmation messages live in the conversation thread — stay English.
       const confirmContent = `Version ${nextVersionNumber} saved (${source === 'human_edit' ? 'manual edit' : 'AI proposal'}). Ready to send for UAT.`;
       await appendMessage.mutateAsync({
         risk_edit_id: change.id,
@@ -298,7 +310,7 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
                 <span className="text-xs text-arc-200 font-mono">· v{latestVersion.version_number}</span>
               )}
               {(hasManualEdits || pendingSql) && (
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Unsaved changes" />
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               )}
             </div>
             <div className="flex items-center gap-2">
@@ -306,11 +318,11 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
                 onClick={() => setShowVersions(!showVersions)}
                 className="text-xs text-arc-200 hover:text-white transition-colors"
               >
-                {showVersions ? 'Hide history' : 'History'}
+                {showVersions ? t('workspace.draft_tab.hide_history') : t('workspace.draft_tab.history')}
               </button>
               {canEdit && (hasManualEdits || pendingSql) && (
                 <Button size="sm" loading={isSaving} onClick={handleSaveVersion}>
-                  Save version
+                  {t('workspace.draft_tab.save_version')}
                 </Button>
               )}
             </div>
@@ -319,7 +331,7 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
           {showVersions && (
             <div className="absolute right-80 top-10 bottom-0 w-64 bg-white border-l border-arc-200 z-10 overflow-y-auto">
               <div className="px-4 py-3 border-b border-arc-200">
-                <p className="text-xs font-semibold text-arc-900">Version history</p>
+                <p className="text-xs font-semibold text-arc-900">{t('workspace.draft_tab.version_history')}</p>
               </div>
               {versions.map((v) => (
                 <button
@@ -330,7 +342,7 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
                   <div className="flex items-center justify-between mb-0.5">
                     <span className="text-xs font-semibold text-arc-900">v{v.version_number}</span>
                     <span className={`text-xs px-1.5 py-0.5 rounded-full ${v.source === 'ai_proposal' ? 'bg-arc-100 text-arc-500' : 'bg-amber-50 text-amber-700'}`}>
-                      {v.source === 'ai_proposal' ? 'AI' : 'Human'}
+                      {v.source === 'ai_proposal' ? t('workspace.draft_tab.ai_label') : t('workspace.draft_tab.human_label')}
                     </span>
                   </div>
                   <p className="text-xs text-arc-500 truncate">{v.diff_summary}</p>
@@ -373,14 +385,14 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
               <div className="w-5 h-5 bg-arc-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-xs font-bold">AI</span>
               </div>
-              <span className="text-xs font-semibold text-arc-900">AI Assistant</span>
+              <span className="text-xs font-semibold text-arc-900">{t('workspace.draft_tab.ai_assistant')}</span>
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
             {messagesLoading ? (
               <div className="flex items-center justify-center py-8 text-arc-500 text-xs">
-                Loading conversation…
+                {t('workspace.draft_tab.loading_conversation')}
               </div>
             ) : (
               uiMessages.map((msg) => (
@@ -409,7 +421,7 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
             <div className="p-3 border-t border-arc-200 bg-white flex flex-col gap-2">
               <Textarea
                 rows={3}
-                placeholder="Ask the AI to propose or refine the SQL change… (Enter to send)"
+                placeholder={t('workspace.draft_tab.chat_placeholder')}
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={handleChatKeyDown}
@@ -423,19 +435,18 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
                 loading={isAiLoading}
                 className="w-full"
               >
-                Send
+                {t('workspace.draft_tab.send')}
               </Button>
               <p className="text-xs text-arc-500 text-center">
-                Phase 1 — AI responses are mocked.
+                {t('workspace.draft_tab.ai_mock_note')}
               </p>
             </div>
           ) : (
             <div className="px-4 py-3 border-t border-arc-200 bg-white">
               <p className="text-xs text-arc-500 text-center">
-                Editing locked — stage is{' '}
-                <span className="font-medium text-arc-500">
-                  {change.current_stage.replace(/_/g, ' ')}
-                </span>
+                {t('workspace.draft_tab.editing_locked', {
+                  stage: t(`stage.${change.current_stage}`),
+                })}
               </p>
             </div>
           )}

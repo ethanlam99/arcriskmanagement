@@ -1,19 +1,11 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useQuery } from '@tanstack/react-query';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import { Logo } from '@/components/shared/Logo';
 import type { User, UserRole } from '@/types';
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  risk_analyst:  'Risk Analyst',
-  tester:        'Tester',
-  admin:         'Admin',
-  risk_lead:     'Risk Lead',
-  testing_lead:  'Testing Lead',
-  it_team:       'IT Team',
-};
 
 const ROLE_COLORS: Record<UserRole, string> = {
   risk_analyst:  'bg-arc-100 text-arc-700 border border-arc-200',
@@ -27,6 +19,7 @@ const ROLE_COLORS: Record<UserRole, string> = {
 const ROLE_ORDER: UserRole[] = ['risk_analyst', 'risk_lead', 'tester', 'testing_lead', 'it_team', 'admin'];
 
 export function LoginPage() {
+  const { t } = useTranslation();
   const repo = useRepository();
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -41,7 +34,6 @@ export function LoginPage() {
     navigate('/overview');
   }
 
-  // Group personas by role for legibility
   const grouped = ROLE_ORDER.reduce<Record<UserRole, User[]>>((acc, role) => {
     acc[role] = users.filter((u) => u.role === role);
     return acc;
@@ -54,30 +46,28 @@ export function LoginPage() {
         <div className="inline-flex items-center justify-center w-12 h-12 bg-arc-900 rounded-xl mb-4">
           <Logo size="sm" variant="light" />
         </div>
-        <h1 className="text-2xl font-semibold text-arc-900">ARC</h1>
-        <p className="text-arc-500 text-sm mt-1">AI Risk Control</p>
-        <p className="text-arc-500 text-xs mt-2 italic">
-          built by Ethan · for Webank · Phase 1 POC
-        </p>
+        <h1 className="text-2xl font-semibold text-arc-900">{t('login.title')}</h1>
+        <p className="text-arc-500 text-sm mt-1">{t('login.tagline')}</p>
+        <p className="text-arc-500 text-xs mt-2 italic">{t('login.phase_1_credit')}</p>
       </div>
 
       {/* Persona picker card */}
       <div className="w-full max-w-2xl bg-white rounded-xl border border-arc-200 p-8">
         <div className="mb-6">
-          <h2 className="text-base font-semibold text-arc-900">Select a persona to continue</h2>
-          <p className="text-sm text-arc-500 mt-0.5">
-            Phase 1 — no password required. Each persona has a different role and permission set.
-          </p>
+          <h2 className="text-base font-semibold text-arc-900">{t('login.subtitle')}</h2>
+          <p className="text-sm text-arc-500 mt-0.5">{t('login.subtitle_help')}</p>
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12 text-arc-500 text-sm">Loading…</div>
+          <div className="flex items-center justify-center py-12 text-arc-500 text-sm">
+            {t('login.loading')}
+          </div>
         ) : (
           <div className="space-y-5">
             {ROLE_ORDER.filter((role) => grouped[role]?.length > 0).map((role) => (
               <div key={role}>
                 <p className="text-xs font-semibold text-arc-500 uppercase tracking-wider mb-2">
-                  {ROLE_LABELS[role]}
+                  {t(`role.${role}`)}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {grouped[role].map((user) => (
@@ -91,7 +81,7 @@ export function LoginPage() {
                         <p className="text-sm font-semibold text-arc-900 truncate">{user.name}</p>
                         <p className="text-xs text-arc-500 truncate">{user.email}</p>
                         <span className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_COLORS[user.role]}`}>
-                          {ROLE_LABELS[user.role]}
+                          {t(`role.${user.role}`)}
                         </span>
                       </div>
                       <svg
@@ -108,9 +98,7 @@ export function LoginPage() {
           </div>
         )}
 
-        <p className="mt-6 text-xs text-arc-500 text-center">
-          Phase 1 POC — all data is local. No external systems are contacted.
-        </p>
+        <p className="mt-6 text-xs text-arc-500 text-center">{t('login.footer_note')}</p>
       </div>
     </div>
   );

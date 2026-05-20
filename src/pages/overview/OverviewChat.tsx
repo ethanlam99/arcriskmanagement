@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { History, Send, ChevronUp, MessageSquarePlus } from 'lucide-react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
@@ -38,6 +39,7 @@ function DraftPreviewCard({
   onRefine: () => void;
   creating: boolean;
 }) {
+  const { t } = useTranslation();
   const module = modules.find((m) => m.id === msg.suggested_module_id);
   return (
     <div className="flex gap-2">
@@ -48,30 +50,30 @@ function DraftPreviewCard({
       </div>
       <div className="flex-1 rounded-xl border border-forest-200 bg-forest-50/60 p-4 max-w-[80%]">
         <p className="text-xs font-semibold text-forest-700 uppercase tracking-wide mb-2">
-          Draft preview
+          {t('chat.draft_preview')}
         </p>
         <div className="space-y-2 text-sm">
           <div>
-            <span className="text-xs text-arc-500">Title</span>
+            <span className="text-xs text-arc-500">{t('chat.draft_preview_title')}</span>
             <p className="font-medium text-arc-900">{msg.suggested_title}</p>
           </div>
           <div>
-            <span className="text-xs text-arc-500">Module</span>
+            <span className="text-xs text-arc-500">{t('chat.draft_preview_module')}</span>
             <p className="font-mono text-xs text-arc-900">
-              {module?.module_name ?? msg.suggested_module_id ?? 'Unknown module'}
+              {module?.module_name ?? msg.suggested_module_id ?? t('chat.draft_unknown_module')}
             </p>
           </div>
           <div>
-            <span className="text-xs text-arc-500">Brief</span>
+            <span className="text-xs text-arc-500">{t('chat.draft_preview_brief')}</span>
             <p className="text-arc-700 leading-relaxed text-xs">{msg.suggested_brief}</p>
           </div>
         </div>
         {alreadyCreated ? (
-          <p className="mt-3 text-xs font-medium text-forest-700">Draft already created from this thread.</p>
+          <p className="mt-3 text-xs font-medium text-forest-700">{t('chat.draft_already_created')}</p>
         ) : (
           <div className="flex gap-2 mt-4">
-            <Button size="sm" onClick={onCreate} loading={creating}>Create draft</Button>
-            <Button size="sm" variant="secondary" onClick={onRefine} disabled={creating}>Refine</Button>
+            <Button size="sm" onClick={onCreate} loading={creating}>{t('chat.create_draft')}</Button>
+            <Button size="sm" variant="secondary" onClick={onRefine} disabled={creating}>{t('chat.refine')}</Button>
           </div>
         )}
       </div>
@@ -120,6 +122,7 @@ function MessageBubble({
 }
 
 export function OverviewChat() {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const repo = useRepository();
@@ -148,9 +151,6 @@ export function OverviewChat() {
     enabled:  !!threadId,
   });
 
-  // Auto-scroll the messages container to its own bottom — directly setting
-  // scrollTop keeps the scroll local. scrollIntoView would walk up the ancestor
-  // tree and scroll the page itself when the container is already at-bottom.
   useEffect(() => {
     if (!expanded) return;
     const el = messagesContainerRef.current;
@@ -165,7 +165,6 @@ export function OverviewChat() {
     setSending(true);
 
     try {
-      // Ensure a thread exists.
       let activeThreadId = threadId;
       if (!activeThreadId) {
         const now = new Date().toISOString();
@@ -178,7 +177,6 @@ export function OverviewChat() {
         qc.invalidateQueries({ queryKey: ['arc', 'overview_chat_threads', currentUser.id] });
       }
 
-      // Append user message.
       await repo.overviewChatMessages.create({
         thread_id: activeThreadId,
         role:      'user',
@@ -186,7 +184,6 @@ export function OverviewChat() {
       } as Omit<OverviewChatMessage, 'id' | 'created_at'>);
       qc.invalidateQueries({ queryKey: ['arc', 'overview_chat_messages', activeThreadId] });
 
-      // Build conversation snapshot for the consultant (user message included).
       const prior = await repo.overviewChatMessages.listForThread(activeThreadId);
       const resp = await consultOnEdit({
         conversation: prior,
@@ -194,7 +191,6 @@ export function OverviewChat() {
         userInput: input,
       });
 
-      // Append assistant message.
       await repo.overviewChatMessages.create({
         thread_id:            activeThreadId,
         role:                 'assistant',
@@ -204,7 +200,6 @@ export function OverviewChat() {
         suggested_brief:      resp.suggested_brief,
       } as Omit<OverviewChatMessage, 'id' | 'created_at'>);
 
-      // Bump thread's updated_at so history is freshest-first.
       await repo.overviewChatThreads.update(activeThreadId, {
         updated_at: new Date().toISOString(),
       });
@@ -229,9 +224,6 @@ export function OverviewChat() {
     setDraft('');
   }
 
-  // ── Thread labels: resulting edit title, else first user message snippet ──
-  // We need first-user-message lookups across past threads. Fetch all
-  // overview chat messages once and build a map. Cheap at demo scale.
   const { data: allMessages = [] } = useQuery({
     queryKey: ['arc', 'overview_chat_messages', 'all'],
     queryFn:  () => repo.overviewChatMessages.list(),
@@ -248,20 +240,19 @@ export function OverviewChat() {
     return map;
   }, [allMessages]);
 
-  function threadLabel(t: OverviewChatThread): string {
-    if (t.resulting_risk_edit_id) {
-      const edit = allEdits.find((e) => e.id === t.resulting_risk_edit_id);
+  function threadLabel(th: OverviewChatThread): string {
+    if (th.resulting_risk_edit_id) {
+      const edit = allEdits.find((e) => e.id === th.resulting_risk_edit_id);
       if (edit) return `✓ ${edit.title}`;
     }
-    const snippet = firstUserByThread[t.id];
+    const snippet = firstUserByThread[th.id];
     if (snippet) {
       return snippet.length > 40 ? snippet.slice(0, 40) + '…' : snippet;
     }
-    return `Thread · ${formatTimeShort(t.updated_at)}`;
+    return `Thread · ${formatTimeShort(th.updated_at)}`;
   }
 
-  // ── Active thread + preview-card state ──────────────────────────────────────
-  const activeThread = threads.find((t) => t.id === threadId) ?? null;
+  const activeThread = threads.find((th) => th.id === threadId) ?? null;
   const lastAssistant = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i -= 1) {
       if (messages[i].role === 'assistant') return messages[i];
@@ -306,7 +297,6 @@ export function OverviewChat() {
       qc.invalidateQueries({ queryKey: ['arc', 'overview_chat_threads', currentUser.id] });
       qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
 
-      // Reset the chatbox to compact for the next session, then navigate.
       setExpanded(false);
       navigate(`/workspace/draft-queue?edit=${edit.id}`);
     } finally {
@@ -316,8 +306,8 @@ export function OverviewChat() {
 
   async function handleRefine() {
     if (!activeThread) return;
-    // Append an assistant message inviting refinement. The next user message
-    // will go back through consultOnEdit and produce a fresh proposal.
+    // The assistant message content here is part of the conversation thread —
+    // stays English regardless of language per the chatbox boundary.
     await repo.overviewChatMessages.create({
       thread_id: activeThread.id,
       role:      'assistant',
@@ -339,10 +329,10 @@ export function OverviewChat() {
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
             <h3 className="text-lg font-semibold text-arc-900 leading-tight">
-              Start a new risk edit
+              {t('chat.header_title')}
             </h3>
             <p className="text-xs text-arc-500 mt-0.5 leading-relaxed">
-              Tell me what you&apos;d like to change — I&apos;ll figure out the module and draft the brief with you.
+              {t('chat.header_subtitle')}
             </p>
           </div>
         </div>
@@ -352,11 +342,9 @@ export function OverviewChat() {
           className="w-full flex items-center gap-2.5 bg-arc-100 hover:bg-arc-200 transition-colors rounded-lg px-3 py-2.5 text-left"
         >
           <MessageSquarePlus className="w-4 h-4 text-arc-500 shrink-0" />
-          <span className="text-sm text-arc-500 flex-1">
-            What would you like to edit today?
-          </span>
+          <span className="text-sm text-arc-500 flex-1">{t('chat.placeholder')}</span>
           <span className="inline-flex items-center justify-center h-7 px-3 rounded-full bg-forest-600 text-white text-xs font-medium">
-            Send
+            {t('chat.send')}
           </span>
         </button>
         {threads.length > 0 && (
@@ -370,7 +358,7 @@ export function OverviewChat() {
               }}
               className="font-medium hover:text-arc-700 transition-colors"
             >
-              History ({threads.length})
+              {t('chat.history_count', { count: threads.length })}
             </button>
           </div>
         )}
@@ -383,9 +371,9 @@ export function OverviewChat() {
     <div className="rounded-xl border border-arc-200 bg-white shadow-sm flex flex-col transition-all duration-200" style={{ minHeight: '450px' }}>
       <div className="flex items-center justify-between px-4 py-3 border-b border-arc-200">
         <div>
-          <h3 className="text-sm font-semibold text-arc-900">Start a new risk edit</h3>
+          <h3 className="text-sm font-semibold text-arc-900">{t('chat.header_title')}</h3>
           <p className="text-[11px] text-arc-500">
-            {threadId ? 'Conversation in progress' : 'New conversation'}
+            {threadId ? t('chat.conversation_in_progress') : t('chat.new_conversation')}
           </p>
         </div>
         <div className="flex items-center gap-1">
@@ -394,37 +382,40 @@ export function OverviewChat() {
               type="button"
               onClick={() => setHistoryOpen((v) => !v)}
               className="p-1.5 rounded-md hover:bg-arc-100 text-arc-500 hover:text-arc-700 transition-colors"
-              aria-label="History"
+              aria-label={t('chat.history')}
+              title={t('chat.history')}
             >
               <History className="w-4 h-4" />
             </button>
             {historyOpen && (
               <div className="absolute right-0 top-full mt-1 w-72 max-h-72 overflow-y-auto bg-white border border-arc-200 rounded-lg shadow-lg z-10">
                 <div className="px-3 py-2 border-b border-arc-200 flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-arc-500 uppercase tracking-wide">Past threads</span>
+                  <span className="text-[11px] font-semibold text-arc-500 uppercase tracking-wide">
+                    {t('chat.past_threads')}
+                  </span>
                   <button
                     type="button"
                     onClick={startNewThread}
                     className="text-[11px] font-medium text-forest-600 hover:text-forest-700"
                   >
-                    + New
+                    {t('chat.new')}
                   </button>
                 </div>
                 {threads.length === 0 ? (
-                  <p className="px-3 py-3 text-xs text-arc-500 italic">No past threads yet.</p>
+                  <p className="px-3 py-3 text-xs text-arc-500 italic">{t('chat.no_past_threads')}</p>
                 ) : (
                   <ul>
-                    {threads.map((t) => (
-                      <li key={t.id}>
+                    {threads.map((th) => (
+                      <li key={th.id}>
                         <button
                           type="button"
-                          onClick={() => loadThread(t)}
+                          onClick={() => loadThread(th)}
                           className={`w-full text-left px-3 py-2 hover:bg-arc-100 transition-colors ${
-                            t.id === threadId ? 'bg-arc-100' : ''
+                            th.id === threadId ? 'bg-arc-100' : ''
                           }`}
                         >
-                          <p className="text-xs font-medium text-arc-900 truncate">{threadLabel(t)}</p>
-                          <p className="text-[10px] text-arc-500 mt-0.5">{new Date(t.updated_at).toLocaleString()}</p>
+                          <p className="text-xs font-medium text-arc-900 truncate">{threadLabel(th)}</p>
+                          <p className="text-[10px] text-arc-500 mt-0.5">{new Date(th.updated_at).toLocaleString()}</p>
                         </button>
                       </li>
                     ))}
@@ -437,7 +428,8 @@ export function OverviewChat() {
             type="button"
             onClick={() => setExpanded(false)}
             className="p-1.5 rounded-md hover:bg-arc-100 text-arc-500 hover:text-arc-700 transition-colors"
-            aria-label="Collapse"
+            aria-label={t('chat.collapse')}
+            title={t('chat.collapse')}
           >
             <ChevronUp className="w-4 h-4" />
           </button>
@@ -448,17 +440,14 @@ export function OverviewChat() {
         {messages.length === 0 ? (
           <div className="flex-1 flex items-center justify-center text-center px-6">
             <div>
-              <p className="text-sm text-arc-700 mb-1">Tell me what you&apos;d like to change.</p>
+              <p className="text-sm text-arc-700 mb-1">{t('chat.empty_prompt_title')}</p>
               <p className="text-xs text-arc-500 leading-relaxed">
-                For example: &ldquo;I want to tighten the credit utilization cap&rdquo; or &ldquo;Adjust the leverage rules for SME customers.&rdquo;
+                {t('chat.empty_prompt_examples')}
               </p>
             </div>
           </div>
         ) : (
           messages.map((m) => {
-            // Render preview card in place of the bubble when the message has
-            // a full proposal AND it is the latest assistant message AND no
-            // draft has been created yet from this thread.
             const isPreviewable =
               m.role === 'assistant' &&
               !!m.suggested_title &&
@@ -514,7 +503,7 @@ export function OverviewChat() {
             type="text"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="What would you like to edit today?"
+            placeholder={t('chat.placeholder')}
             disabled={sending}
             className="flex-1 rounded-lg border border-arc-200 bg-arc-100 px-3 py-2 text-sm focus:outline-none focus:border-forest-500 focus:bg-white transition-colors disabled:opacity-60"
           />
@@ -522,7 +511,7 @@ export function OverviewChat() {
             type="submit"
             disabled={!draft.trim() || sending}
             className="inline-flex items-center justify-center h-9 px-4 rounded-full bg-forest-600 text-white text-sm font-medium hover:bg-forest-700 disabled:bg-arc-300 transition-colors"
-            aria-label="Send"
+            aria-label={t('chat.send')}
           >
             <Send className="w-4 h-4" />
           </button>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Inbox } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRiskEdits, useUpdateRiskEditStage } from '@/hooks/useRiskEdits';
 import { useRepository } from '@/data/RepositoryProvider';
@@ -66,6 +67,7 @@ function EditListItem({
 }
 
 export function DraftQueueWorkspacePage() {
+  const { t } = useTranslation();
   const { currentUser, role } = useAuth();
   const repo = useRepository();
   const qc   = useQueryClient();
@@ -121,8 +123,6 @@ export function DraftQueueWorkspacePage() {
       fromStage:   selectedEdit.current_stage,
       extraUpdate: { cases_reviewed: false },
     });
-    // Eager AI test-case proposal. Sequential after the stage update so a
-    // proposer failure doesn't block the transition itself.
     try {
       await ensureProposedCasesForReadyForUat(repo, updated);
     } catch {
@@ -138,14 +138,14 @@ export function DraftQueueWorkspacePage() {
       <div className="w-72 shrink-0 border-r border-arc-200 bg-white flex flex-col overflow-hidden">
         <div className="px-3 py-2.5 border-b border-arc-200 bg-arc-100 shrink-0">
           <p className="text-xs font-semibold text-arc-500 uppercase tracking-wider">
-            Drafts
+            {t('workspace.draft.section_drafts')}
             <span className="ml-1.5 font-mono font-normal text-arc-700">({drafts.length})</span>
           </p>
         </div>
 
         <div className="overflow-y-auto flex-1">
           {drafts.length === 0 ? (
-            <p className="px-3 py-4 text-xs text-arc-500 text-center italic">No drafts.</p>
+            <p className="px-3 py-4 text-xs text-arc-500 text-center italic">{t('workspace.draft.empty_drafts')}</p>
           ) : (
             drafts.map((e) => (
               <EditListItem
@@ -160,13 +160,13 @@ export function DraftQueueWorkspacePage() {
 
           <div className="px-3 py-2.5 border-b border-t border-arc-200 bg-arc-100 shrink-0">
             <p className="text-xs font-semibold text-arc-500 uppercase tracking-wider">
-              Queued for UAT
+              {t('workspace.draft.section_queued')}
               <span className="ml-1.5 font-mono font-normal text-arc-700">({queued.length})</span>
             </p>
           </div>
 
           {queued.length === 0 ? (
-            <p className="px-3 py-4 text-xs text-arc-500 text-center italic">No edits queued.</p>
+            <p className="px-3 py-4 text-xs text-arc-500 text-center italic">{t('workspace.draft.empty_queued')}</p>
           ) : (
             queued.map((e) => (
               <EditListItem
@@ -186,13 +186,11 @@ export function DraftQueueWorkspacePage() {
         {!selectedEdit ? (
           <div className="flex h-full items-center justify-center flex-col gap-3 text-arc-500">
             <Inbox className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
-            <p className="text-sm">Select an edit from the list to begin.</p>
+            <p className="text-sm">{t('workspace.draft.select_to_begin')}</p>
           </div>
         ) : (
           <>
-            {/* Right pane header */}
             <div className="px-4 py-2.5 border-b border-arc-200 bg-white flex items-center gap-3 shrink-0">
-              {/* Sequential nav */}
               <div className="flex items-center gap-1">
                 <button
                   onClick={goToPrev}
@@ -227,17 +225,15 @@ export function DraftQueueWorkspacePage() {
                   onClick={() => setShowConfirm(true)}
                   loading={stageTransition.isPending}
                 >
-                  Send for UAT
+                  {t('workspace.draft.send_for_uat')}
                 </Button>
               )}
             </div>
 
-            {/* Stepper */}
             <div className="px-4 py-2.5 border-b border-arc-200 bg-white shrink-0">
               <Stepper currentStage={selectedEdit.current_stage} />
             </div>
 
-            {/* DraftQueueTab fills the rest */}
             <div className="flex-1 min-h-0 overflow-hidden">
               <DraftQueueTab change={selectedEdit} />
             </div>
@@ -247,9 +243,9 @@ export function DraftQueueWorkspacePage() {
 
       {showConfirm && selectedEdit && (
         <ConfirmModal
-          title="Send for UAT"
-          description={`Queue "${selectedEdit.title}" for AI UAT testing. A tester can trigger the run from the UAT workspace.`}
-          confirmLabel="Send for UAT"
+          title={t('workspace.draft.send_for_uat_modal_title')}
+          description={t('workspace.draft.send_for_uat_modal_desc', { title: selectedEdit.title })}
+          confirmLabel={t('workspace.draft.send_for_uat_confirm')}
           loading={stageTransition.isPending}
           onConfirm={handleSendForUat}
           onCancel={() => setShowConfirm(false)}

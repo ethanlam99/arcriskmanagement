@@ -1,13 +1,14 @@
+import { useTranslation } from 'react-i18next';
 import type { RiskEditStage } from '@/types';
 
-const STAGES: { key: RiskEditStage; label: string; subtitle: string }[] = [
-  { key: 'draft',           label: 'Author',     subtitle: 'Risk team drafting' },
-  { key: 'ready_for_uat',   label: 'Queued',     subtitle: 'Awaiting tester'    },
-  { key: 'uat_in_progress', label: 'UAT',        subtitle: 'AI running tests'   },
-  { key: 'qa_review',       label: 'QA Review',  subtitle: 'Tester reviewing'   },
-  { key: 'approved',        label: 'Approved',   subtitle: 'Awaiting bundling'  },
-  { key: 'sent_to_it',      label: 'Sent to IT', subtitle: 'Ready to deploy'    },
-  { key: 'live',            label: 'Live',       subtitle: 'In risk engine'     },
+const STAGES: { key: RiskEditStage; labelKey: string; subtitleKey: string }[] = [
+  { key: 'draft',           labelKey: 'stepper.author',     subtitleKey: 'stepper.sub_author'     },
+  { key: 'ready_for_uat',   labelKey: 'stepper.queued',     subtitleKey: 'stepper.sub_queued'     },
+  { key: 'uat_in_progress', labelKey: 'stepper.uat',        subtitleKey: 'stepper.sub_uat'        },
+  { key: 'qa_review',       labelKey: 'stepper.qa_review',  subtitleKey: 'stepper.sub_qa_review'  },
+  { key: 'approved',        labelKey: 'stepper.approved',   subtitleKey: 'stepper.sub_approved'   },
+  { key: 'sent_to_it',      labelKey: 'stepper.sent_to_it', subtitleKey: 'stepper.sub_sent_to_it' },
+  { key: 'live',            labelKey: 'stepper.live',       subtitleKey: 'stepper.sub_live'       },
 ];
 
 const STAGE_ORDER = STAGES.map((s) => s.key);
@@ -22,6 +23,7 @@ interface StepperProps {
 }
 
 export function Stepper({ currentStage }: StepperProps) {
+  const { t } = useTranslation();
   const current = stageIndex(currentStage);
   const isRejected = currentStage === 'rejected';
   const isLive     = currentStage === 'live';
@@ -34,9 +36,6 @@ export function Stepper({ currentStage }: StepperProps) {
         const active  = !isRejected && !isLive && current === i;
         const pending = !done && !active && !isRejected;
 
-        // Connector after this circle is "done" only when both adjacent
-        // circles are done — i.e., the one before the active circle stays
-        // arc-300. When isLive, every connector turns forest.
         const connectorDone = !isRejected && (isLive || current > i + 1);
 
         const circleClass = isRejected
@@ -63,11 +62,12 @@ export function Stepper({ currentStage }: StepperProps) {
           ? 'text-arc-700'
           : 'text-arc-300';
 
+        const subtitle = t(stage.subtitleKey);
+
         return (
           <div key={stage.key} className="flex items-center">
-            {/* Step circle + labels */}
             <div className="flex flex-col items-center">
-              <span title={stage.subtitle} className="relative inline-flex">
+              <span title={subtitle} className="relative inline-flex">
                 {active && (
                   <span
                     aria-hidden
@@ -87,14 +87,13 @@ export function Stepper({ currentStage }: StepperProps) {
                 </span>
               </span>
               <span className={`mt-2 text-xs font-semibold whitespace-nowrap ${labelClass}`}>
-                {stage.label}
+                {t(stage.labelKey)}
               </span>
               <span className={`hidden md:block text-[10px] whitespace-nowrap ${subtitleClass}`}>
-                {stage.subtitle}
+                {subtitle}
               </span>
             </div>
 
-            {/* Connector */}
             {i < STAGES.length - 1 && (
               <div
                 className={`h-0.5 w-10 mx-1 mb-8 transition-colors ${
@@ -102,6 +101,7 @@ export function Stepper({ currentStage }: StepperProps) {
                 }`}
               />
             )}
+            {pending && null}
           </div>
         );
       })}
@@ -109,7 +109,7 @@ export function Stepper({ currentStage }: StepperProps) {
       {isRejected && (
         <div className="ml-4 flex items-center gap-1.5 mb-8">
           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
-            Rejected
+            {t('stepper.rejected_label')}
           </span>
         </div>
       )}

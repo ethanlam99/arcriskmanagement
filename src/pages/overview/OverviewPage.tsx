@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
 import { useEngineModules } from '@/hooks/useEngineModules';
@@ -13,8 +14,6 @@ import { Button } from '@/components/ui/Button';
 import { CreateRiskEditModal } from '@/pages/risk-edits/CreateRiskEditModal';
 import { OverviewChat } from '@/pages/overview/OverviewChat';
 import type { EngineModule, Packet, RiskEdit, RiskEditStage } from '@/types';
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const REFETCH_MS = 3_600_000;
 
@@ -50,20 +49,19 @@ function workspaceUrl(edit: RiskEdit): string {
   return '/workspace/draft-queue';
 }
 
-// Pipeline-stage stat cards (the seven boxes)
 type StageKey = Extract<
   RiskEditStage,
   'draft' | 'ready_for_uat' | 'uat_in_progress' | 'qa_review' | 'approved' | 'sent_to_it' | 'live'
 >;
 
-const STAGE_CARDS: { key: StageKey; label: string; color: string }[] = [
-  { key: 'draft',           label: 'Draft',      color: 'text-arc-500'    },
-  { key: 'ready_for_uat',   label: 'UAT Queue',  color: 'text-amber-600'  },
-  { key: 'uat_in_progress', label: 'In UAT',     color: 'text-amber-600'  },
-  { key: 'qa_review',       label: 'QA Review',  color: 'text-amber-600'  },
-  { key: 'approved',        label: 'Approved',   color: 'text-emerald-600' },
-  { key: 'sent_to_it',      label: 'Sent to IT', color: 'text-emerald-600' },
-  { key: 'live',            label: 'Live',       color: 'text-forest-600'    },
+const STAGE_CARDS: { key: StageKey; labelKey: string; color: string }[] = [
+  { key: 'draft',           labelKey: 'overview.stage_card_draft',      color: 'text-arc-500'    },
+  { key: 'ready_for_uat',   labelKey: 'overview.stage_card_uat_queue',  color: 'text-amber-600'  },
+  { key: 'uat_in_progress', labelKey: 'overview.stage_card_in_uat',     color: 'text-amber-600'  },
+  { key: 'qa_review',       labelKey: 'overview.stage_card_qa_review',  color: 'text-amber-600'  },
+  { key: 'approved',        labelKey: 'overview.stage_card_approved',   color: 'text-emerald-600' },
+  { key: 'sent_to_it',      labelKey: 'overview.stage_card_sent_to_it', color: 'text-emerald-600' },
+  { key: 'live',            labelKey: 'overview.stage_card_live',       color: 'text-forest-600' },
 ];
 
 function StatBox({
@@ -88,7 +86,6 @@ function StatBox({
   );
 }
 
-// Inline expansion panel listing edits in a stage
 function StageExpansionPanel({
   stageLabel,
   edits,
@@ -100,16 +97,21 @@ function StageExpansionPanel({
   userMap: Record<string, { name: string; avatar_seed: string }>;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="mt-3 rounded-xl border border-arc-200 bg-white shadow-sm overflow-hidden">
       <div className="px-4 py-2.5 border-b border-arc-200 flex items-center justify-between">
         <p className="text-sm font-semibold text-arc-900">
-          {stageLabel} — {edits.length} edit{edits.length !== 1 ? 's' : ''}
+          {t('overview.stage_panel_subheader', {
+            count: edits.length,
+            stageLabel,
+          })}
         </p>
         <button
           onClick={onClose}
           className="text-arc-500 hover:text-arc-900 transition-colors"
-          title="Collapse"
+          title={t('overview.stage_panel_collapse')}
+          aria-label={t('overview.stage_panel_collapse')}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -118,15 +120,15 @@ function StageExpansionPanel({
       </div>
 
       {edits.length === 0 ? (
-        <p className="px-4 py-6 text-center text-sm text-arc-500">No edits in this stage.</p>
+        <p className="px-4 py-6 text-center text-sm text-arc-500">{t('overview.stage_panel_no_edits')}</p>
       ) : (
         <table className="w-full text-sm">
           <thead className="bg-arc-100 text-xs text-arc-500 uppercase tracking-wide">
             <tr>
-              <th className="text-left font-medium px-4 py-2 w-28">Edit ID</th>
-              <th className="text-left font-medium px-4 py-2">Title</th>
-              <th className="text-left font-medium px-4 py-2 w-40">Author</th>
-              <th className="text-left font-medium px-4 py-2 w-24">In stage</th>
+              <th className="text-left font-medium px-4 py-2 w-28">{t('overview.stage_panel_col_id')}</th>
+              <th className="text-left font-medium px-4 py-2">{t('overview.stage_panel_col_title')}</th>
+              <th className="text-left font-medium px-4 py-2 w-40">{t('overview.stage_panel_col_author')}</th>
+              <th className="text-left font-medium px-4 py-2 w-24">{t('overview.stage_panel_col_in_stage')}</th>
               <th className="text-right font-medium px-4 py-2 w-44">{/* action */}</th>
             </tr>
           </thead>
@@ -155,7 +157,7 @@ function StageExpansionPanel({
                       to={workspaceUrl(e)}
                       className="text-xs font-medium text-arc-500 hover:text-arc-900 transition-colors"
                     >
-                      Open in Workspace →
+                      {t('overview.stage_panel_open_workspace')}
                     </Link>
                   </td>
                 </tr>
@@ -200,11 +202,12 @@ function Panel({
   linkTo?: string;
   linkLabel?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-xl border border-arc-200 bg-white shadow-sm overflow-hidden flex flex-col">
       <div className="px-4 py-3 border-b border-arc-200 flex items-center justify-between">
         <p className="text-sm font-semibold text-arc-900">{title}</p>
-        <span className="text-xs text-arc-500">{count} item{count !== 1 ? 's' : ''}</span>
+        <span className="text-xs text-arc-500">{t('overview.items', { count })}</span>
       </div>
       <div className="flex-1 px-4 py-1">
         {count === 0 ? (
@@ -213,10 +216,10 @@ function Panel({
           <div className="divide-y divide-arc-200">{children}</div>
         )}
       </div>
-      {linkTo && (
+      {linkTo && linkLabel && (
         <div className="px-4 py-2.5 border-t border-arc-200">
           <Link to={linkTo} className="text-xs text-arc-500 hover:text-arc-900 font-medium transition-colors">
-            {linkLabel ?? 'View all →'}
+            {linkLabel}
           </Link>
         </div>
       )}
@@ -233,6 +236,7 @@ function ModuleMiniCard({
   canCreate: boolean;
   onNewEdit: () => void;
 }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const lines = module.current_sql_code.split('\n').length;
   return (
@@ -245,11 +249,15 @@ function ModuleMiniCard({
           <p className="font-mono text-sm font-semibold text-arc-900 group-hover:text-arc-700 truncate">
             {module.module_name}
           </p>
-          <span className="shrink-0 text-xs text-arc-500 font-mono">{lines}L</span>
+          <span className="shrink-0 text-xs text-arc-500 font-mono">
+            {t('overview.module_lines_short', { count: lines })}
+          </span>
         </div>
         <p className="text-xs text-arc-500 line-clamp-3 leading-relaxed flex-1">{module.description}</p>
         <div className="flex items-center justify-between gap-2 pt-1">
-          <p className="text-xs text-arc-500">Updated {fmtDate(module.updated_at)}</p>
+          <p className="text-xs text-arc-500">
+            {t('overview.module_updated', { date: fmtDate(module.updated_at) })}
+          </p>
           {canCreate && (
             <Button
               size="sm"
@@ -259,7 +267,7 @@ function ModuleMiniCard({
                 onNewEdit();
               }}
             >
-              New Edit
+              {t('overview.module_new_edit')}
             </Button>
           )}
         </div>
@@ -268,9 +276,8 @@ function ModuleMiniCard({
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
 export function OverviewPage() {
+  const { t } = useTranslation();
   const { currentUser, role } = useAuth();
   const navigate = useNavigate();
   const repo     = useRepository();
@@ -297,7 +304,6 @@ export function OverviewPage() {
     },
   });
 
-  // Stage counts
   const counts = useMemo<Record<StageKey, number>>(() => {
     const c: Record<StageKey, number> = {
       draft: 0, ready_for_uat: 0, uat_in_progress: 0, qa_review: 0,
@@ -309,7 +315,6 @@ export function OverviewPage() {
     return c;
   }, [allEdits]);
 
-  // Expansion state — only one stage's panel open at a time
   const [expandedStage, setExpandedStage] = useState<StageKey | null>(null);
   const expandedEdits = useMemo(() => {
     if (!expandedStage) return [];
@@ -318,7 +323,6 @@ export function OverviewPage() {
       .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
   }, [allEdits, expandedStage]);
 
-  // Role-specific edit lists
   const myId          = currentUser?.id;
   const myDrafts      = allEdits.filter((e) => e.created_by === myId && e.current_stage === 'draft');
   const myReadyForUat = allEdits.filter((e) => e.created_by === myId && e.current_stage === 'ready_for_uat');
@@ -332,14 +336,8 @@ export function OverviewPage() {
     [allModules],
   );
 
-  const ROLE_LABELS: Record<string, string> = {
-    risk_analyst: 'Risk Analyst', risk_lead: 'Risk Lead',
-    tester: 'Tester', testing_lead: 'Testing Lead',
-    it_team: 'IT Team', admin: 'Admin',
-  };
-  const roleLabel = role ? (ROLE_LABELS[role] ?? role) : '';
+  const roleLabel = role ? t(`role.${role}`) : '';
 
-  // Refresh: invalidate the three queries that drive the dashboard
   function handleRefresh() {
     qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
     qc.invalidateQueries({ queryKey: ['arc', 'engine_modules'] });
@@ -354,7 +352,7 @@ export function OverviewPage() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <TopBar breadcrumb={<Breadcrumb items={[{ label: 'Overview' }]} />} />
+      <TopBar breadcrumb={<Breadcrumb items={[{ label: t('nav.overview') }]} />} />
 
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-5xl mx-auto flex flex-col gap-6">
@@ -363,7 +361,7 @@ export function OverviewPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-semibold text-arc-900">
-                Welcome back, {currentUser?.name}
+                {t('overview.welcome_back', { name: currentUser?.name ?? '' })}
               </h1>
               <p className="text-sm text-arc-500 mt-0.5">
                 {roleLabel} · {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -374,14 +372,19 @@ export function OverviewPage() {
           {/* Pipeline stats */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide">Pipeline at a glance</p>
+              <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide">
+                {t('overview.pipeline_glance')}
+              </p>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-arc-500 tabular-nums">
-                  Last updated {lastUpdated ? fmtClock(lastUpdated) : '—'}
+                  {lastUpdated
+                    ? t('overview.last_updated', { ts: fmtClock(lastUpdated) })
+                    : t('overview.last_updated_unknown')}
                 </span>
                 <button
                   onClick={handleRefresh}
-                  title="Refresh now"
+                  title={t('overview.refresh_now')}
+                  aria-label={t('overview.refresh_now')}
                   className="text-arc-500 hover:text-arc-900 transition-colors p-1 rounded hover:bg-arc-100"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -395,7 +398,7 @@ export function OverviewPage() {
               {STAGE_CARDS.map((s) => (
                 <StatBox
                   key={s.key}
-                  label={s.label}
+                  label={t(s.labelKey)}
                   value={counts[s.key]}
                   color={s.color}
                   isActive={expandedStage === s.key}
@@ -408,7 +411,7 @@ export function OverviewPage() {
 
             {expandedStage && (
               <StageExpansionPanel
-                stageLabel={STAGE_CARDS.find((s) => s.key === expandedStage)!.label}
+                stageLabel={t(STAGE_CARDS.find((s) => s.key === expandedStage)!.labelKey)}
                 edits={expandedEdits}
                 userMap={userMap}
                 onClose={() => setExpandedStage(null)}
@@ -418,19 +421,21 @@ export function OverviewPage() {
 
           {/* Role-specific action panels */}
           <div>
-            <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">Your queue</p>
+            <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">
+              {t('overview.your_queue')}
+            </p>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
               {(role === 'risk_analyst' || role === 'admin') && (
                 <>
-                  <Panel title="Your Drafts" count={myDrafts.length} empty="No drafts."
-                    linkTo="/risk-edits" linkLabel="Go to Risk Edits →">
+                  <Panel title={t('overview.panel_your_drafts')} count={myDrafts.length} empty={t('overview.empty_drafts')}
+                    linkTo="/risk-edits" linkLabel={t('overview.go_to_risk_edits')}>
                     {myDrafts.slice(0, 5).map((e) => (
                       <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
-                  <Panel title="Pending UAT Confirmation" count={myReadyForUat.length} empty="Nothing queued."
-                    linkTo="/risk-edits" linkLabel="Go to Risk Edits →">
+                  <Panel title={t('overview.panel_pending_uat')} count={myReadyForUat.length} empty={t('overview.empty_pending_uat')}
+                    linkTo="/risk-edits" linkLabel={t('overview.go_to_risk_edits')}>
                     {myReadyForUat.slice(0, 5).map((e) => (
                       <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
@@ -440,14 +445,14 @@ export function OverviewPage() {
 
               {role === 'risk_lead' && (
                 <>
-                  <Panel title="UAT Queue" count={uatQueue.length} empty="No changes queued."
-                    linkTo="/changelog" linkLabel="Confirm on Changelog →">
+                  <Panel title={t('overview.panel_uat_queue')} count={uatQueue.length} empty={t('overview.empty_uat_queue')}
+                    linkTo="/changelog" linkLabel={t('overview.go_to_changelog')}>
                     {uatQueue.slice(0, 5).map((e) => (
                       <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
-                  <Panel title="UAT Running" count={uatRunning.length} empty="None in progress."
-                    linkTo="/changelog" linkLabel="View Changelog →">
+                  <Panel title={t('overview.panel_uat_running')} count={uatRunning.length} empty={t('overview.empty_uat_running')}
+                    linkTo="/changelog" linkLabel={t('overview.view_changelog')}>
                     {uatRunning.slice(0, 5).map((e) => (
                       <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
@@ -457,14 +462,14 @@ export function OverviewPage() {
 
               {role === 'tester' && (
                 <>
-                  <Panel title="QA Review Queue" count={qaQueue.length} empty="Queue is clear."
-                    linkTo="/changelog" linkLabel="View Changelog →">
+                  <Panel title={t('overview.panel_qa_review_queue')} count={qaQueue.length} empty={t('overview.empty_qa_queue')}
+                    linkTo="/changelog" linkLabel={t('overview.view_changelog')}>
                     {qaQueue.slice(0, 5).map((e) => (
                       <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
-                  <Panel title="Approved Pool" count={approvedPool.length} empty="None approved yet."
-                    linkTo="/changelog" linkLabel="View Changelog →">
+                  <Panel title={t('overview.panel_approved_pool')} count={approvedPool.length} empty={t('overview.empty_approved')}
+                    linkTo="/changelog" linkLabel={t('overview.view_changelog')}>
                     {approvedPool.slice(0, 5).map((e) => (
                       <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
@@ -474,14 +479,14 @@ export function OverviewPage() {
 
               {role === 'testing_lead' && (
                 <>
-                  <Panel title="QA Review Queue" count={qaQueue.length} empty="Queue is clear."
-                    linkTo="/changelog" linkLabel="View Changelog →">
+                  <Panel title={t('overview.panel_qa_review_queue')} count={qaQueue.length} empty={t('overview.empty_qa_queue')}
+                    linkTo="/changelog" linkLabel={t('overview.view_changelog')}>
                     {qaQueue.slice(0, 5).map((e) => (
                       <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
-                  <Panel title="Approved — Ready to Package" count={approvedPool.length} empty="Nothing approved yet."
-                    linkTo="/changelog" linkLabel="Go to Approved Pool →">
+                  <Panel title={t('overview.panel_approved_ready')} count={approvedPool.length} empty={t('overview.empty_approved_ready')}
+                    linkTo="/changelog" linkLabel={t('overview.go_to_approved_pool')}>
                     {approvedPool.slice(0, 5).map((e) => (
                       <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
@@ -491,9 +496,9 @@ export function OverviewPage() {
 
               {role === 'it_team' && (
                 <>
-                  <Panel title="Confirmed Packets" count={confirmedPackets.length}
-                    empty="No packets awaiting deployment."
-                    linkTo="/it-handoff-log" linkLabel="Go to IT Handoff Log →">
+                  <Panel title={t('overview.panel_confirmed_packets')} count={confirmedPackets.length}
+                    empty={t('overview.empty_confirmed_packets')}
+                    linkTo="/it-handoff-log" linkLabel={t('overview.go_to_it_handoff')}>
                     {confirmedPackets.slice(0, 5).map((pkt) => (
                       <button key={pkt.id}
                         onClick={() => navigate('/it-handoff-log')}
@@ -505,14 +510,14 @@ export function OverviewPage() {
                           )}
                         </div>
                         <span className="ml-3 shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                          Confirmed
+                          {t('overview.confirmed')}
                         </span>
                       </button>
                     ))}
                   </Panel>
-                  <Panel title="Sent to IT" count={counts.sent_to_it}
-                    empty="No edits sent to IT yet."
-                    linkTo="/risk-edits" linkLabel="View Risk Edits →">
+                  <Panel title={t('overview.panel_sent_to_it')} count={counts.sent_to_it}
+                    empty={t('overview.empty_sent_to_it')}
+                    linkTo="/risk-edits" linkLabel={t('overview.view_risk_edits')}>
                     {allEdits.filter((e) => e.current_stage === 'sent_to_it').slice(0, 5).map((e) => (
                       <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
@@ -522,33 +527,33 @@ export function OverviewPage() {
 
               {role === 'admin' && (
                 <>
-                  <Panel title="UAT Queue" count={uatQueue.length} empty="No changes queued."
-                    linkTo="/changelog" linkLabel="Confirm on Changelog →">
+                  <Panel title={t('overview.panel_uat_queue')} count={uatQueue.length} empty={t('overview.empty_uat_queue')}
+                    linkTo="/changelog" linkLabel={t('overview.go_to_changelog')}>
                     {uatQueue.slice(0, 5).map((e) => (
                       <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
-                  <Panel title="QA Review" count={qaQueue.length} empty="Queue is clear."
-                    linkTo="/changelog" linkLabel="View Changelog →">
+                  <Panel title={t('overview.panel_qa_review')} count={qaQueue.length} empty={t('overview.empty_qa_queue')}
+                    linkTo="/changelog" linkLabel={t('overview.view_changelog')}>
                     {qaQueue.slice(0, 5).map((e) => (
                       <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
-                  <Panel title="Approved Pool" count={approvedPool.length} empty="Nothing to package."
-                    linkTo="/changelog" linkLabel="Go to Approved Pool →">
+                  <Panel title={t('overview.panel_approved_pool')} count={approvedPool.length} empty={t('overview.empty_approved_pool')}
+                    linkTo="/changelog" linkLabel={t('overview.go_to_approved_pool')}>
                     {approvedPool.slice(0, 5).map((e) => (
                       <EditRow key={e.id} change={e} onClick={() => navigate(workspaceUrl(e))} />
                     ))}
                   </Panel>
-                  <Panel title="Confirmed Packets" count={confirmedPackets.length}
-                    empty="No packets awaiting deployment."
-                    linkTo="/it-handoff-log" linkLabel="Go to IT Handoff Log →">
+                  <Panel title={t('overview.panel_confirmed_packets')} count={confirmedPackets.length}
+                    empty={t('overview.empty_confirmed_packets')}
+                    linkTo="/it-handoff-log" linkLabel={t('overview.go_to_it_handoff')}>
                     {confirmedPackets.slice(0, 5).map((pkt) => (
                       <button key={pkt.id} onClick={() => navigate('/it-handoff-log')}
                         className="w-full flex items-start justify-between py-2.5 px-1 hover:bg-arc-200 rounded-lg transition-colors duration-150 text-left group">
                         <p className="text-sm font-medium text-arc-900 group-hover:text-arc-700 truncate">{pkt.name}</p>
                         <span className="ml-3 shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                          Confirmed
+                          {t('overview.confirmed')}
                         </span>
                       </button>
                     ))}
@@ -561,7 +566,9 @@ export function OverviewPage() {
           {/* Create a new risk edit — chatbox + module browser */}
           {canCreateRiskEdit && (
             <div>
-              <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">Create a new risk edit</p>
+              <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">
+                {t('overview.start_new_edit')}
+              </p>
               <OverviewChat />
             </div>
           )}
@@ -569,7 +576,7 @@ export function OverviewPage() {
           {/* Engine modules — full grid, no separate listing page */}
           <div>
             <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">
-              {canCreateRiskEdit ? 'Or browse modules to start from' : 'Engine Modules'}
+              {canCreateRiskEdit ? t('overview.browse_modules') : t('overview.engine_modules')}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {modulesSorted.map((mod) => (

@@ -1,5 +1,6 @@
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { resetToSeedData } from '@/data/localRepository';
@@ -10,7 +11,7 @@ import { ConfirmModal } from '@/components/shared/ConfirmModal';
 
 interface NavItem {
   to: string;
-  label: string;
+  labelKey: string;
   icon: React.ReactNode;
 }
 
@@ -24,13 +25,13 @@ function NavIcon({ d }: { d: string }) {
 
 const OVERVIEW_ITEM: NavItem = {
   to: '/overview',
-  label: 'Overview',
+  labelKey: 'nav.overview',
   icon: <NavIcon d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />,
 };
 
 const RISK_EDITS_ITEM: NavItem = {
   to: '/risk-edits',
-  label: 'Risk Edits',
+  labelKey: 'nav.risk_edits',
   icon: <NavIcon d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />,
 };
 
@@ -38,21 +39,21 @@ const WORKSPACE_ICON = (
   <NavIcon d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
 );
 
-const WORKSPACE_CHILDREN: { to: string; label: string }[] = [
-  { to: '/workspace/draft-queue', label: 'Draft & Queue' },
-  { to: '/workspace/uat',         label: 'UAT' },
-  { to: '/workspace/qa',          label: 'QA Review' },
+const WORKSPACE_CHILDREN: { to: string; labelKey: string }[] = [
+  { to: '/workspace/draft-queue', labelKey: 'nav.workspace_draft_queue' },
+  { to: '/workspace/uat',         labelKey: 'nav.workspace_uat' },
+  { to: '/workspace/qa',          labelKey: 'nav.workspace_qa' },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
   {
     to: '/changelog',
-    label: 'Changelog',
+    labelKey: 'nav.changelog',
     icon: <NavIcon d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />,
   },
   {
     to: '/it-handoff-log',
-    label: 'IT Handoff',
+    labelKey: 'nav.it_handoff',
     icon: <NavIcon d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />,
   },
 ];
@@ -63,24 +64,24 @@ const linkInactive = 'text-arc-200 hover:bg-arc-700 hover:text-white';
 const linkActive   = 'bg-forest-500 text-white';
 
 function PrimaryNavLink({ item }: { item: NavItem }) {
+  const { t } = useTranslation();
   return (
     <NavLink
       to={item.to}
       className={({ isActive }) => `${linkBase} ${isActive ? linkActive : linkInactive}`}
     >
       {item.icon}
-      {item.label}
+      {t(item.labelKey)}
     </NavLink>
   );
 }
 
 function WorkspaceNav() {
+  const { t } = useTranslation();
   const location = useLocation();
   const isOnWorkspace = location.pathname.startsWith('/workspace');
   const [open, setOpen] = useState(isOnWorkspace);
 
-  // Sync dropdown to route: auto-open on /workspace/*, auto-close when leaving.
-  // User's local toggle persists until the next navigation event.
   useEffect(() => {
     setOpen(isOnWorkspace);
   }, [location.pathname, isOnWorkspace]);
@@ -94,7 +95,7 @@ function WorkspaceNav() {
       >
         <span className="flex items-center gap-2.5">
           {WORKSPACE_ICON}
-          Workspace
+          {t('nav.workspace')}
         </span>
         <svg
           className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`}
@@ -114,7 +115,7 @@ function WorkspaceNav() {
                 `${linkBase} text-xs py-1.5 ${isActive ? linkActive : linkInactive}`
               }
             >
-              {c.label}
+              {t(c.labelKey)}
             </NavLink>
           ))}
         </div>
@@ -124,6 +125,7 @@ function WorkspaceNav() {
 }
 
 export function Sidebar() {
+  const { t } = useTranslation();
   const { currentUser, signOut } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -147,13 +149,15 @@ export function Sidebar() {
         <Link
           to="/overview"
           className="block px-4 py-5 border-b border-arc-700 hover:bg-arc-800 transition-colors"
-          aria-label="ARC — back to Overview"
+          aria-label={t('app.logo_back_to_overview')}
         >
           <div className="flex items-center gap-3">
             <Logo size="md" variant="light" />
             <div>
-              <span className="text-white font-semibold text-sm tracking-wide block">ARC</span>
-              <span className="text-arc-200 text-xs leading-tight">AI Risk Control</span>
+              <span className="text-white font-semibold text-sm tracking-wide block">
+                {t('app.name')}
+              </span>
+              <span className="text-arc-200 text-xs leading-tight">{t('app.tagline')}</span>
             </div>
           </div>
         </Link>
@@ -165,7 +169,9 @@ export function Sidebar() {
           <PrimaryNavLink item={RISK_EDITS_ITEM} />
 
           <div className="mt-4 mb-1 px-3">
-            <span className="text-xs text-arc-200 uppercase tracking-wider font-medium">Reports</span>
+            <span className="text-xs text-arc-200 uppercase tracking-wider font-medium">
+              {t('nav.reports')}
+            </span>
           </div>
 
           {BOTTOM_ITEMS.map((item) => (
@@ -183,7 +189,7 @@ export function Sidebar() {
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              Reset Demo Data
+              {t('nav.reset_demo')}
             </button>
           )}
 
@@ -192,11 +198,12 @@ export function Sidebar() {
               <UserAvatar seed={currentUser.avatar_seed} name={currentUser.name} size="sm" />
               <div className="flex-1 min-w-0">
                 <p className="text-white text-xs font-medium truncate">{currentUser.name}</p>
-                <p className="text-arc-200 text-xs truncate capitalize">{currentUser.role.replace('_', ' ')}</p>
+                <p className="text-arc-200 text-xs truncate">{t(`role.${currentUser.role}`)}</p>
               </div>
               <button
                 onClick={handleSignOut}
-                title="Sign out"
+                title={t('nav.sign_out')}
+                aria-label={t('nav.sign_out')}
                 className="text-arc-200 hover:text-white transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -210,9 +217,9 @@ export function Sidebar() {
 
       {showResetModal && (
         <ConfirmModal
-          title="Reset Demo Data"
-          description="This will clear all localStorage data and reseed from fixture. All unsaved changes will be lost."
-          confirmLabel="Reset"
+          title={t('nav.reset_demo_modal_title')}
+          description={t('nav.reset_demo_modal_desc')}
+          confirmLabel={t('nav.reset_demo_confirm')}
           variant="destructive"
           onConfirm={handleReset}
           onCancel={() => setShowResetModal(false)}

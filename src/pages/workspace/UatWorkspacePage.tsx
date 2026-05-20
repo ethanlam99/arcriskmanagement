@@ -2,6 +2,7 @@ import { useState, useEffect, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { Beaker, AlertCircle, Trash2 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
 import { useAllUatRuns } from '@/hooks/useUatRuns';
@@ -15,15 +16,16 @@ import { ConfirmModal } from '@/components/shared/ConfirmModal';
 import { AttachmentUploader } from '@/components/shared/AttachmentUploader';
 import type { RiskEdit, UatContextAttachment, ProposedTestCase } from '@/types';
 
-const AI_TASK_STEPS = [
-  'Loading sandbox engine',
-  'Applying SQL diff',
-  'Running test cases',
-  'Capturing frontend renders',
-  'Compiling report',
+const AI_TASK_STEP_KEYS = [
+  'workspace.uat.task_step_load',
+  'workspace.uat.task_step_diff',
+  'workspace.uat.task_step_run',
+  'workspace.uat.task_step_capture',
+  'workspace.uat.task_step_compile',
 ] as const;
 
 function ElapsedTimer({ updatedAt }: { updatedAt: string }) {
+  const { t } = useTranslation();
   const [secs, setSecs] = useState(() =>
     Math.floor((Date.now() - new Date(updatedAt).getTime()) / 1000)
   );
@@ -34,7 +36,7 @@ function ElapsedTimer({ updatedAt }: { updatedAt: string }) {
     );
     return () => clearInterval(id);
   }, [updatedAt]);
-  return <span>{secs}s elapsed</span>;
+  return <span>{t('workspace.uat.task_running_elapsed', { secs })}</span>;
 }
 
 function AiTaskList({
@@ -44,37 +46,35 @@ function AiTaskList({
   mode: 'queued' | 'running' | 'done';
   startedAt?: string;
 }) {
+  const { t } = useTranslation();
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (mode !== 'running') return;
-    const id = setInterval(() => setTick((t) => t + 1), 400);
+    const id = setInterval(() => setTick((c) => c + 1), 400);
     return () => clearInterval(id);
   }, [mode]);
 
-  // Distribute steps over the simulated UAT delay (~2.5s). For animation we
-  // walk through steps roughly every 500ms while running.
   let currentStep = -1;
   if (mode === 'done') {
-    currentStep = AI_TASK_STEPS.length;
+    currentStep = AI_TASK_STEP_KEYS.length;
   } else if (mode === 'running' && startedAt) {
     const elapsed = Date.now() - new Date(startedAt).getTime();
     currentStep = Math.min(
-      AI_TASK_STEPS.length - 1,
+      AI_TASK_STEP_KEYS.length - 1,
       Math.floor(elapsed / 500)
     );
   }
-  // tick reference keeps the linter happy and forces a re-render
   void tick;
 
   return (
     <ol className="flex flex-col gap-2">
-      {AI_TASK_STEPS.map((label, idx) => {
+      {AI_TASK_STEP_KEYS.map((labelKey, idx) => {
         const isDone = mode === 'done' || idx < currentStep;
         const isActive = mode === 'running' && idx === currentStep;
         const isPending = !isDone && !isActive;
         return (
-          <li key={label} className="flex items-center gap-2.5 text-xs">
+          <li key={labelKey} className="flex items-center gap-2.5 text-xs">
             <span
               className={`flex items-center justify-center w-4 h-4 rounded-full shrink-0 ${
                 isDone
@@ -103,7 +103,7 @@ function AiTaskList({
                   : 'text-arc-500'
               }
             >
-              {label}
+              {t(labelKey)}
             </span>
           </li>
         );
@@ -123,6 +123,7 @@ function ProposedCaseRow({
   onToggleInclude: () => void;
   onRemove: () => void;
 }) {
+  const { t } = useTranslation();
   const isHuman = proposed.source === 'human';
   return (
     <li className={`rounded-lg border border-arc-200 bg-white px-3 py-2.5 flex items-start gap-2.5 transition-opacity ${locked ? 'opacity-60' : ''}`}>
@@ -132,7 +133,7 @@ function ProposedCaseRow({
         onChange={onToggleInclude}
         disabled={locked}
         className="mt-0.5 rounded border-arc-300 shrink-0"
-        aria-label={proposed.included_in_run ? 'Exclude from run' : 'Include in run'}
+        aria-label={proposed.included_in_run ? t('workspace.uat.case_exclude_aria') : t('workspace.uat.case_include_aria')}
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
@@ -140,18 +141,18 @@ function ProposedCaseRow({
           <span className={`text-[10px] font-semibold uppercase tracking-wide shrink-0 ${
             isHuman ? 'text-forest-600' : 'text-arc-500'
           }`}>
-            {isHuman ? 'Manual' : 'AI'}
+            {isHuman ? t('workspace.uat.case_source_human') : t('workspace.uat.case_source_ai')}
           </span>
         </div>
         <div className="mt-1.5 grid grid-cols-2 gap-2 text-[10px] font-mono">
           <div className="bg-arc-100 rounded px-1.5 py-1 overflow-hidden">
-            <span className="block text-arc-500 mb-0.5">input</span>
+            <span className="block text-arc-500 mb-0.5">{t('workspace.uat.case_input')}</span>
             <span className="block text-arc-700 truncate" title={JSON.stringify(proposed.input)}>
               {JSON.stringify(proposed.input)}
             </span>
           </div>
           <div className="bg-arc-100 rounded px-1.5 py-1 overflow-hidden">
-            <span className="block text-arc-500 mb-0.5">expected</span>
+            <span className="block text-arc-500 mb-0.5">{t('workspace.uat.case_expected')}</span>
             <span className="block text-arc-700 truncate" title={JSON.stringify(proposed.expected)}>
               {JSON.stringify(proposed.expected)}
             </span>
@@ -164,7 +165,7 @@ function ProposedCaseRow({
           onClick={onRemove}
           disabled={locked}
           className="shrink-0 mt-0.5 text-arc-400 hover:text-rose-500 disabled:text-arc-200 transition-colors"
-          aria-label="Remove case"
+          aria-label={t('workspace.uat.case_remove_aria')}
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -180,6 +181,7 @@ function AddCaseForm({
   onSubmit: (data: { description: string; input: Record<string, unknown>; expected: Record<string, unknown> }) => Promise<void>;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const [description, setDescription] = useState('');
   const [inputJson, setInputJson] = useState('{\n  \n}');
   const [expectedJson, setExpectedJson] = useState('{\n  \n}');
@@ -190,7 +192,7 @@ function AddCaseForm({
     e.preventDefault();
     setError(null);
     if (!description.trim()) {
-      setError('Description is required.');
+      setError(t('workspace.uat.add_case_err_desc'));
       return;
     }
     let parsedInput: Record<string, unknown>;
@@ -198,13 +200,13 @@ function AddCaseForm({
     try {
       parsedInput = JSON.parse(inputJson);
     } catch {
-      setError('Input must be valid JSON.');
+      setError(t('workspace.uat.add_case_err_input'));
       return;
     }
     try {
       parsedExpected = JSON.parse(expectedJson);
     } catch {
-      setError('Expected must be valid JSON.');
+      setError(t('workspace.uat.add_case_err_expected'));
       return;
     }
     setSubmitting(true);
@@ -218,17 +220,17 @@ function AddCaseForm({
   return (
     <form onSubmit={handleSubmit} className="mt-2 rounded-lg border border-arc-200 bg-white px-3 py-3 flex flex-col gap-2.5">
       <label className="block">
-        <span className="block text-[11px] font-semibold text-arc-500 uppercase tracking-wide mb-1">Description</span>
+        <span className="block text-[11px] font-semibold text-arc-500 uppercase tracking-wide mb-1">{t('workspace.uat.add_case_description')}</span>
         <input
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Manual tester check — high-value customer"
+          placeholder={t('workspace.uat.add_case_description_placeholder')}
           className="w-full rounded-md border border-arc-200 px-2 py-1.5 text-xs focus:outline-none focus:border-forest-500"
         />
       </label>
       <label className="block">
-        <span className="block text-[11px] font-semibold text-arc-500 uppercase tracking-wide mb-1">Input (JSON)</span>
+        <span className="block text-[11px] font-semibold text-arc-500 uppercase tracking-wide mb-1">{t('workspace.uat.add_case_input')}</span>
         <textarea
           value={inputJson}
           onChange={(e) => setInputJson(e.target.value)}
@@ -237,7 +239,7 @@ function AddCaseForm({
         />
       </label>
       <label className="block">
-        <span className="block text-[11px] font-semibold text-arc-500 uppercase tracking-wide mb-1">Expected (JSON)</span>
+        <span className="block text-[11px] font-semibold text-arc-500 uppercase tracking-wide mb-1">{t('workspace.uat.add_case_expected')}</span>
         <textarea
           value={expectedJson}
           onChange={(e) => setExpectedJson(e.target.value)}
@@ -252,14 +254,14 @@ function AddCaseForm({
           onClick={onCancel}
           className="text-xs px-2.5 py-1 rounded-md text-arc-700 hover:bg-arc-100 transition-colors"
         >
-          Cancel
+          {t('workspace.uat.add_case_cancel')}
         </button>
         <button
           type="submit"
           disabled={submitting}
           className="text-xs px-2.5 py-1 rounded-md bg-forest-600 text-white hover:bg-forest-700 disabled:bg-arc-300 transition-colors"
         >
-          {submitting ? 'Adding…' : 'Add case'}
+          {submitting ? t('workspace.uat.add_case_submitting') : t('workspace.uat.add_case_submit')}
         </button>
       </div>
     </form>
@@ -275,6 +277,7 @@ function ProposedCasesSection({
   locked: boolean;
   onSendFromPanel: () => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const repo = useRepository();
   const qc   = useQueryClient();
@@ -285,8 +288,6 @@ function ProposedCasesSection({
   const [sendingFromPanel, setSendingFromPanel] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
 
-  // Lock controls when the tester has marked cases reviewed OR the edit has
-  // transitioned out of ready_for_uat (existing `locked` prop semantics).
   const casesLocked = edit.cases_reviewed === true || locked;
   const includedCount = cases.filter((c) => c.included_in_run).length;
 
@@ -336,7 +337,6 @@ function ProposedCasesSection({
       });
       qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
       setShowReviewConfirm(false);
-      // Close any open AddCaseForm so the lock feels deliberate.
       setShowAddCase(false);
     } finally {
       setMarkingReviewed(false);
@@ -374,14 +374,13 @@ function ProposedCasesSection({
   return (
     <section>
       <h3 className="text-xs font-semibold text-arc-900 uppercase tracking-wide mb-2">
-        Proposed test cases
+        {t('workspace.uat.proposed_cases_heading')}
       </h3>
       <p className="text-xs text-arc-500 mb-3 leading-relaxed">
-        Review each case the AI has proposed. Uncheck cases you don&apos;t want included
-        in the AI UAT run. Use the button below to add your own test cases.
+        {t('workspace.uat.proposed_cases_help')}
       </p>
       {cases.length === 0 ? (
-        <p className="text-xs text-arc-500 italic">No proposed cases yet.</p>
+        <p className="text-xs text-arc-500 italic">{t('workspace.uat.no_proposed_cases')}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {cases.map((c) => (
@@ -402,7 +401,7 @@ function ProposedCasesSection({
           disabled={casesLocked}
           className="mt-2 text-xs font-medium text-forest-600 hover:text-forest-700 disabled:text-arc-300"
         >
-          + Propose new test case
+          {t('workspace.uat.propose_new_case')}
         </button>
       ) : (
         <AddCaseForm
@@ -418,9 +417,9 @@ function ProposedCasesSection({
               onClick={() => setShowReviewConfirm(true)}
               disabled={markingReviewed || includedCount === 0}
               className="w-full rounded-lg bg-arc-900 text-white text-sm font-medium py-2 disabled:bg-arc-300 hover:bg-arc-700 transition-colors"
-              title={includedCount === 0 ? 'Include at least one case before locking' : undefined}
+              title={includedCount === 0 ? t('workspace.uat.include_at_least_one') : undefined}
             >
-              Mark reviewed
+              {t('workspace.uat.mark_reviewed')}
             </button>
           ) : (
             <>
@@ -430,7 +429,7 @@ function ProposedCasesSection({
                 disabled={sendingFromPanel || includedCount === 0}
                 className="w-full rounded-lg bg-forest-600 text-white text-sm font-medium py-2 disabled:bg-arc-300 hover:bg-forest-700 transition-colors"
               >
-                {sendingFromPanel ? 'Sending…' : 'Send for AI UAT report'}
+                {sendingFromPanel ? t('workspace.uat.sending') : t('workspace.uat.send_for_ai_uat_report')}
               </button>
               <button
                 type="button"
@@ -438,7 +437,7 @@ function ProposedCasesSection({
                 disabled={sendingFromPanel || unlocking}
                 className="mt-2 w-full text-center text-xs text-arc-500 hover:text-arc-700 disabled:text-arc-300 transition-colors"
               >
-                {unlocking ? 'Unlocking…' : 'Need to change something? Unlock cases'}
+                {unlocking ? t('workspace.uat.unlocking') : t('workspace.uat.unlock_cases')}
               </button>
             </>
           )}
@@ -446,9 +445,9 @@ function ProposedCasesSection({
       )}
       {showReviewConfirm && (
         <ConfirmModal
-          title="Lock test cases for AI UAT?"
-          description={`Lock these ${includedCount} test case${includedCount !== 1 ? 's' : ''} as the final set for AI UAT report generation. After locking you can still send for UAT or unlock to make changes.`}
-          confirmLabel="Lock cases"
+          title={t('workspace.uat.lock_modal_title')}
+          description={t('workspace.uat.lock_modal_desc', { count: includedCount })}
+          confirmLabel={t('workspace.uat.lock_modal_confirm')}
           loading={markingReviewed}
           onConfirm={confirmReview}
           onCancel={() => setShowReviewConfirm(false)}
@@ -467,6 +466,7 @@ function UatContextPanel({
   onClose: () => void;
   onSendFromPanel: () => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const repo = useRepository();
   const qc = useQueryClient();
@@ -479,7 +479,6 @@ function UatContextPanel({
     },
   });
 
-  // Uploads are locked once the edit transitions to uat_in_progress or beyond.
   const locked = edit.current_stage !== 'ready_for_uat';
 
   async function handleUpload(file: {
@@ -521,7 +520,7 @@ function UatContextPanel({
           onClick={onClose}
           className="text-xs font-medium text-arc-500 hover:text-arc-700 transition-colors"
         >
-          Hide ▲
+          {t('workspace.uat.panel_hide')}
         </button>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -531,12 +530,12 @@ function UatContextPanel({
         <div className="lg:col-span-1 order-1 lg:order-2 flex flex-col gap-5">
           <section>
             <h3 className="text-xs font-semibold text-arc-900 uppercase tracking-wide mb-1">
-              AI context attachments
+              {t('workspace.uat.context_attachments')}
             </h3>
             <p className="text-xs text-arc-500 mb-3 leading-relaxed">
               {locked
-                ? 'Uploads are locked once UAT has started. Existing files remain visible to the AI.'
-                : 'Upload screenshots or supporting media that the AI bot should consider when generating the AI UAT report. Up to 5 files, 1MB each, image or PDF only.'}
+                ? t('workspace.uat.context_attachments_locked')
+                : t('workspace.uat.context_attachments_open')}
             </p>
             <AttachmentUploader
               attachments={attachments}
@@ -548,13 +547,13 @@ function UatContextPanel({
 
           <section>
             <h3 className="text-xs font-semibold text-arc-900 uppercase tracking-wide mb-2">
-              AI task list
+              {t('workspace.uat.task_list')}
             </h3>
             <div className="rounded-lg border border-arc-200 bg-white px-3 py-3">
               <AiTaskList mode={mode} startedAt={edit.updated_at} />
               {mode === 'queued' && (
                 <p className="mt-3 pt-2.5 border-t border-arc-200 text-[11px] text-arc-500">
-                  Waiting to start — send to AI UAT to begin.
+                  {t('workspace.uat.task_waiting')}
                 </p>
               )}
               {mode === 'running' && (
@@ -564,7 +563,7 @@ function UatContextPanel({
               )}
               {mode === 'done' && (
                 <p className="mt-3 pt-2.5 border-t border-arc-200 text-[11px] text-emerald-600">
-                  Run complete — review in QA.
+                  {t('workspace.uat.task_done')}
                 </p>
               )}
             </div>
@@ -576,6 +575,7 @@ function UatContextPanel({
 }
 
 export function UatWorkspacePage() {
+  const { t } = useTranslation();
   const { currentUser, role } = useAuth();
   const repo = useRepository();
   const qc   = useQueryClient();
@@ -615,8 +615,6 @@ export function UatWorkspacePage() {
     return latestRun(editId)?.status === 'failed';
   }
 
-  // Local time-since helper — mirrors OverviewPage.formatTimeSince. Inline to
-  // keep this patch self-contained; if a third caller emerges, extract.
   function formatElapsed(iso: string): string {
     const diff = Date.now() - new Date(iso).getTime();
     const s = Math.floor(diff / 1000);
@@ -646,7 +644,6 @@ export function UatWorkspacePage() {
       });
       qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
       const edit = allEdits.find((e) => e.id === editId);
-      // Re-propose cases only if none exist yet (idempotent helper).
       if (edit) {
         try {
           await ensureProposedCasesForReadyForUat(repo, edit);
@@ -670,7 +667,6 @@ export function UatWorkspacePage() {
   const openEdit =
     [...queued, ...running].find((e) => e.id === openEditId) ?? null;
 
-  // Auto-close drawer if the opened edit moves out of UAT scope.
   useEffect(() => {
     if (openEditId && !openEdit) setOpenEditId(null);
   }, [openEditId, openEdit]);
@@ -704,7 +700,6 @@ export function UatWorkspacePage() {
 
     if (!latest) throw new Error(`No version found for edit ${editId}`);
 
-    // Fetch tester-curated cases — only included ones go into the run.
     const allProposed = await repo.proposedTestCases.listForEdit(editId);
     const included    = allProposed.filter((c) => c.included_in_run);
 
@@ -757,9 +752,6 @@ export function UatWorkspacePage() {
       });
     } catch (err) {
       await repo.uatRuns.update(run.id, { status: 'failed' } as Partial<typeof run>);
-      // Roll the edit back so the tester can retry — orphan-on-failure fix.
-      // Reset cases_reviewed so the tester explicitly re-confirms the case
-      // list before the retry transmits. Existing curated cases are preserved.
       await repo.riskEdits.update(editId, {
         current_stage:   'ready_for_uat',
         updated_at:      new Date().toISOString(),
@@ -801,6 +793,16 @@ export function UatWorkspacePage() {
 
   const selectedIds = [...selected];
 
+  function reviewQueueSubheading(): string {
+    if (queued.length === 0) return t('workspace.uat.review_queue_sub_zero');
+    return t('workspace.uat.review_queue_sub', { count: queued.length });
+  }
+
+  function runningSubheading(): string {
+    if (running.length === 0) return t('workspace.uat.running_sub_zero');
+    return t('workspace.uat.running_sub', { count: running.length });
+  }
+
   return (
     <div className="flex h-full overflow-hidden">
       <div className="flex-1 overflow-y-auto p-6 min-w-0">
@@ -810,12 +812,8 @@ export function UatWorkspacePage() {
           <section>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h2 className="text-sm font-semibold text-arc-900">AI UAT Review Queue</h2>
-                <p className="text-xs text-arc-500 mt-0.5">
-                  {queued.length === 0
-                    ? 'No edits awaiting review.'
-                    : `${queued.length} edit${queued.length !== 1 ? 's' : ''} awaiting test case review · click a row to review cases`}
-                </p>
+                <h2 className="text-sm font-semibold text-arc-900">{t('workspace.uat.review_queue_heading')}</h2>
+                <p className="text-xs text-arc-500 mt-0.5">{reviewQueueSubheading()}</p>
               </div>
               {canAct && selectedIds.length > 0 && (() => {
                 const reviewedIds = selectedIds.filter((id) => {
@@ -829,9 +827,9 @@ export function UatWorkspacePage() {
                     onClick={() => handleTrigger(reviewedIds)}
                     loading={triggering.size > 0}
                     disabled={noneReviewed}
-                    title={noneReviewed ? 'Review proposed test cases first' : undefined}
+                    title={noneReviewed ? t('workspace.uat.review_cases_first_tip') : undefined}
                   >
-                    Send selected to AI UAT ({reviewedIds.length})
+                    {t('workspace.uat.send_selected_to_ai_uat', { count: reviewedIds.length })}
                   </Button>
                 );
               })()}
@@ -840,9 +838,9 @@ export function UatWorkspacePage() {
             {queued.length === 0 ? (
               <div className="rounded-xl border border-arc-200 shadow-sm bg-white flex items-center justify-center py-12 flex-col gap-3 text-arc-500">
                 <Beaker className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
-                <p className="text-sm">No edits awaiting test case review.</p>
+                <p className="text-sm">{t('workspace.uat.no_edits_review')}</p>
                 <p className="text-xs text-center max-w-xs text-arc-500">
-                  Edits arrive here once a risk analyst sends them for UAT. The AI proposes test cases on arrival; review and confirm before sending for AI execution.
+                  {t('workspace.uat.no_edits_review_help')}
                 </p>
               </div>
             ) : (
@@ -860,9 +858,9 @@ export function UatWorkspacePage() {
                           />
                         </th>
                       )}
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Edit</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Module</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Queued</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.uat.col_edit')}</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.uat.col_module')}</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.uat.col_queued')}</th>
                       {canAct && <th className="px-4 py-2.5 w-44" />}
                     </tr>
                   </thead>
@@ -905,7 +903,7 @@ export function UatWorkspacePage() {
                                 {isTriggering ? (
                                   <span className="flex items-center gap-1.5 text-xs text-arc-500">
                                     <span className="w-3 h-3 border border-arc-500 border-t-transparent rounded-full animate-spin" />
-                                    Triggering…
+                                    {t('workspace.uat.triggering')}
                                   </span>
                                 ) : (
                                   <Button
@@ -913,9 +911,9 @@ export function UatWorkspacePage() {
                                     variant="secondary"
                                     disabled={triggering.size > 0 || !edit.cases_reviewed}
                                     onClick={() => handleTrigger([edit.id])}
-                                    title={!edit.cases_reviewed ? 'Review proposed test cases first' : undefined}
+                                    title={!edit.cases_reviewed ? t('workspace.uat.review_cases_first_tip') : undefined}
                                   >
-                                    Send to AI UAT
+                                    {t('workspace.uat.send_to_ai_uat')}
                                   </Button>
                                 )}
                               </td>
@@ -942,7 +940,7 @@ export function UatWorkspacePage() {
 
             {!canAct && queued.length > 0 && (
               <p className="mt-2 text-xs text-arc-500">
-                Only Testers, Testing Leads, and Admins can trigger AI UAT runs.
+                {t('workspace.uat.only_testers')}
               </p>
             )}
           </section>
@@ -950,18 +948,14 @@ export function UatWorkspacePage() {
           {/* ── Section 2: UAT Running ── */}
           <section>
             <div className="mb-3">
-              <h2 className="text-sm font-semibold text-arc-900">UAT Running</h2>
-              <p className="text-xs text-arc-500 mt-0.5">
-                {running.length === 0
-                  ? 'No active runs.'
-                  : `${running.length} run${running.length !== 1 ? 's' : ''} in progress · click a row for live AI progress`}
-              </p>
+              <h2 className="text-sm font-semibold text-arc-900">{t('workspace.uat.running_heading')}</h2>
+              <p className="text-xs text-arc-500 mt-0.5">{runningSubheading()}</p>
             </div>
 
             {running.length === 0 ? (
               <div className="rounded-xl border border-arc-200 shadow-sm bg-white flex items-center justify-center py-12 flex-col gap-3 text-arc-500">
                 <Beaker className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
-                <p className="text-sm">No UAT runs in progress.</p>
+                <p className="text-sm">{t('workspace.uat.no_runs')}</p>
               </div>
             ) : (
               <div className="rounded-xl border border-arc-200 shadow-sm overflow-hidden bg-white">
@@ -987,10 +981,12 @@ export function UatWorkspacePage() {
                           </p>
                         </div>
                         <span className="text-xs text-rose-600 font-medium shrink-0">
-                          UAT run failed · stuck since {run ? formatElapsed(run.started_at) : '—'}
+                          {run
+                            ? t('workspace.uat.uat_run_failed_stuck', { elapsed: formatElapsed(run.started_at) })
+                            : t('workspace.uat.uat_run_failed_stuck_unknown')}
                         </span>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
-                          Stuck
+                          {t('workspace.uat.stuck')}
                         </span>
                         {role === 'admin' && (
                           <Button
@@ -1001,7 +997,7 @@ export function UatWorkspacePage() {
                               setConfirmUnstickId(edit.id);
                             }}
                           >
-                            Unstick
+                            {t('workspace.uat.unstick')}
                           </Button>
                         )}
                       </div>
@@ -1019,7 +1015,7 @@ export function UatWorkspacePage() {
                         </p>
                       </div>
                       <span className="text-xs text-arc-500 font-medium shrink-0">
-                        AI generating report · <ElapsedTimer updatedAt={edit.updated_at} />
+                        {t('workspace.uat.ai_generating')} <ElapsedTimer updatedAt={edit.updated_at} />
                       </span>
                       <StageBadge stage={edit.current_stage} />
                     </button>
@@ -1049,11 +1045,11 @@ export function UatWorkspacePage() {
         <div className={`fixed bottom-6 right-6 z-50 ${toast.ok ? 'bg-arc-900' : 'bg-rose-900'} text-white text-sm px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-3`}>
           <span>
             {toast.ok && toast.kind === 'completion'
-              ? `UAT complete — ${toast.displayId} moved to QA Review.`
+              ? t('toast.uat_completion', { displayId: toast.displayId })
               : toast.ok && toast.kind === 'unstuck'
-              ? `${toast.displayId} returned to queue for retry.`
+              ? t('toast.uat_unstuck', { displayId: toast.displayId })
               : !toast.ok
-              ? `UAT failed for ${toast.displayId} — back in queue for retry.`
+              ? t('toast.uat_failed', { displayId: toast.displayId })
               : ''}
           </span>
           {toast.ok && toast.kind === 'completion' && (
@@ -1062,7 +1058,7 @@ export function UatWorkspacePage() {
               className="text-forest-100 hover:text-white font-medium underline-offset-2 hover:underline"
               onClick={() => setToast(null)}
             >
-              Open →
+              {t('toast.open_arrow')}
             </Link>
           )}
         </div>
@@ -1070,9 +1066,11 @@ export function UatWorkspacePage() {
 
       {confirmUnstickId && (
         <ConfirmModal
-          title="Unstick UAT run"
-          description={`Return "${allEdits.find((e) => e.id === confirmUnstickId)?.title ?? confirmUnstickId}" to the UAT queue? The failed run record stays in history for audit. A tester can retrigger UAT from the queue.`}
-          confirmLabel="Unstick"
+          title={t('workspace.uat.unstick_modal_title')}
+          description={t('workspace.uat.unstick_modal_desc', {
+            title: allEdits.find((e) => e.id === confirmUnstickId)?.title ?? confirmUnstickId,
+          })}
+          confirmLabel={t('workspace.uat.unstick')}
           loading={unsticking}
           onConfirm={() => handleUnstick(confirmUnstickId)}
           onCancel={() => setConfirmUnstickId(null)}

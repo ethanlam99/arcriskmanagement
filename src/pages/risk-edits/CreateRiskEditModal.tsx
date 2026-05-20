@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/auth/AuthProvider';
 import { useCreateRiskEdit } from '@/hooks/useRiskEdits';
 import { useEngineModules } from '@/hooks/useEngineModules';
@@ -13,6 +14,7 @@ interface CreateRiskEditModalProps {
 }
 
 export function CreateRiskEditModal({ defaultModuleId, onClose }: CreateRiskEditModalProps) {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const { data: modules = [] } = useEngineModules();
   const createMutation = useCreateRiskEdit();
@@ -44,23 +46,21 @@ export function CreateRiskEditModal({ defaultModuleId, onClose }: CreateRiskEdit
       <div className="absolute inset-0 bg-arc-900/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-xl border border-arc-200 w-full max-w-lg mx-4 p-6 shadow-lg">
         <div className="mb-5">
-          <h2 className="text-base font-semibold text-arc-900">New Risk Edit</h2>
-          <p className="text-xs text-arc-500 mt-0.5">
-            Describe what you want to change — the AI will help you translate this into SQL.
-          </p>
+          <h2 className="text-base font-semibold text-arc-900">{t('risk_edits.create_title')}</h2>
+          <p className="text-xs text-arc-500 mt-0.5">{t('risk_edits.create_subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <FormField label="Title">
+          <FormField label={t('risk_edits.field_title')}>
             <Input
               required
-              placeholder="e.g. Increase loan limit for high-income customers"
+              placeholder={t('risk_edits.field_title_placeholder')}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
           </FormField>
 
-          <FormField label="Target Engine Module">
+          <FormField label={t('risk_edits.field_module')}>
             <Select
               required
               value={moduleId}
@@ -72,11 +72,11 @@ export function CreateRiskEditModal({ defaultModuleId, onClose }: CreateRiskEdit
             </Select>
           </FormField>
 
-          <FormField label="Edit brief">
+          <FormField label={t('risk_edits.field_brief')}>
             <Textarea
               required
               rows={5}
-              placeholder="Describe the change in plain language. Be specific about thresholds, segments, and expected behaviour…"
+              placeholder={t('risk_edits.field_brief_placeholder')}
               value={brief}
               onChange={(e) => setBrief(e.target.value)}
             />
@@ -84,7 +84,7 @@ export function CreateRiskEditModal({ defaultModuleId, onClose }: CreateRiskEdit
 
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="secondary" size="sm" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
@@ -92,7 +92,7 @@ export function CreateRiskEditModal({ defaultModuleId, onClose }: CreateRiskEdit
               loading={createMutation.isPending}
               disabled={!title || !moduleId || !brief}
             >
-              Create & Open
+              {t('risk_edits.create_submit')}
             </Button>
           </div>
         </form>

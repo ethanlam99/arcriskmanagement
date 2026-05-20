@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 
 interface ConfirmModalProps {
@@ -14,13 +15,14 @@ interface ConfirmModalProps {
 export function ConfirmModal({
   title,
   description,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   variant = 'primary',
   loading = false,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
@@ -34,7 +36,7 @@ export function ConfirmModal({
         <p className="text-sm text-arc-500 mb-6">{description}</p>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={onCancel} disabled={loading}>
-            {cancelLabel}
+            {cancelLabel ?? t('confirm.default_cancel')}
           </Button>
           <Button
             variant={variant === 'destructive' ? 'destructive' : 'primary'}
@@ -42,7 +44,7 @@ export function ConfirmModal({
             loading={loading}
             onClick={onConfirm}
           >
-            {confirmLabel}
+            {confirmLabel ?? t('confirm.default_confirm')}
           </Button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
 import { useAllUatRuns } from '@/hooks/useUatRuns';
 import { StageBadge } from '@/components/shared/StageBadge';
@@ -15,6 +16,7 @@ function StatChip({ value, label, color }: { value: number; label: string; color
 }
 
 export function QaWorkspacePage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { data: allEdits = [] } = useRiskEdits();
@@ -44,7 +46,7 @@ export function QaWorkspacePage() {
       <div className="w-72 shrink-0 border-r border-arc-200 bg-white flex flex-col overflow-hidden">
         <div className="px-3 py-2.5 border-b border-arc-200 bg-arc-100 shrink-0">
           <p className="text-xs font-semibold text-arc-500 uppercase tracking-wider">
-            QA Review
+            {t('workspace.qa.panel_title')}
             <span className="ml-1.5 font-mono font-normal text-arc-700">({qaEdits.length})</span>
           </p>
         </div>
@@ -53,7 +55,7 @@ export function QaWorkspacePage() {
           {qaEdits.length === 0 ? (
             <div className="flex items-center justify-center py-12 flex-col gap-3 text-arc-500 px-3">
               <CheckCircle2 className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
-              <p className="text-sm text-center">No edits in QA Review.</p>
+              <p className="text-sm text-center">{t('workspace.qa.no_qa_in_list')}</p>
             </div>
           ) : (
             qaEdits.map((edit) => {
@@ -76,12 +78,12 @@ export function QaWorkspacePage() {
                     <span className="font-mono text-xs text-arc-700">{edit.edit_id_display}</span>
                     {stats ? (
                       <div className="flex items-center gap-2">
-                        <StatChip value={stats.passed}       label="pass" color="text-emerald-600" />
-                        <StatChip value={stats.failed}       label="fail" color="text-rose-600" />
-                        <StatChip value={stats.inconclusive} label="inc"  color="text-amber-600" />
+                        <StatChip value={stats.passed}       label={t('workspace.qa.stat_pass')} color="text-emerald-600" />
+                        <StatChip value={stats.failed}       label={t('workspace.qa.stat_fail')} color="text-rose-600" />
+                        <StatChip value={stats.inconclusive} label={t('workspace.qa.stat_inc')}  color="text-amber-600" />
                       </div>
                     ) : (
-                      <span className="text-xs text-arc-500 italic">No report yet</span>
+                      <span className="text-xs text-arc-500 italic">{t('workspace.qa.no_report_yet')}</span>
                     )}
                   </div>
                 </button>
@@ -96,11 +98,10 @@ export function QaWorkspacePage() {
         {!selectedEdit ? (
           <div className="flex h-full items-center justify-center flex-col gap-3 text-arc-500">
             <CheckCircle2 className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
-            <p className="text-sm">Select an edit from the list to review.</p>
+            <p className="text-sm">{t('workspace.qa.no_selection')}</p>
           </div>
         ) : (
           <>
-            {/* Right pane header */}
             <div className="px-4 py-2.5 border-b border-arc-200 bg-white flex items-center gap-2 shrink-0">
               <span className="font-mono text-xs text-arc-700 shrink-0">{selectedEdit.edit_id_display}</span>
               <span className="text-sm font-medium text-arc-900 truncate flex-1 min-w-0">
@@ -109,7 +110,6 @@ export function QaWorkspacePage() {
               <StageBadge stage={selectedEdit.current_stage} />
             </div>
 
-            {/* QaTab fills the rest */}
             <div className="flex-1 min-h-0 overflow-hidden">
               <QaTab change={selectedEdit} />
             </div>

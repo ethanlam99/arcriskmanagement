@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Send } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
@@ -10,8 +11,6 @@ import { Button } from '@/components/ui/Button';
 import { StageBadge } from '@/components/shared/StageBadge';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
 import type { Packet, RiskEdit } from '@/types';
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(dateStr: string) {
   return new Date(dateStr).toLocaleString('en-GB', {
@@ -27,26 +26,19 @@ function fmtDate(dateStr: string) {
 }
 
 function PacketStatusBadge({ status }: { status: Packet['status'] }) {
+  const { t } = useTranslation();
   const styles: Record<Packet['status'], string> = {
     proposed:  'bg-amber-50 text-amber-700 border-amber-200',
     confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
     rejected:  'bg-rose-50 text-rose-700 border-rose-200',
     live:      'bg-forest-50 text-forest-700 border-forest-100 font-semibold',
   };
-  const labels: Record<Packet['status'], string> = {
-    proposed:  'Proposed',
-    confirmed: 'Confirmed',
-    rejected:  'Rejected',
-    live:      'Live',
-  };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${styles[status]}`}>
-      {labels[status]}
+      {t(`it_handoff.status_${status}`)}
     </span>
   );
 }
-
-// ── Packet drawer ─────────────────────────────────────────────────────────────
 
 function PacketDrawer({
   packet,
@@ -63,11 +55,11 @@ function PacketDrawer({
   onMarkLive:  () => void;
   onClose:     () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="fixed inset-0 z-40 bg-arc-900/20" onClick={onClose} />
       <div className="fixed right-0 top-0 bottom-0 z-50 w-[560px] bg-white border-l border-arc-200 flex flex-col shadow-xl">
-        {/* Header */}
         <div className="px-6 py-4 border-b border-arc-200 flex items-start justify-between shrink-0">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -78,27 +70,25 @@ function PacketDrawer({
               <p className="text-xs text-arc-500 mt-0.5 leading-relaxed">{packet.description}</p>
             )}
           </div>
-          <button onClick={onClose} className="text-arc-500 hover:text-arc-900 transition-colors ml-4 shrink-0">
+          <button onClick={onClose} className="text-arc-500 hover:text-arc-900 transition-colors ml-4 shrink-0" aria-label={t('common.close')}>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
-          {/* Meta */}
           <div className="rounded-xl border border-arc-200 bg-arc-100 divide-y divide-arc-200">
             {[
-              { label: 'Created by',   value: userMap[packet.created_by] ?? packet.created_by },
-              { label: 'Created at',   value: fmtDate(packet.created_at) },
+              { label: t('it_handoff.drawer_created_by'), value: userMap[packet.created_by] ?? packet.created_by },
+              { label: t('it_handoff.drawer_created_at'), value: fmtDate(packet.created_at) },
               ...(packet.confirmed_by ? [
-                { label: 'Confirmed by', value: userMap[packet.confirmed_by] ?? packet.confirmed_by },
-                { label: 'Confirmed at', value: packet.confirmed_at ? fmt(packet.confirmed_at) : '—' },
+                { label: t('it_handoff.drawer_confirmed_by'), value: userMap[packet.confirmed_by] ?? packet.confirmed_by },
+                { label: t('it_handoff.drawer_confirmed_at'), value: packet.confirmed_at ? fmt(packet.confirmed_at) : '—' },
               ] : []),
               ...(packet.lived_by ? [
-                { label: 'Marked live by', value: userMap[packet.lived_by] ?? packet.lived_by },
-                { label: 'Went live at',   value: packet.lived_at ? fmt(packet.lived_at) : '—' },
+                { label: t('it_handoff.drawer_marked_live_by'), value: userMap[packet.lived_by] ?? packet.lived_by },
+                { label: t('it_handoff.drawer_went_live_at'), value: packet.lived_at ? fmt(packet.lived_at) : '—' },
               ] : []),
             ].map(({ label, value }) => (
               <div key={label} className="flex items-start gap-3 px-4 py-2.5">
@@ -108,13 +98,12 @@ function PacketDrawer({
             ))}
           </div>
 
-          {/* Edits in packet */}
           <div>
             <p className="text-xs font-semibold text-arc-500 uppercase tracking-wide mb-3">
-              Risk Edits ({edits.length})
+              {t('it_handoff.drawer_risk_edits', { count: edits.length })}
             </p>
             {edits.length === 0 ? (
-              <p className="text-xs text-arc-500">No edits in this packet.</p>
+              <p className="text-xs text-arc-500">{t('it_handoff.drawer_no_edits')}</p>
             ) : (
               <div className="rounded-xl border border-arc-200 overflow-hidden bg-white divide-y divide-arc-200">
                 {edits.map((e) => (
@@ -131,16 +120,15 @@ function PacketDrawer({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="px-6 py-4 border-t border-arc-200 shrink-0 flex items-center justify-end">
           {canMarkLive && packet.status === 'confirmed' ? (
             <Button size="sm" onClick={onMarkLive}>
-              Mark as Live
+              {t('it_handoff.mark_as_live')}
             </Button>
           ) : packet.status === 'live' ? (
             <span className="text-xs text-forest-700 font-medium flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-forest-500" />
-              Live in risk engine
+              {t('it_handoff.live_in_engine')}
             </span>
           ) : null}
         </div>
@@ -149,9 +137,8 @@ function PacketDrawer({
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
 export function ITHandoffLogPage() {
+  const { t } = useTranslation();
   const { currentUser, role } = useAuth();
   const repo = useRepository();
   const qc   = useQueryClient();
@@ -168,7 +155,6 @@ export function ITHandoffLogPage() {
     },
   });
 
-  // Only show confirmed + live packets (the IT-relevant ones)
   const packets = [...allPackets]
     .filter((p) => p.status === 'confirmed' || p.status === 'live')
     .sort((a, b) => {
@@ -223,10 +209,10 @@ export function ITHandoffLogPage() {
     <>
       <div className="flex flex-col h-full overflow-hidden">
         <TopBar
-          breadcrumb={<Breadcrumb items={[{ label: 'IT Handoff Log' }]} />}
+          breadcrumb={<Breadcrumb items={[{ label: t('it_handoff.title') }]} />}
           actions={
             <span className="px-2.5 py-1 rounded-full bg-arc-100 border border-arc-200 text-xs font-semibold text-arc-500">
-              {packets.length} packet{packets.length !== 1 ? 's' : ''}
+              {t('it_handoff.packets_count', { count: packets.length })}
             </span>
           }
         />
@@ -234,29 +220,27 @@ export function ITHandoffLogPage() {
         <div className="flex-1 overflow-y-auto p-6">
           <div className="max-w-6xl mx-auto">
             <div className="mb-5">
-              <h1 className="text-xl font-semibold text-arc-900">IT Handoff Log</h1>
-              <p className="text-sm text-arc-500 mt-0.5">
-                Confirmed packets awaiting deployment, and live packets already in the risk engine.
-              </p>
+              <h1 className="text-xl font-semibold text-arc-900">{t('it_handoff.title')}</h1>
+              <p className="text-sm text-arc-500 mt-0.5">{t('it_handoff.subtitle')}</p>
             </div>
 
             {isLoading ? (
-              <div className="flex items-center justify-center py-24 text-arc-500 text-sm">Loading…</div>
+              <div className="flex items-center justify-center py-24 text-arc-500 text-sm">{t('common.loading')}</div>
             ) : packets.length === 0 ? (
               <div className="flex items-center justify-center py-24 flex-col gap-3 text-arc-500">
                 <Send className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
-                <p className="text-sm">No packets have been confirmed yet.</p>
+                <p className="text-sm">{t('it_handoff.empty')}</p>
               </div>
             ) : (
               <div className="rounded-xl border border-arc-200 shadow-sm overflow-hidden bg-white">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-arc-200 bg-arc-100">
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Packet</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Status</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Edits</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Confirmed by</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Confirmed at</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('it_handoff.col_packet')}</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('it_handoff.col_status')}</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('it_handoff.col_edits')}</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('it_handoff.col_confirmed_by')}</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('it_handoff.col_confirmed_at')}</th>
                       <th className="px-4 py-2.5 w-20" />
                     </tr>
                   </thead>
@@ -277,7 +261,7 @@ export function ITHandoffLogPage() {
                             <PacketStatusBadge status={pkt.status} />
                           </td>
                           <td className="px-4 py-3 text-xs text-arc-500">
-                            {edits.length} edit{edits.length !== 1 ? 's' : ''}
+                            {t('it_handoff.edits_count', { count: edits.length })}
                           </td>
                           <td className="px-4 py-3 text-xs text-arc-500">
                             {pkt.confirmed_by ? (userMap[pkt.confirmed_by] ?? pkt.confirmed_by) : '—'}
@@ -288,7 +272,7 @@ export function ITHandoffLogPage() {
                           <td className="px-4 py-3">
                             <Button size="sm" variant="secondary"
                               onClick={(e) => { e.stopPropagation(); setSelected(pkt); }}>
-                              View
+                              {t('it_handoff.view')}
                             </Button>
                           </td>
                         </tr>
@@ -315,9 +299,12 @@ export function ITHandoffLogPage() {
 
       {showConfirm && selected && (
         <ConfirmModal
-          title="Mark packet as Live"
-          description={`"${selected.name}" contains ${selectedEdits.length} edit${selectedEdits.length !== 1 ? 's' : ''}. Marking as live will update their stage to Live and cannot be undone.`}
-          confirmLabel="Mark as Live"
+          title={t('it_handoff.mark_live_modal_title')}
+          description={t('it_handoff.mark_live_modal', {
+            name: selected.name,
+            count: selectedEdits.length,
+          })}
+          confirmLabel={t('it_handoff.mark_live_confirm')}
           loading={markingLive}
           onConfirm={handleMarkLive}
           onCancel={() => setShowConfirm(false)}

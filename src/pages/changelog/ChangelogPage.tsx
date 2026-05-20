@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { PackageOpen, Package, Send } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
@@ -15,8 +16,6 @@ import { Button } from '@/components/ui/Button';
 import { StageBadge } from '@/components/shared/StageBadge';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
 import type { Packet, RiskEdit } from '@/types';
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-GB', {
@@ -75,9 +74,10 @@ function useAllUserNames() {
   });
 }
 
-// ── Tab 1: Approved Pool (unbundled edits only) ───────────────────────────────
+// ── Tab 1: Approved Pool ─────────────────────────────────────────────────────
 
 function ApprovedPoolTab() {
+  const { t } = useTranslation();
   const { currentUser, role } = useAuth();
   const repo = useRepository();
   const qc = useQueryClient();
@@ -89,9 +89,6 @@ function ApprovedPoolTab() {
   const userIds = [...new Set(changes.map((c) => c.created_by))];
   const { data: userMap = {} } = useUserNames(userIds);
 
-  // Unbundled = approved AND not in any packet whose status is 'proposed' or 'confirmed'.
-  // Rejected packets release their edits back to the pool; confirmed packets
-  // already moved their edits to sent_to_it (defensive — caught by stage filter too).
   const lockedEditIds = new Set<string>();
   for (const pe of allPacketEdits) {
     const pkt = allPackets.find((p) => p.id === pe.packet_id);
@@ -172,8 +169,8 @@ function ApprovedPoolTab() {
         <div className="px-6 py-3 border-b border-arc-200 bg-white flex items-center justify-between gap-4 shrink-0">
           <p className="text-xs text-arc-500">
             {unbundled.length === 0
-              ? 'No approved edits available to bundle.'
-              : `${unbundled.length} approved edit${unbundled.length !== 1 ? 's' : ''} available`}
+              ? t('changelog.approved_no_available')
+              : t('changelog.approved_count', { count: unbundled.length })}
           </p>
           {canAct && (
             <Button
@@ -181,20 +178,18 @@ function ApprovedPoolTab() {
               disabled={selected.size === 0}
               onClick={() => setShowCreateModal(true)}
             >
-              Create proposed packet from selected ({selected.size})
+              {t('changelog.create_from_selected', { count: selected.size })}
             </Button>
           )}
         </div>
 
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center py-16 text-arc-500 text-sm">Loading…</div>
+            <div className="flex items-center justify-center py-16 text-arc-500 text-sm">{t('common.loading')}</div>
           ) : unbundled.length === 0 ? (
             <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-500 px-6 text-center">
               <PackageOpen className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
-              <p className="text-sm max-w-sm">
-                No approved edits available to bundle. Edits will appear here after testers approve AI UAT reports.
-              </p>
+              <p className="text-sm max-w-sm">{t('changelog.approved_empty')}</p>
             </div>
           ) : (
             <table className="w-full text-sm">
@@ -208,10 +203,10 @@ function ApprovedPoolTab() {
                         className="rounded border-arc-300" />
                     </th>
                   )}
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Change</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Module</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Author</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Approved</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('changelog.col_change')}</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('changelog.col_module')}</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('changelog.col_author')}</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('changelog.col_approved')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -243,36 +238,36 @@ function ApprovedPoolTab() {
         <div className="fixed inset-0 z-40 bg-arc-900/30 flex items-center justify-center p-6">
           <div className="bg-white rounded-xl border border-arc-200 shadow-xl w-full max-w-md p-6 flex flex-col gap-4">
             <div>
-              <h3 className="font-semibold text-arc-900 mb-0.5">Create proposed packet</h3>
+              <h3 className="font-semibold text-arc-900 mb-0.5">{t('changelog.create_packet_title')}</h3>
               <p className="text-xs text-arc-500">
-                Bundling {selected.size} approved edit{selected.size !== 1 ? 's' : ''}.
+                {t('changelog.create_packet_bundling', { count: selected.size })}
               </p>
             </div>
             <div>
               <label className="text-xs font-medium text-arc-500 mb-1.5 block">
-                Packet name <span className="text-rose-500">*</span>
+                {t('changelog.packet_name')} <span className="text-rose-500">*</span>
               </label>
               <input
                 className="w-full border border-arc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-arc-500 transition-colors"
-                placeholder="e.g. May 2026 Batch C"
+                placeholder={t('changelog.packet_name_placeholder')}
                 value={newPacketName}
                 onChange={(e) => setNewPacketName(e.target.value)}
                 autoFocus
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-arc-500 mb-1.5 block">Description (optional)</label>
+              <label className="text-xs font-medium text-arc-500 mb-1.5 block">{t('changelog.packet_description')}</label>
               <textarea
                 className="w-full border border-arc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-arc-500 transition-colors resize-none"
                 rows={3}
-                placeholder="Short context for the lead reviewer (optional)."
+                placeholder={t('changelog.packet_description_placeholder')}
                 value={newPacketDescription}
                 onChange={(e) => setNewPacketDescription(e.target.value)}
               />
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="secondary" size="sm" onClick={closeModal} disabled={createPacket.isPending}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 size="sm"
@@ -280,7 +275,7 @@ function ApprovedPoolTab() {
                 loading={createPacket.isPending}
                 onClick={handleCreate}
               >
-                Create
+                {t('changelog.create')}
               </Button>
             </div>
           </div>
@@ -290,9 +285,10 @@ function ApprovedPoolTab() {
   );
 }
 
-// ── Tab 2: Proposed Packets (Approve / Reject) ────────────────────────────────
+// ── Tab 2: Proposed Packets ──────────────────────────────────────────────────
 
 function ProposedPacketsTab() {
+  const { t } = useTranslation();
   const { currentUser, role } = useAuth();
   const repo = useRepository();
   const qc   = useQueryClient();
@@ -374,8 +370,6 @@ function ProposedPacketsTab() {
     setSubmitting(true);
     try {
       const now = new Date().toISOString();
-      // Edits stay at 'approved'; packet_edits rows are preserved on purpose so
-      // the audit trail of which edits were in the rejected packet survives.
       await repo.packets.update(packet.id, {
         status:           'rejected',
         rejected_by:      currentUser.id,
@@ -413,21 +407,19 @@ function ProposedPacketsTab() {
         <div className="px-6 py-3 border-b border-arc-200 bg-white flex items-center gap-4 shrink-0">
           <p className="text-xs text-arc-500">
             {packets.length === 0
-              ? 'No packets awaiting review.'
-              : `${packets.length} packet${packets.length !== 1 ? 's' : ''} proposed`}
+              ? t('changelog.proposed_no_awaiting')
+              : t('changelog.proposed_count', { count: packets.length })}
           </p>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
-            <div className="flex items-center justify-center py-16 text-arc-500 text-sm">Loading…</div>
+            <div className="flex items-center justify-center py-16 text-arc-500 text-sm">{t('common.loading')}</div>
           ) : packets.length === 0 ? (
             <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-500">
               <Package className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
-              <p className="text-sm">No packets are proposed.</p>
-              <p className="text-xs text-center max-w-xs">
-                Create a packet from approved edits in the Approved Pool tab.
-              </p>
+              <p className="text-sm">{t('changelog.no_proposed_packets')}</p>
+              <p className="text-xs text-center max-w-xs">{t('changelog.no_proposed_create')}</p>
             </div>
           ) : (
             <div className="max-w-3xl mx-auto flex flex-col gap-4">
@@ -440,16 +432,19 @@ function ProposedPacketsTab() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                            Proposed
+                            {t('changelog.status_proposed')}
                           </span>
-                          <span className="text-xs text-arc-500">{edits.length} edit{edits.length !== 1 ? 's' : ''}</span>
+                          <span className="text-xs text-arc-500">{t('changelog.edits_count', { count: edits.length })}</span>
                         </div>
                         <h3 className="font-semibold text-arc-900">{pkt.name}</h3>
                         {pkt.description && (
                           <p className="text-xs text-arc-500 mt-0.5 leading-relaxed">{pkt.description}</p>
                         )}
                         <p className="text-xs text-arc-500 mt-1">
-                          Proposed by {userMap[pkt.created_by] ?? pkt.created_by} · {fmt(pkt.created_at)}
+                          {t('changelog.proposed_by', {
+                            name: userMap[pkt.created_by] ?? pkt.created_by,
+                            date: fmt(pkt.created_at),
+                          })}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -457,7 +452,7 @@ function ProposedPacketsTab() {
                           onClick={() => toggleExpand(pkt.id)}
                           className="text-xs text-arc-500 hover:text-arc-900 transition-colors px-2 py-1 rounded border border-arc-200 hover:border-arc-500"
                         >
-                          {isOpen ? 'Hide edits ▲' : 'Show edits ▼'}
+                          {isOpen ? t('changelog.hide_edits') : t('changelog.show_edits')}
                         </button>
                         {canAct && (
                           <>
@@ -466,7 +461,7 @@ function ProposedPacketsTab() {
                               className="!bg-emerald-600 hover:!bg-emerald-700 active:!bg-emerald-800"
                               onClick={() => setShowApprove(pkt)}
                             >
-                              Approve
+                              {t('changelog.approve_packet')}
                             </Button>
                             <Button
                               size="sm"
@@ -474,7 +469,7 @@ function ProposedPacketsTab() {
                               className="!border-rose-500 !text-rose-600 hover:!bg-rose-50 active:!bg-rose-100"
                               onClick={() => { setShowReject(pkt); setRejectNotes(''); }}
                             >
-                              Reject
+                              {t('changelog.reject_packet')}
                             </Button>
                           </>
                         )}
@@ -484,7 +479,7 @@ function ProposedPacketsTab() {
                     {isOpen && (
                       <div className="border-t border-arc-200 divide-y divide-arc-200 bg-arc-100">
                         {edits.length === 0 ? (
-                          <p className="px-5 py-3 text-xs text-arc-500">No edits attached.</p>
+                          <p className="px-5 py-3 text-xs text-arc-500">{t('changelog.no_edits_attached')}</p>
                         ) : (
                           edits.map((e) => (
                             <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-4">
@@ -510,9 +505,12 @@ function ProposedPacketsTab() {
         const edits = getPacketEdits(showApprove.id);
         return (
           <ConfirmModal
-            title="Approve packet"
-            description={`Approve packet "${showApprove.name}"? This will mark the packet confirmed and move all ${edits.length} edit${edits.length !== 1 ? 's' : ''} to Sent to IT.`}
-            confirmLabel="Approve"
+            title={t('changelog.approve_packet_modal_title')}
+            description={t('changelog.approve_packet_modal', {
+              name: showApprove.name,
+              count: edits.length,
+            })}
+            confirmLabel={t('changelog.approve_packet')}
             loading={submitting}
             onConfirm={() => handleApprove(showApprove)}
             onCancel={() => setShowApprove(null)}
@@ -527,17 +525,17 @@ function ProposedPacketsTab() {
             onClick={() => { if (!submitting) { setShowReject(null); setRejectNotes(''); } }}
           />
           <div className="relative bg-white rounded-xl border border-arc-200 shadow-lg w-full max-w-md mx-4 p-6">
-            <h2 className="text-base font-semibold text-arc-900 mb-2">Reject packet</h2>
+            <h2 className="text-base font-semibold text-arc-900 mb-2">{t('changelog.reject_packet_modal_title')}</h2>
             <p className="text-sm text-arc-500 mb-4">
-              Rejecting "{showReject.name}". The packet will be closed and its edits will return to the Approved Pool.
+              {t('changelog.reject_packet_modal', { name: showReject.name })}
             </p>
             <label className="text-xs font-medium text-arc-500 mb-1.5 block">
-              Rejection notes <span className="text-rose-500">*</span>
+              {t('workspace.qa.rejection_notes')} <span className="text-rose-500">*</span>
             </label>
             <textarea
               className="w-full border border-arc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-arc-500 transition-colors resize-none mb-4"
               rows={4}
-              placeholder="Explain why this packet is being rejected so the analyst can address it."
+              placeholder={t('changelog.reject_packet_placeholder')}
               value={rejectNotes}
               onChange={(e) => setRejectNotes(e.target.value)}
               autoFocus
@@ -549,7 +547,7 @@ function ProposedPacketsTab() {
                 onClick={() => { setShowReject(null); setRejectNotes(''); }}
                 disabled={submitting}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 size="sm"
@@ -558,7 +556,7 @@ function ProposedPacketsTab() {
                 loading={submitting}
                 onClick={() => handleReject(showReject)}
               >
-                Reject
+                {t('changelog.reject_packet')}
               </Button>
             </div>
           </div>
@@ -568,7 +566,7 @@ function ProposedPacketsTab() {
   );
 }
 
-// ── Tab 3: Confirmed (packet-centric: Sent to IT + Live) ──────────────────────
+// ── Tab 3: Confirmed ─────────────────────────────────────────────────────────
 
 interface PacketSectionProps {
   title: string;
@@ -584,11 +582,12 @@ interface PacketSectionProps {
 function PacketSection({
   title, packets, userMap, getPacketEdits, expanded, onToggle, badge, emptyText,
 }: PacketSectionProps) {
+  const { t } = useTranslation();
   return (
     <section>
       <header className="flex items-center justify-between mb-2">
         <h2 className="text-sm font-semibold text-arc-900 uppercase tracking-wide">{title}</h2>
-        <span className="text-xs text-arc-500">{packets.length} packet{packets.length !== 1 ? 's' : ''}</span>
+        <span className="text-xs text-arc-500">{t('changelog.packets_count', { count: packets.length })}</span>
       </header>
       {packets.length === 0 ? (
         <p className="text-xs text-arc-500 px-1 py-3">{emptyText}</p>
@@ -605,19 +604,28 @@ function PacketSection({
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${badge.className}`}>
                         {badge.label}
                       </span>
-                      <span className="text-xs text-arc-500">{edits.length} edit{edits.length !== 1 ? 's' : ''}</span>
+                      <span className="text-xs text-arc-500">{t('changelog.edits_count', { count: edits.length })}</span>
                     </div>
                     <h3 className="font-semibold text-arc-900">{pkt.name}</h3>
                     {pkt.description && (
                       <p className="text-xs text-arc-500 mt-0.5 leading-relaxed">{pkt.description}</p>
                     )}
                     <p className="text-xs text-arc-500 mt-1">
-                      Created by {userMap[pkt.created_by] ?? pkt.created_by} · {fmt(pkt.created_at)}
+                      {t('changelog.created_by', {
+                        name: userMap[pkt.created_by] ?? pkt.created_by,
+                        date: fmt(pkt.created_at),
+                      })}
                       {pkt.confirmed_by && pkt.confirmed_at && (
-                        <> · Confirmed by {userMap[pkt.confirmed_by] ?? pkt.confirmed_by} · {fmt(pkt.confirmed_at)}</>
+                        <> · {t('changelog.confirmed_by', {
+                          name: userMap[pkt.confirmed_by] ?? pkt.confirmed_by,
+                          date: fmt(pkt.confirmed_at),
+                        })}</>
                       )}
                       {pkt.lived_by && pkt.lived_at && (
-                        <> · Lived by {userMap[pkt.lived_by] ?? pkt.lived_by} · {fmt(pkt.lived_at)}</>
+                        <> · {t('changelog.lived_by', {
+                          name: userMap[pkt.lived_by] ?? pkt.lived_by,
+                          date: fmt(pkt.lived_at),
+                        })}</>
                       )}
                     </p>
                   </div>
@@ -625,14 +633,14 @@ function PacketSection({
                     onClick={() => onToggle(pkt.id)}
                     className="shrink-0 text-xs text-arc-500 hover:text-arc-900 transition-colors px-2 py-1 rounded border border-arc-200 hover:border-arc-500"
                   >
-                    {isOpen ? 'Hide edits ▲' : 'Show edits ▼'}
+                    {isOpen ? t('changelog.hide_edits') : t('changelog.show_edits')}
                   </button>
                 </div>
 
                 {isOpen && (
                   <div className="border-t border-arc-200 divide-y divide-arc-200 bg-white">
                     {edits.length === 0 ? (
-                      <p className="px-5 py-3 text-xs text-arc-500">No edits attached.</p>
+                      <p className="px-5 py-3 text-xs text-arc-500">{t('changelog.no_edits_attached')}</p>
                     ) : (
                       edits.map((e) => (
                         <div key={e.id} className="px-5 py-3 flex items-center justify-between gap-4 odd:bg-white even:bg-arc-100/40">
@@ -655,6 +663,7 @@ function PacketSection({
 }
 
 function ConfirmedTab() {
+  const { t } = useTranslation();
   const { data: allPackets = [], isLoading } = usePackets();
   const { data: allEdits = [] } = useRiskEdits();
   const { data: allPacketEdits = [] } = useAllPacketEdits();
@@ -697,45 +706,43 @@ function ConfirmedTab() {
       <div className="px-6 py-3 border-b border-arc-200 bg-white flex items-center justify-between gap-4 shrink-0">
         <p className="text-xs text-arc-500">
           {totalVisible === 0
-            ? 'No confirmed packets yet.'
-            : `${sentToIt.length} sent to IT · ${live.length} live`}
+            ? t('changelog.confirmed_no_packets')
+            : t('changelog.confirmed_count', { sent: sentToIt.length, live: live.length })}
         </p>
         <Button variant="secondary" size="sm" disabled={totalVisible === 0} onClick={handleExport}>
-          Export CSV
+          {t('common.export_csv')}
         </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center py-16 text-arc-500 text-sm">Loading…</div>
+          <div className="flex items-center justify-center py-16 text-arc-500 text-sm">{t('common.loading')}</div>
         ) : totalVisible === 0 ? (
           <div className="flex items-center justify-center py-16 flex-col gap-3 text-arc-500 text-center">
             <Send className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
-            <p className="text-sm max-w-sm">
-              No confirmed packets yet. Packets approved on the Proposed Packets tab will appear here.
-            </p>
+            <p className="text-sm max-w-sm">{t('changelog.confirmed_empty')}</p>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto flex flex-col gap-8">
             <PacketSection
-              title="Sent to IT"
+              title={t('changelog.section_sent_to_it')}
               packets={sentToIt}
               userMap={userMap}
               getPacketEdits={getPacketEdits}
               expanded={expanded}
               onToggle={toggleExpand}
-              badge={{ label: 'Confirmed', className: 'bg-arc-100 text-arc-700 border-arc-200' }}
-              emptyText="No packets currently with IT."
+              badge={{ label: t('changelog.badge_confirmed'), className: 'bg-arc-100 text-arc-700 border-arc-200' }}
+              emptyText={t('changelog.section_sent_to_it_empty')}
             />
             <PacketSection
-              title="Live"
+              title={t('changelog.section_live')}
               packets={live}
               userMap={userMap}
               getPacketEdits={getPacketEdits}
               expanded={expanded}
               onToggle={toggleExpand}
-              badge={{ label: 'Live', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' }}
-              emptyText="No packets live yet."
+              badge={{ label: t('changelog.badge_live'), className: 'bg-emerald-50 text-emerald-700 border-emerald-200' }}
+              emptyText={t('changelog.section_live_empty')}
             />
           </div>
         )}
@@ -744,27 +751,28 @@ function ConfirmedTab() {
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 export function ChangelogPage() {
+  const { t } = useTranslation();
   const { data: proposedPackets = [] } = usePackets({ status: 'proposed' } as Partial<Packet>);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <TopBar breadcrumb={<Breadcrumb items={[{ label: 'Changelog' }]} />} />
+      <TopBar breadcrumb={<Breadcrumb items={[{ label: t('changelog.title') }]} />} />
 
       <Tabs defaultTab="approved" className="flex-1 min-h-0 overflow-hidden">
         <TabList className="px-6 bg-white shrink-0">
-          <TabTrigger id="approved">Approved Pool</TabTrigger>
+          <TabTrigger id="approved">{t('changelog.tab_approved')}</TabTrigger>
           <TabTrigger id="proposed">
-            Proposed Packets
+            {t('changelog.tab_proposed')}
             {proposedPackets.length > 0 && (
               <span className="ml-2 px-1.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
                 {proposedPackets.length}
               </span>
             )}
           </TabTrigger>
-          <TabTrigger id="confirmed">Confirmed</TabTrigger>
+          <TabTrigger id="confirmed">{t('changelog.tab_confirmed')}</TabTrigger>
         </TabList>
 
         <TabPanel id="approved"  className="overflow-hidden"><ApprovedPoolTab /></TabPanel>

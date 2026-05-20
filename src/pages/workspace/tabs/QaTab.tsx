@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useLatestUatRun } from '@/hooks/useUatRuns';
@@ -54,6 +55,7 @@ function ReviewableTestCaseRow({
   onRemoveAttachment: (id: string) => Promise<void>;
   readonly: boolean;
 }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const displayStatus = statusOverride ?? tc.status;
 
@@ -69,7 +71,7 @@ function ReviewableTestCaseRow({
         <td className="px-4 py-2.5">
           {readonly ? (
             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${statusColor(displayStatus)}`}>
-              {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
+              {t(`workspace.qa.status_${displayStatus}`)}
             </span>
           ) : (
             <select
@@ -77,16 +79,16 @@ function ReviewableTestCaseRow({
               onChange={(e) => onStatusOverride(e.target.value as TestCaseStatus)}
               className="text-xs border border-arc-200 rounded-lg px-2 py-1 bg-white text-arc-900 focus:outline-none focus:ring-1 focus:ring-arc-500"
             >
-              <option value="passed">Passed</option>
-              <option value="failed">Failed</option>
-              <option value="inconclusive">Inconclusive</option>
+              <option value="passed">{t('workspace.qa.status_passed')}</option>
+              <option value="failed">{t('workspace.qa.status_failed')}</option>
+              <option value="inconclusive">{t('workspace.qa.status_inconclusive')}</option>
             </select>
           )}
         </td>
         <td className="px-4 py-2.5">
           <span className={`inline-flex items-center gap-1 text-xs font-medium ${tc.frontend_render_ok ? 'text-emerald-600' : 'text-rose-600'}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${tc.frontend_render_ok ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-            {tc.frontend_render_ok ? 'OK' : 'Issue'}
+            {tc.frontend_render_ok ? t('workspace.qa.frontend_ok') : t('workspace.qa.frontend_issue')}
           </span>
         </td>
         {!readonly && (
@@ -99,7 +101,7 @@ function ReviewableTestCaseRow({
                   : 'bg-white border-arc-200 text-arc-500 hover:border-arc-500 hover:text-arc-700'
               }`}
             >
-              {isReviewed ? '✓ Reviewed' : 'Mark reviewed'}
+              {isReviewed ? t('workspace.qa.reviewed') : t('workspace.qa.mark_reviewed')}
             </button>
           </td>
         )}
@@ -109,9 +111,9 @@ function ReviewableTestCaseRow({
           <td colSpan={readonly ? 4 : 5} className="px-6 py-4">
             <div className="grid grid-cols-3 gap-4 text-xs mb-3">
               {[
-                { label: 'Input',    data: tc.input,    cls: 'bg-white border-arc-200 text-arc-900' },
-                { label: 'Expected', data: tc.expected,  cls: 'bg-white border-arc-200 text-arc-900' },
-                { label: 'Actual',   data: tc.actual,    cls: tc.status === 'failed' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-white border-arc-200 text-arc-900' },
+                { label: t('workspace.qa.input'),    data: tc.input,    cls: 'bg-white border-arc-200 text-arc-900' },
+                { label: t('workspace.qa.expected'), data: tc.expected, cls: 'bg-white border-arc-200 text-arc-900' },
+                { label: t('workspace.qa.actual'),   data: tc.actual,   cls: tc.status === 'failed' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-white border-arc-200 text-arc-900' },
               ].map(({ label, data, cls }) => (
                 <div key={label}>
                   <p className="font-semibold text-arc-500 mb-1.5">{label}</p>
@@ -123,7 +125,7 @@ function ReviewableTestCaseRow({
             </div>
             <div>
               <p className="text-xs font-semibold text-arc-500 mb-1.5">
-                {readonly ? 'Annotation' : 'Annotation (optional)'}
+                {readonly ? t('workspace.qa.annotation') : t('workspace.qa.annotation_optional')}
               </p>
               {readonly ? (
                 annotation ? (
@@ -131,12 +133,12 @@ function ReviewableTestCaseRow({
                     {annotation}
                   </p>
                 ) : (
-                  <p className="text-xs text-arc-500 italic">No annotation added.</p>
+                  <p className="text-xs text-arc-500 italic">{t('workspace.qa.no_annotation')}</p>
                 )
               ) : (
                 <Textarea
                   rows={2}
-                  placeholder="Add a note about this test case…"
+                  placeholder={t('workspace.qa.annotation_placeholder')}
                   value={annotation}
                   onChange={(e) => onAnnotationChange(e.target.value)}
                   className="text-xs resize-none"
@@ -146,10 +148,10 @@ function ReviewableTestCaseRow({
 
             <div className="mt-3">
               <p className="text-xs font-semibold text-arc-500 mb-1.5">
-                Supporting evidence
+                {t('workspace.qa.supporting_evidence')}
                 {!readonly && (
                   <span className="ml-1.5 font-normal text-arc-500">
-                    — attach manual UAT screenshots/PDFs when overriding an AI verdict
+                    {t('workspace.qa.evidence_help')}
                   </span>
                 )}
               </p>
@@ -168,6 +170,7 @@ function ReviewableTestCaseRow({
 }
 
 export function QaTab({ change }: QaTabProps) {
+  const { t } = useTranslation();
   const { currentUser, role } = useAuth();
   const repo   = useRepository();
   const qc     = useQueryClient();
@@ -235,7 +238,7 @@ export function QaTab({ change }: QaTabProps) {
 
   function saveDraft() {
     localStorage.setItem(DRAFT_KEY(change.id), JSON.stringify({ annotations, statusOverrides, reviewed }));
-    showToast('Draft saved.');
+    showToast(t('workspace.qa.draft_saved'));
   }
 
   function showToast(msg: string) {
@@ -247,7 +250,6 @@ export function QaTab({ change }: QaTabProps) {
     if (!currentUser || !run) return;
     setIsSubmitting(true);
     try {
-      // Create a UAT review record
       await repo.uatReviews.create({
         uat_run_id:          run.id,
         reviewer_id:         currentUser.id,
@@ -261,7 +263,6 @@ export function QaTab({ change }: QaTabProps) {
         decided_at:          new Date().toISOString(),
       });
 
-      // Transition edit to approved — testing lead will bundle it into a packet
       await stageTransition.mutateAsync({
         id:        change.id,
         stage:     'approved',
@@ -280,7 +281,7 @@ export function QaTab({ change }: QaTabProps) {
       localStorage.removeItem(DRAFT_KEY(change.id));
       qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
       setShowApproveModal(false);
-      showToast('Change approved — it is now in the Approved pool for packet bundling.');
+      showToast(t('workspace.qa.approved_toast'));
     } finally {
       setIsSubmitting(false);
     }
@@ -323,13 +324,13 @@ export function QaTab({ change }: QaTabProps) {
   }
 
   if (runLoading) {
-    return <div className="flex h-full items-center justify-center text-arc-500 text-sm">Loading…</div>;
+    return <div className="flex h-full items-center justify-center text-arc-500 text-sm">{t('common.loading')}</div>;
   }
 
   if (!run || !run.ai_report_json) {
     return (
       <div className="flex h-full items-center justify-center flex-col gap-2 text-arc-500">
-        <p className="text-sm">No completed AI UAT report to review.</p>
+        <p className="text-sm">{t('workspace.qa.no_report')}</p>
       </div>
     );
   }
@@ -349,19 +350,19 @@ export function QaTab({ change }: QaTabProps) {
   const approveBlockedReason = canApprove
     ? ''
     : !allPassed && !allReviewed
-      ? 'All cases must be passing and reviewed before approval.'
+      ? t('workspace.qa.blocked_both')
       : !allPassed
-        ? `${failingCount} case${failingCount !== 1 ? 's' : ''} still marked failed/inconclusive.`
-        : `${unreviewedCount} case${unreviewedCount !== 1 ? 's' : ''} still need to be marked reviewed.`;
+        ? t('workspace.qa.blocked_failed', { count: failingCount })
+        : t('workspace.qa.blocked_unreviewed', { count: unreviewedCount });
 
   return (
     <>
       <div className="flex flex-col h-full overflow-hidden">
         <div className="px-6 py-3 border-b border-arc-200 bg-amber-50 shrink-0">
           <p className="text-xs text-amber-800 leading-relaxed">
-            <span className="font-semibold">Reviewing AI UAT report for "{change.title}".</span>
-            {canAct && ' Edits here override the AI\'s findings — your final verdict moves the edit to Approved.'}
-            {isTerminal && ' This change has already been approved and is awaiting IT deployment.'}
+            <span className="font-semibold">{t('workspace.qa.review_header', { title: change.title })}</span>
+            {canAct && t('workspace.qa.review_header_can_act')}
+            {isTerminal && t('workspace.qa.review_header_terminal')}
           </p>
         </div>
 
@@ -371,11 +372,11 @@ export function QaTab({ change }: QaTabProps) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-arc-200 bg-arc-100">
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">ID</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Description</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Status</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Frontend</th>
-                    {canAct && <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">Review</th>}
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.qa.col_id')}</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.qa.col_description')}</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.qa.col_status')}</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.qa.col_frontend')}</th>
+                    {canAct && <th className="px-4 py-2.5 text-left text-xs font-semibold text-arc-500 uppercase tracking-wide">{t('workspace.qa.col_review')}</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -404,11 +405,15 @@ export function QaTab({ change }: QaTabProps) {
         {canAct && (
           <div className="shrink-0 border-t border-arc-200 bg-white px-6 py-4 flex items-center justify-between gap-4">
             <p className="text-xs text-arc-500">
-              {passedCount} of {testCases.length} passing · {reviewedCount} of {testCases.length} reviewed
+              {t('workspace.qa.summary', {
+                passed: passedCount,
+                total: testCases.length,
+                reviewed: reviewedCount,
+              })}
             </p>
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={saveDraft}>
-                Save draft review
+                {t('workspace.qa.save_draft')}
               </Button>
               <Button
                 variant="secondary"
@@ -416,7 +421,7 @@ export function QaTab({ change }: QaTabProps) {
                 className="border-rose-200 text-rose-600 hover:bg-rose-50"
                 onClick={() => setShowRejectModal(true)}
               >
-                Reject — return to author
+                {t('workspace.qa.reject_return')}
               </Button>
               <span title={approveBlockedReason || undefined} className="inline-block">
                 <Button
@@ -425,7 +430,7 @@ export function QaTab({ change }: QaTabProps) {
                   disabled={!canApprove}
                   onClick={() => setShowApproveModal(true)}
                 >
-                  Approve
+                  {t('workspace.qa.approve')}
                 </Button>
               </span>
             </div>
@@ -441,9 +446,9 @@ export function QaTab({ change }: QaTabProps) {
 
       {showApproveModal && (
         <ConfirmModal
-          title="Approve change"
-          description="The change will move to Approved. A testing lead can then bundle it into a deployment packet for IT."
-          confirmLabel="Approve"
+          title={t('workspace.qa.approve_modal_title')}
+          description={t('workspace.qa.approve_modal_desc')}
+          confirmLabel={t('workspace.qa.approve_modal_confirm')}
           loading={isSubmitting}
           onConfirm={handleApprove}
           onCancel={() => setShowApproveModal(false)}
@@ -454,23 +459,21 @@ export function QaTab({ change }: QaTabProps) {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-arc-900/40 backdrop-blur-sm" onClick={() => setShowRejectModal(false)} />
           <div className="relative bg-white rounded-xl border border-arc-200 w-full max-w-md mx-4 p-6 shadow-lg">
-            <h2 className="text-base font-semibold text-arc-900 mb-1">Reject — Return to Author</h2>
-            <p className="text-xs text-arc-500 mb-4">
-              The change will be moved back to Draft. The risk analyst will see your notes when they re-open it.
-            </p>
+            <h2 className="text-base font-semibold text-arc-900 mb-1">{t('workspace.qa.reject_modal_title')}</h2>
+            <p className="text-xs text-arc-500 mb-4">{t('workspace.qa.reject_modal_desc')}</p>
             <label className="block text-xs font-medium text-arc-900 mb-1.5">
-              Rejection notes <span className="text-rose-500">*</span>
+              {t('workspace.qa.rejection_notes')} <span className="text-rose-500">*</span>
             </label>
             <Textarea
               rows={4}
-              placeholder="Describe what needs to be fixed before re-submission…"
+              placeholder={t('workspace.qa.reject_placeholder')}
               value={rejectionNotes}
               onChange={(e) => setRejectionNotes(e.target.value)}
               className="mb-4 resize-none"
             />
             <div className="flex justify-end gap-2">
               <Button variant="secondary" size="sm" onClick={() => setShowRejectModal(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 size="sm"
@@ -479,7 +482,7 @@ export function QaTab({ change }: QaTabProps) {
                 loading={isSubmitting}
                 onClick={handleReject}
               >
-                Reject &amp; Return
+                {t('workspace.qa.reject_action')}
               </Button>
             </div>
           </div>
