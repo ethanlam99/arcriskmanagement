@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Beaker, AlertCircle } from 'lucide-react';
+import { Beaker, AlertCircle, Trash2 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/auth/AuthProvider';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
 import { useAllUatRuns } from '@/hooks/useUatRuns';
+import { useProposedTestCases } from '@/hooks/useProposedTestCases';
 import { useRepository } from '@/data/RepositoryProvider';
 import { runUat } from '@/integrations/uatRunner';
 import { ensureProposedCasesForReadyForUat } from '@/integrations/testCaseProposer';
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { StageBadge } from '@/components/shared/StageBadge';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
 import { AttachmentUploader } from '@/components/shared/AttachmentUploader';
-import type { RiskEdit, UatContextAttachment } from '@/types';
+import type { RiskEdit, UatContextAttachment, ProposedTestCase } from '@/types';
 
 const AI_TASK_STEPS = [
   'Loading sandbox engine',
@@ -111,6 +112,271 @@ function AiTaskList({
   );
 }
 
+function ProposedCaseRow({
+  proposed,
+  locked,
+  onToggleInclude,
+  onRemove,
+}: {
+  proposed: ProposedTestCase;
+  locked: boolean;
+  onToggleInclude: () => void;
+  onRemove: () => void;
+}) {
+  const isHuman = proposed.source === 'human';
+  return (
+    <li className="rounded-lg border border-arc-200 bg-white px-3 py-2.5 flex items-start gap-2.5">
+      <input
+        type="checkbox"
+        checked={proposed.included_in_run}
+        onChange={onToggleInclude}
+        disabled={locked}
+        className="mt-0.5 rounded border-arc-300 shrink-0"
+        aria-label={proposed.included_in_run ? 'Exclude from run' : 'Include in run'}
+      />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-xs font-medium text-arc-900 leading-snug">{proposed.description}</p>
+          <span className={`text-[10px] font-semibold uppercase tracking-wide shrink-0 ${
+            isHuman ? 'text-forest-600' : 'text-arc-500'
+          }`}>
+            {isHuman ? 'Manual' : 'AI'}
+          </span>
+        </div>
+        <div className="mt-1.5 grid grid-cols-2 gap-2 text-[10px] font-mono">
+          <div className="bg-arc-100 rounded px-1.5 py-1 overflow-hidden">
+            <span className="block text-arc-500 mb-0.5">input</span>
+            <span className="block text-arc-700 truncate" title={JSON.stringify(proposed.input)}>
+              {JSON.stringify(proposed.input)}
+            </span>
+          </div>
+          <div className="bg-arc-100 rounded px-1.5 py-1 overflow-hidden">
+            <span className="block text-arc-500 mb-0.5">expected</span>
+            <span className="block text-arc-700 truncate" title={JSON.stringify(proposed.expected)}>
+              {JSON.stringify(proposed.expected)}
+            </span>
+          </div>
+        </div>
+      </div>
+      {isHuman && (
+        <button
+          type="button"
+          onClick={onRemove}
+          disabled={locked}
+          className="shrink-0 mt-0.5 text-arc-400 hover:text-rose-500 disabled:text-arc-200 transition-colors"
+          aria-label="Remove case"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </li>
+  );
+}
+
+function AddCaseForm({
+  onSubmit,
+  onCancel,
+}: {
+  onSubmit: (data: { description: string; input: Record<string, unknown>; expected: Record<string, unknown> }) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [description, setDescription] = useState('');
+  const [inputJson, setInputJson] = useState('{\n  \n}');
+  const [expectedJson, setExpectedJson] = useState('{\n  \n}');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!description.trim()) {
+      setError('Description is required.');
+      return;
+    }
+    let parsedInput: Record<string, unknown>;
+    let parsedExpected: Record<string, unknown>;
+    try {
+      parsedInput = JSON.parse(inputJson);
+    } catch {
+      setError('Input must be valid JSON.');
+      return;
+    }
+    try {
+      parsedExpected = JSON.parse(expectedJson);
+    } catch {
+      setError('Expected must be valid JSON.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await onSubmit({ description: description.trim(), input: parsedInput, expected: parsedExpected });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-2 rounded-lg border border-arc-200 bg-white px-3 py-3 flex flex-col gap-2.5">
+      <label className="block">
+        <span className="block text-[11px] font-semibold text-arc-500 uppercase tracking-wide mb-1">Description</span>
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Manual tester check — high-value customer"
+          className="w-full rounded-md border border-arc-200 px-2 py-1.5 text-xs focus:outline-none focus:border-forest-500"
+        />
+      </label>
+      <label className="block">
+        <span className="block text-[11px] font-semibold text-arc-500 uppercase tracking-wide mb-1">Input (JSON)</span>
+        <textarea
+          value={inputJson}
+          onChange={(e) => setInputJson(e.target.value)}
+          rows={3}
+          className="w-full rounded-md border border-arc-200 px-2 py-1.5 text-[11px] font-mono focus:outline-none focus:border-forest-500"
+        />
+      </label>
+      <label className="block">
+        <span className="block text-[11px] font-semibold text-arc-500 uppercase tracking-wide mb-1">Expected (JSON)</span>
+        <textarea
+          value={expectedJson}
+          onChange={(e) => setExpectedJson(e.target.value)}
+          rows={3}
+          className="w-full rounded-md border border-arc-200 px-2 py-1.5 text-[11px] font-mono focus:outline-none focus:border-forest-500"
+        />
+      </label>
+      {error && <p className="text-[11px] text-rose-600">{error}</p>}
+      <div className="flex justify-end gap-2 mt-1">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-xs px-2.5 py-1 rounded-md text-arc-700 hover:bg-arc-100 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="text-xs px-2.5 py-1 rounded-md bg-forest-600 text-white hover:bg-forest-700 disabled:bg-arc-300 transition-colors"
+        >
+          {submitting ? 'Adding…' : 'Add case'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function ProposedCasesSection({ edit, locked }: { edit: RiskEdit; locked: boolean }) {
+  const { currentUser } = useAuth();
+  const repo = useRepository();
+  const qc   = useQueryClient();
+  const { data: cases = [] } = useProposedTestCases(edit.id);
+  const [showAddCase, setShowAddCase] = useState(false);
+  const [markingReviewed, setMarkingReviewed] = useState(false);
+
+  async function toggleInclude(c: ProposedTestCase) {
+    await repo.proposedTestCases.update(c.id, { included_in_run: !c.included_in_run });
+    qc.invalidateQueries({ queryKey: ['arc', 'proposed_test_cases', edit.id] });
+  }
+
+  async function removeCase(c: ProposedTestCase) {
+    await repo.proposedTestCases.delete(c.id);
+    qc.invalidateQueries({ queryKey: ['arc', 'proposed_test_cases', edit.id] });
+  }
+
+  async function handleAddCase(data: { description: string; input: Record<string, unknown>; expected: Record<string, unknown> }) {
+    if (!currentUser) return;
+    await repo.proposedTestCases.create({
+      risk_edit_id:    edit.id,
+      description:     data.description,
+      input:           data.input,
+      expected:        data.expected,
+      source:          'human',
+      included_in_run: true,
+      proposed_by:     currentUser.id,
+    });
+    await repo.auditLog.append({
+      actor_id:     currentUser.id,
+      action:       'test_cases.added_manually',
+      entity_type:  'risk_edit',
+      entity_id:    edit.id,
+      payload_json: { description: data.description },
+    });
+    qc.invalidateQueries({ queryKey: ['arc', 'proposed_test_cases', edit.id] });
+    setShowAddCase(false);
+  }
+
+  async function handleMarkReviewed() {
+    if (!currentUser || edit.cases_reviewed) return;
+    setMarkingReviewed(true);
+    try {
+      await repo.riskEdits.update(edit.id, { cases_reviewed: true } as Partial<RiskEdit>);
+      await repo.auditLog.append({
+        actor_id:     currentUser.id,
+        action:       'test_cases.marked_reviewed',
+        entity_type:  'risk_edit',
+        entity_id:    edit.id,
+        payload_json: { case_count: cases.filter((c) => c.included_in_run).length },
+      });
+      qc.invalidateQueries({ queryKey: ['arc', 'risk_edits'] });
+    } finally {
+      setMarkingReviewed(false);
+    }
+  }
+
+  return (
+    <section>
+      <h3 className="text-xs font-semibold text-arc-900 uppercase tracking-wide mb-2">
+        Proposed test cases
+      </h3>
+      <p className="text-xs text-arc-500 mb-3 leading-relaxed">
+        Review each case the AI has proposed. Uncheck cases you don&apos;t want included
+        in the AI UAT run. Use the button below to add your own test cases.
+      </p>
+      {cases.length === 0 ? (
+        <p className="text-xs text-arc-500 italic">No proposed cases yet.</p>
+      ) : (
+        <ul className="flex flex-col gap-1.5">
+          {cases.map((c) => (
+            <ProposedCaseRow
+              key={c.id}
+              proposed={c}
+              locked={locked}
+              onToggleInclude={() => toggleInclude(c)}
+              onRemove={() => removeCase(c)}
+            />
+          ))}
+        </ul>
+      )}
+      {!showAddCase ? (
+        <button
+          type="button"
+          onClick={() => setShowAddCase(true)}
+          disabled={locked}
+          className="mt-2 text-xs font-medium text-forest-600 hover:text-forest-700 disabled:text-arc-300"
+        >
+          + Propose new test case
+        </button>
+      ) : (
+        <AddCaseForm
+          onSubmit={handleAddCase}
+          onCancel={() => setShowAddCase(false)}
+        />
+      )}
+      {edit.current_stage === 'ready_for_uat' && (
+        <button
+          type="button"
+          onClick={handleMarkReviewed}
+          disabled={edit.cases_reviewed === true || markingReviewed}
+          className="mt-3 w-full rounded-lg bg-arc-900 text-white text-sm font-medium py-2 disabled:bg-arc-300 hover:bg-arc-700 transition-colors"
+        >
+          {edit.cases_reviewed ? 'Cases reviewed ✓' : markingReviewed ? 'Marking…' : 'Mark reviewed'}
+        </button>
+      )}
+    </section>
+  );
+}
+
 function UatContextDrawer({
   edit,
   onClose,
@@ -197,6 +463,8 @@ function UatContextDrawer({
             readonly={locked}
           />
         </section>
+
+        <ProposedCasesSection edit={edit} locked={locked} />
 
         <section>
           <h3 className="text-xs font-semibold text-arc-900 uppercase tracking-wide mb-2">
@@ -355,12 +623,16 @@ export function UatWorkspacePage() {
 
     if (!latest) throw new Error(`No version found for edit ${editId}`);
 
+    // Fetch tester-curated cases — only included ones go into the run.
+    const allProposed = await repo.proposedTestCases.listForEdit(editId);
+    const included    = allProposed.filter((c) => c.included_in_run);
+
     await repo.auditLog.append({
       actor_id:     currentUser.id,
       action:       'uat_run.triggered',
       entity_type:  'risk_edit',
       entity_id:    editId,
-      payload_json: { version_id: latest.id },
+      payload_json: { version_id: latest.id, case_count: included.length },
     });
 
     const run = await repo.uatRuns.create({
@@ -374,7 +646,7 @@ export function UatWorkspacePage() {
     } as Parameters<typeof repo.uatRuns.create>[0]);
 
     try {
-      const report = await runUat({ riskEditId: editId, versionId: latest.id });
+      const report = await runUat({ riskEditId: editId, versionId: latest.id, includedCases: included });
 
       await repo.uatRuns.update(run.id, {
         status:          'completed',
@@ -453,34 +725,43 @@ export function UatWorkspacePage() {
       <div className="flex-1 overflow-y-auto p-6 min-w-0">
         <div className="max-w-4xl mx-auto flex flex-col gap-8">
 
-          {/* ── Section 1: Queued for UAT ── */}
+          {/* ── Section 1: AI UAT Review Queue ── */}
           <section>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h2 className="text-sm font-semibold text-arc-900">Queued for UAT</h2>
+                <h2 className="text-sm font-semibold text-arc-900">AI UAT Review Queue</h2>
                 <p className="text-xs text-arc-500 mt-0.5">
                   {queued.length === 0
-                    ? 'No edits waiting.'
-                    : `${queued.length} edit${queued.length !== 1 ? 's' : ''} ready to run · click a row for AI context`}
+                    ? 'No edits awaiting review.'
+                    : `${queued.length} edit${queued.length !== 1 ? 's' : ''} awaiting test case review · click a row to review cases`}
                 </p>
               </div>
-              {canAct && selectedIds.length > 0 && (
-                <Button
-                  size="sm"
-                  onClick={() => handleTrigger(selectedIds)}
-                  loading={triggering.size > 0}
-                >
-                  Send selected to AI UAT ({selectedIds.length})
-                </Button>
-              )}
+              {canAct && selectedIds.length > 0 && (() => {
+                const reviewedIds = selectedIds.filter((id) => {
+                  const e = queued.find((q) => q.id === id);
+                  return e?.cases_reviewed === true;
+                });
+                const noneReviewed = reviewedIds.length === 0;
+                return (
+                  <Button
+                    size="sm"
+                    onClick={() => handleTrigger(reviewedIds)}
+                    loading={triggering.size > 0}
+                    disabled={noneReviewed}
+                    title={noneReviewed ? 'Review proposed test cases first' : undefined}
+                  >
+                    Send selected to AI UAT ({reviewedIds.length})
+                  </Button>
+                );
+              })()}
             </div>
 
             {queued.length === 0 ? (
               <div className="rounded-xl border border-arc-200 shadow-sm bg-white flex items-center justify-center py-12 flex-col gap-3 text-arc-500">
                 <Beaker className="w-12 h-12 text-arc-500" strokeWidth={1.5} />
-                <p className="text-sm">No edits queued for UAT.</p>
+                <p className="text-sm">No edits awaiting test case review.</p>
                 <p className="text-xs text-center max-w-xs text-arc-500">
-                  Risk analysts send edits for UAT from the Draft &amp; Queue workspace.
+                  Edits arrive here once a risk analyst sends them for UAT. The AI proposes test cases on arrival; review and confirm before sending for AI execution.
                 </p>
               </div>
             ) : (
@@ -548,8 +829,9 @@ export function UatWorkspacePage() {
                                 <Button
                                   size="sm"
                                   variant="secondary"
-                                  disabled={triggering.size > 0}
+                                  disabled={triggering.size > 0 || !edit.cases_reviewed}
                                   onClick={() => handleTrigger([edit.id])}
+                                  title={!edit.cases_reviewed ? 'Review proposed test cases first' : undefined}
                                 >
                                   Send to AI UAT
                                 </Button>

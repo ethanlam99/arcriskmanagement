@@ -6,7 +6,7 @@
 //   - Capture frontend display via headless browser against the customer-facing app.
 //   - Return structured UatReport including real screenshot refs.
 
-import type { UatReport, UatRunRequest } from '@/types';
+import type { UatReport, UatRunRequest, TestCase } from '@/types';
 import seedData from '@/data/seed.json';
 
 const SIMULATED_DELAY_MS = 2500;
@@ -15,8 +15,53 @@ function delay(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
+// Build a UatReport from the tester-curated proposed cases. First case fails
+// 5% of the time for demo realism; all others pass. Frontend renders pass
+// except for one in four cases.
+function buildReportFromIncluded(request: UatRunRequest): UatReport | null {
+  if (!request.includedCases || request.includedCases.length === 0) return null;
+
+  const generated_at = new Date().toISOString();
+  const test_cases: TestCase[] = request.includedCases.map((p, idx) => {
+    const isFirstAndUnlucky = idx === 0 && Math.random() < 0.05;
+    const status: TestCase['status'] = isFirstAndUnlucky ? 'failed' : 'passed';
+    return {
+      id:                  `tc-${p.id}`,
+      description:         p.description,
+      input:               p.input,
+      expected:            p.expected,
+      actual:              status === 'passed' ? p.expected : { ...p.expected, _drift: 'unexpected_value' },
+      status,
+      frontend_render_ok:  idx % 4 !== 3,
+    };
+  });
+
+  const passed = test_cases.filter((c) => c.status === 'passed').length;
+  const failed = test_cases.filter((c) => c.status === 'failed').length;
+  const inconclusive = test_cases.filter((c) => c.status === 'inconclusive').length;
+  const frontend_ok = test_cases.filter((c) => c.frontend_render_ok).length;
+
+  return {
+    generated_at,
+    screenshot_refs: ['screenshot-generic-before.png', 'screenshot-generic-after.png'],
+    summary: {
+      total:           test_cases.length,
+      passed,
+      failed,
+      inconclusive,
+      frontend_ok,
+      frontend_not_ok: test_cases.length - frontend_ok,
+    },
+    test_cases,
+  };
+}
+
 export async function runUat(request: UatRunRequest): Promise<UatReport> {
   await delay(SIMULATED_DELAY_MS);
+
+  // If the tester curated a case list, build the report from it.
+  const fromIncluded = buildReportFromIncluded(request);
+  if (fromIncluded) return fromIncluded;
 
   // Return a seeded fixture if one exists for this strategy change
   const existingRun = seedData.uat_runs.find(

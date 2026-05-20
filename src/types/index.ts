@@ -256,6 +256,7 @@ export interface LlmEditResponse {
 export interface UatRunRequest {
   versionId: string;
   riskEditId: string;
+  includedCases?: ProposedTestCase[];   // v0.4.1: cases curated by tester
 }
 
 // ── IT handoff types ──────────────────────────────────────────────────────────
