@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { Beaker, AlertCircle, Trash2 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -269,11 +269,11 @@ function AddCaseForm({
 function ProposedCasesSection({
   edit,
   locked,
-  onSendFromDrawer,
+  onSendFromPanel,
 }: {
   edit: RiskEdit;
   locked: boolean;
-  onSendFromDrawer: () => Promise<void>;
+  onSendFromPanel: () => Promise<void>;
 }) {
   const { currentUser } = useAuth();
   const repo = useRepository();
@@ -282,7 +282,7 @@ function ProposedCasesSection({
   const [showAddCase, setShowAddCase] = useState(false);
   const [markingReviewed, setMarkingReviewed] = useState(false);
   const [showReviewConfirm, setShowReviewConfirm] = useState(false);
-  const [sendingFromDrawer, setSendingFromDrawer] = useState(false);
+  const [sendingFromPanel, setSendingFromPanel] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
 
   // Lock controls when the tester has marked cases reviewed OR the edit has
@@ -362,12 +362,12 @@ function ProposedCasesSection({
   }
 
   async function handleSendClick() {
-    if (sendingFromDrawer) return;
-    setSendingFromDrawer(true);
+    if (sendingFromPanel) return;
+    setSendingFromPanel(true);
     try {
-      await onSendFromDrawer();
+      await onSendFromPanel();
     } finally {
-      setSendingFromDrawer(false);
+      setSendingFromPanel(false);
     }
   }
 
@@ -427,15 +427,15 @@ function ProposedCasesSection({
               <button
                 type="button"
                 onClick={handleSendClick}
-                disabled={sendingFromDrawer || includedCount === 0}
+                disabled={sendingFromPanel || includedCount === 0}
                 className="w-full rounded-lg bg-forest-600 text-white text-sm font-medium py-2 disabled:bg-arc-300 hover:bg-forest-700 transition-colors"
               >
-                {sendingFromDrawer ? 'Sending…' : 'Send for AI UAT report'}
+                {sendingFromPanel ? 'Sending…' : 'Send for AI UAT report'}
               </button>
               <button
                 type="button"
                 onClick={handleUnlock}
-                disabled={sendingFromDrawer || unlocking}
+                disabled={sendingFromPanel || unlocking}
                 className="mt-2 w-full text-center text-xs text-arc-500 hover:text-arc-700 disabled:text-arc-300 transition-colors"
               >
                 {unlocking ? 'Unlocking…' : 'Need to change something? Unlock cases'}
@@ -458,14 +458,14 @@ function ProposedCasesSection({
   );
 }
 
-function UatContextDrawer({
+function UatContextPanel({
   edit,
   onClose,
-  onSendFromDrawer,
+  onSendFromPanel,
 }: {
   edit: RiskEdit;
   onClose: () => void;
-  onSendFromDrawer: () => Promise<void>;
+  onSendFromPanel: () => Promise<void>;
 }) {
   const { currentUser } = useAuth();
   const repo = useRepository();
@@ -514,66 +514,64 @@ function UatContextDrawer({
       : 'done';
 
   return (
-    <aside className="w-96 shrink-0 border-l border-arc-200 bg-arc-100/40 flex flex-col overflow-hidden">
-      <div className="px-4 py-3 border-b border-arc-200 bg-white flex items-start gap-2 shrink-0">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-mono text-arc-500">{edit.edit_id_display}</p>
-          <p className="text-sm font-medium text-arc-900 truncate">{edit.title}</p>
-        </div>
+    <div className="bg-arc-100/60 border-t border-arc-200 px-5 py-5">
+      <div className="flex items-center justify-end mb-3">
         <button
+          type="button"
           onClick={onClose}
-          className="text-arc-500 hover:text-arc-700 transition-colors text-base leading-none px-1"
-          aria-label="Close panel"
+          className="text-xs font-medium text-arc-500 hover:text-arc-700 transition-colors"
         >
-          ✕
+          Hide ▲
         </button>
       </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2 order-2 lg:order-1">
+          <ProposedCasesSection edit={edit} locked={locked} onSendFromPanel={onSendFromPanel} />
+        </div>
+        <div className="lg:col-span-1 order-1 lg:order-2 flex flex-col gap-5">
+          <section>
+            <h3 className="text-xs font-semibold text-arc-900 uppercase tracking-wide mb-1">
+              AI context attachments
+            </h3>
+            <p className="text-xs text-arc-500 mb-3 leading-relaxed">
+              {locked
+                ? 'Uploads are locked once UAT has started. Existing files remain visible to the AI.'
+                : 'Upload screenshots or supporting media that the AI bot should consider when generating the AI UAT report. Up to 5 files, 1MB each, image or PDF only.'}
+            </p>
+            <AttachmentUploader
+              attachments={attachments}
+              onUpload={handleUpload}
+              onRemove={handleRemove}
+              readonly={locked}
+            />
+          </section>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-5">
-        <section>
-          <h3 className="text-xs font-semibold text-arc-900 uppercase tracking-wide mb-1">
-            AI context attachments
-          </h3>
-          <p className="text-xs text-arc-500 mb-3 leading-relaxed">
-            {locked
-              ? 'Uploads are locked once UAT has started. Existing files remain visible to the AI.'
-              : 'Upload screenshots or supporting media that the AI bot should consider when generating the AI UAT report. Up to 5 files, 1MB each, image or PDF only.'}
-          </p>
-          <AttachmentUploader
-            attachments={attachments}
-            onUpload={handleUpload}
-            onRemove={handleRemove}
-            readonly={locked}
-          />
-        </section>
-
-        <ProposedCasesSection edit={edit} locked={locked} onSendFromDrawer={onSendFromDrawer} />
-
-        <section>
-          <h3 className="text-xs font-semibold text-arc-900 uppercase tracking-wide mb-2">
-            AI task list
-          </h3>
-          <div className="rounded-lg border border-arc-200 bg-white px-3 py-3">
-            <AiTaskList mode={mode} startedAt={edit.updated_at} />
-            {mode === 'queued' && (
-              <p className="mt-3 pt-2.5 border-t border-arc-200 text-[11px] text-arc-500">
-                Waiting to start — send to AI UAT to begin.
-              </p>
-            )}
-            {mode === 'running' && (
-              <p className="mt-3 pt-2.5 border-t border-arc-200 text-[11px] text-arc-500">
-                <ElapsedTimer updatedAt={edit.updated_at} />
-              </p>
-            )}
-            {mode === 'done' && (
-              <p className="mt-3 pt-2.5 border-t border-arc-200 text-[11px] text-emerald-600">
-                Run complete — review in QA.
-              </p>
-            )}
-          </div>
-        </section>
+          <section>
+            <h3 className="text-xs font-semibold text-arc-900 uppercase tracking-wide mb-2">
+              AI task list
+            </h3>
+            <div className="rounded-lg border border-arc-200 bg-white px-3 py-3">
+              <AiTaskList mode={mode} startedAt={edit.updated_at} />
+              {mode === 'queued' && (
+                <p className="mt-3 pt-2.5 border-t border-arc-200 text-[11px] text-arc-500">
+                  Waiting to start — send to AI UAT to begin.
+                </p>
+              )}
+              {mode === 'running' && (
+                <p className="mt-3 pt-2.5 border-t border-arc-200 text-[11px] text-arc-500">
+                  <ElapsedTimer updatedAt={edit.updated_at} />
+                </p>
+              )}
+              {mode === 'done' && (
+                <p className="mt-3 pt-2.5 border-t border-arc-200 text-[11px] text-emerald-600">
+                  Run complete — review in QA.
+                </p>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
-    </aside>
+    </div>
   );
 }
 
@@ -872,56 +870,69 @@ export function UatWorkspacePage() {
                     {queued.map((edit) => {
                       const isTriggering = triggering.has(edit.id);
                       const isOpen = openEditId === edit.id;
+                      const colCount = canAct ? 5 : 4;
                       return (
-                        <tr
-                          key={edit.id}
-                          onClick={() => setOpenEditId(edit.id)}
-                          className={`border-b border-arc-200 last:border-0 cursor-pointer transition-colors duration-150 ${
-                            isOpen ? 'bg-arc-200' : 'hover:bg-arc-200'
-                          }`}
-                        >
-                          {canAct && (
-                            <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                              <input
-                                type="checkbox"
-                                checked={selected.has(edit.id)}
-                                onChange={() => toggleSelect(edit.id)}
-                                disabled={isTriggering || triggering.size > 0}
-                                className="rounded border-arc-300"
-                              />
+                        <Fragment key={edit.id}>
+                          <tr
+                            onClick={() => setOpenEditId(isOpen ? null : edit.id)}
+                            className={`border-b border-arc-200 cursor-pointer transition-colors duration-150 ${
+                              isOpen ? 'bg-arc-200' : 'hover:bg-arc-200'
+                            }`}
+                          >
+                            {canAct && (
+                              <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={selected.has(edit.id)}
+                                  onChange={() => toggleSelect(edit.id)}
+                                  disabled={isTriggering || triggering.size > 0}
+                                  className="rounded border-arc-300"
+                                />
+                              </td>
+                            )}
+                            <td className="px-4 py-3">
+                              <p className="font-medium text-arc-900">{edit.title}</p>
+                              <p className="text-xs font-mono text-arc-500 mt-0.5">{edit.edit_id_display}</p>
                             </td>
-                          )}
-                          <td className="px-4 py-3">
-                            <p className="font-medium text-arc-900">{edit.title}</p>
-                            <p className="text-xs font-mono text-arc-500 mt-0.5">{edit.edit_id_display}</p>
-                          </td>
-                          <td className="px-4 py-3 font-mono text-xs text-arc-500">{edit.target_module_id}</td>
-                          <td className="px-4 py-3 text-xs text-arc-500">
-                            {new Date(edit.updated_at).toLocaleDateString('en-GB', {
-                              day: 'numeric', month: 'short',
-                            })}
-                          </td>
-                          {canAct && (
-                            <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                              {isTriggering ? (
-                                <span className="flex items-center gap-1.5 text-xs text-arc-500">
-                                  <span className="w-3 h-3 border border-arc-500 border-t-transparent rounded-full animate-spin" />
-                                  Triggering…
-                                </span>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  disabled={triggering.size > 0 || !edit.cases_reviewed}
-                                  onClick={() => handleTrigger([edit.id])}
-                                  title={!edit.cases_reviewed ? 'Review proposed test cases first' : undefined}
-                                >
-                                  Send to AI UAT
-                                </Button>
-                              )}
+                            <td className="px-4 py-3 font-mono text-xs text-arc-500">{edit.target_module_id}</td>
+                            <td className="px-4 py-3 text-xs text-arc-500">
+                              {new Date(edit.updated_at).toLocaleDateString('en-GB', {
+                                day: 'numeric', month: 'short',
+                              })}
                             </td>
+                            {canAct && (
+                              <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                                {isTriggering ? (
+                                  <span className="flex items-center gap-1.5 text-xs text-arc-500">
+                                    <span className="w-3 h-3 border border-arc-500 border-t-transparent rounded-full animate-spin" />
+                                    Triggering…
+                                  </span>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    disabled={triggering.size > 0 || !edit.cases_reviewed}
+                                    onClick={() => handleTrigger([edit.id])}
+                                    title={!edit.cases_reviewed ? 'Review proposed test cases first' : undefined}
+                                  >
+                                    Send to AI UAT
+                                  </Button>
+                                )}
+                              </td>
+                            )}
+                          </tr>
+                          {isOpen && (
+                            <tr className="border-b border-arc-200 last:border-0">
+                              <td colSpan={colCount} className="p-0">
+                                <UatContextPanel
+                                  edit={edit}
+                                  onClose={() => setOpenEditId(null)}
+                                  onSendFromPanel={() => handleTrigger([edit.id])}
+                                />
+                              </td>
+                            </tr>
                           )}
-                        </tr>
+                        </Fragment>
                       );
                     })}
                   </tbody>
@@ -957,16 +968,15 @@ export function UatWorkspacePage() {
                 {running.map((edit) => {
                   const isOpen = openEditId === edit.id;
                   const orphan = isOrphaned(edit.id);
-                  const rowClass = `w-full text-left px-5 py-4 border-b border-arc-200 last:border-0 flex items-center gap-4 transition-colors duration-150 ${
+                  const rowClass = `w-full text-left px-5 py-4 flex items-center gap-4 transition-colors duration-150 ${
                     isOpen ? 'bg-arc-200' : 'hover:bg-arc-200'
                   }`;
 
-                  if (orphan) {
+                  const row = orphan ? (() => {
                     const run = latestRun(edit.id);
                     return (
                       <div
-                        key={edit.id}
-                        onClick={() => setOpenEditId(edit.id)}
+                        onClick={() => setOpenEditId(isOpen ? null : edit.id)}
                         className={`${rowClass} cursor-pointer`}
                       >
                         <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" strokeWidth={2} />
@@ -996,12 +1006,9 @@ export function UatWorkspacePage() {
                         )}
                       </div>
                     );
-                  }
-
-                  return (
+                  })() : (
                     <button
-                      key={edit.id}
-                      onClick={() => setOpenEditId(edit.id)}
+                      onClick={() => setOpenEditId(isOpen ? null : edit.id)}
                       className={rowClass}
                     >
                       <div className="w-5 h-5 border-2 border-arc-500 border-t-transparent rounded-full animate-spin shrink-0" />
@@ -1016,6 +1023,19 @@ export function UatWorkspacePage() {
                       </span>
                       <StageBadge stage={edit.current_stage} />
                     </button>
+                  );
+
+                  return (
+                    <div key={edit.id} className="border-b border-arc-200 last:border-0">
+                      {row}
+                      {isOpen && (
+                        <UatContextPanel
+                          edit={edit}
+                          onClose={() => setOpenEditId(null)}
+                          onSendFromPanel={() => handleTrigger([edit.id])}
+                        />
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -1046,14 +1066,6 @@ export function UatWorkspacePage() {
             </Link>
           )}
         </div>
-      )}
-
-      {openEdit && (
-        <UatContextDrawer
-          edit={openEdit}
-          onClose={() => setOpenEditId(null)}
-          onSendFromDrawer={() => handleTrigger([openEdit.id])}
-        />
       )}
 
       {confirmUnstickId && (
