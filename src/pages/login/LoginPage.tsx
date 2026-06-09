@@ -58,9 +58,10 @@ export function LoginPage() {
   }, []);
 
   // Arrow keys step through the sections one keyframe at a time — a deterministic
-  // "mandatory" snap on top of the free-scroll proximity feel. We track the active
-  // index ourselves so rapid presses chain forward instead of fighting the in-flight
-  // smooth scroll, and re-sync to the nearest section after any manual scroll.
+  // "mandatory" snap on top of the free-scroll proximity feel. Down/Right go
+  // forward, Up/Left go back. We track the active index ourselves so rapid presses
+  // chain forward instead of fighting the in-flight smooth scroll, and re-sync to
+  // the nearest section after any manual scroll.
   useEffect(() => {
     const getList = () => sectionRefs.current.filter(Boolean) as HTMLElement[];
     const nearest = (list: HTMLElement[]) => {
@@ -92,7 +93,12 @@ export function LoginPage() {
       // Don't hijack arrows while typing in the login fields.
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
-      const dir = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+      const dir =
+        e.key === 'ArrowDown' || e.key === 'ArrowRight'
+          ? 1
+          : e.key === 'ArrowUp' || e.key === 'ArrowLeft'
+            ? -1
+            : 0;
       if (!dir) return;
       const list = getList();
       if (!list.length) return;
