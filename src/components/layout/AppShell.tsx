@@ -5,9 +5,19 @@ import { Footer } from './Footer';
 import { NavHistoryProvider } from './NavHistoryProvider';
 
 export function AppShell() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading, needsPasswordChange } = useAuth();
+
+  // Avoid a login-flash while the Supabase session resolves on first paint.
+  if (loading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-arc-100 dark:bg-arc-dark-900 text-sm text-arc-500 dark:text-arc-dark-500">
+        Loading…
+      </div>
+    );
+  }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (needsPasswordChange) return <Navigate to="/change-password" replace />;
 
   return (
     <NavHistoryProvider>

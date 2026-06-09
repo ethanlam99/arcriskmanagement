@@ -8,6 +8,12 @@ import { UserAvatar } from '@/components/shared/UserAvatar';
 import { Logo } from '@/components/shared/Logo';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
+import type { UserRole } from '@/types';
+
+// Roles an admin can preview the platform as (demo affordance).
+const VIEW_AS_ROLES: UserRole[] = [
+  'risk_analyst', 'risk_lead', 'tester', 'testing_lead', 'it_team', 'admin',
+];
 
 interface NavItem {
   to: string;
@@ -126,7 +132,7 @@ function WorkspaceNav() {
 
 export function Sidebar() {
   const { t } = useTranslation();
-  const { currentUser, signOut } = useAuth();
+  const { currentUser, signOut, canViewAs, viewAsRole, setViewAsRole } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [showResetModal, setShowResetModal] = useState(false);
@@ -191,6 +197,25 @@ export function Sidebar() {
               </svg>
               {t('nav.reset_demo')}
             </button>
+          )}
+
+          {canViewAs && (
+            <div className="px-1">
+              <label htmlFor="view-as" className="block text-[10px] uppercase tracking-wider text-arc-200 dark:text-arc-dark-300 font-medium mb-1">
+                {t('view_as.label')}
+              </label>
+              <select
+                id="view-as"
+                value={viewAsRole ?? ''}
+                onChange={(e) => setViewAsRole(e.target.value ? (e.target.value as UserRole) : null)}
+                className="w-full rounded-lg bg-arc-800 dark:bg-arc-dark-200 text-white text-xs px-2 py-1.5 border border-arc-700 dark:border-arc-dark-300 focus:outline-none focus:ring-1 focus:ring-forest-dark-600"
+              >
+                <option value="">{t('view_as.as_self')}</option>
+                {VIEW_AS_ROLES.map((r) => (
+                  <option key={r} value={r}>{t(`role.${r}`)}</option>
+                ))}
+              </select>
+            </div>
           )}
 
           {currentUser && (

@@ -469,11 +469,44 @@
   "login": {
     "title":              "ARC",
     "tagline":            "AI 风险管控",
-    "phase_1_credit":     "由 Ethan 构建 · 为 Webank · 第一阶段 POC",
-    "subtitle":           "选择一个角色以继续",
-    "subtitle_help":      "第一阶段 — 无需密码。每个角色具有不同的职责和权限集。",
-    "loading":            "加载中…",
-    "footer_note":        "第一阶段 POC — 所有数据均在本地。不连接任何外部系统。"
+    "heading":            "登录",
+    "subtitle":           "请输入凭据以访问平台。",
+    "email_label":        "邮箱",
+    "email_placeholder":  "you@webank.id",
+    "password_label":     "密码",
+    "password_placeholder": "••••••••",
+    "sign_in":            "登录",
+    "signing_in":         "登录中…",
+    "error_generic":      "邮箱或密码错误。",
+    "hero_eyebrow":       "全新 ARC 流水线",
+    "hero_headline":      "风险变更，毫无阻力。",
+    "hero_subline":       "AI 辅助编写、自动化 UAT，以及向 IT 的清晰交接 — 一套受控流程，将数周缩短为数天。",
+    "footer_note":        "仅限授权访问。所有操作均归属于您的账户。"
+  },
+  "change_password": {
+    "heading":               "设置密码",
+    "subtitle":              "继续之前，请设置新密码以保护您的账户。",
+    "new_password_label":    "新密码",
+    "confirm_password_label": "确认密码",
+    "submit":                "设置密码",
+    "submitting":            "保存中…",
+    "error_too_short":       "密码至少需要 {{min}} 个字符。",
+    "error_mismatch":        "两次输入的密码不一致。"
+  },
+  "view_as": {
+    "label":    "查看身份",
+    "as_self":  "本人（管理员）"
+  },
+  "landing": {
+    "scroll_hint": "向下滚动浏览",
+    "p1_title":    "描述变更，ARC 自动生成 SQL。",
+    "p1_body":     "用自然语言表达意图，即可生成可供审阅的风险逻辑 — 无需从零开始，无需样板代码。",
+    "p2_title":    "每一次变更，自动验证。",
+    "p2_body":     "内置 UAT 与 QA，确保没有任何变更未经测试、审阅或留痕便上线。",
+    "p3_title":    "从 2.3 周缩短到数天。",
+    "p3_body":     "一条受控流水线，从初稿到上线 — 整个周期，大幅压缩。",
+    "cta_headline": "风险变更全面提速的新时代已经到来。",
+    "cta_cue":     "让我们开始吧。"
   },
   "confirm": {
     "default_confirm": "确认",

@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { LoginPage } from '@/pages/login/LoginPage';
+import { ChangePasswordPage } from '@/pages/change-password/ChangePasswordPage';
 import { OverviewPage } from '@/pages/overview/OverviewPage';
 import { EngineModuleDetailPage } from '@/pages/engine-modules/EngineModuleDetailPage';
 import { RiskEditsPage } from '@/pages/risk-edits/RiskEditsPage';
@@ -15,6 +16,10 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/change-password',
+    element: <ChangePasswordPage />,
   },
   {
     path: '/',

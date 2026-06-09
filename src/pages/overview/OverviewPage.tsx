@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { CreateRiskEditModal } from '@/pages/risk-edits/CreateRiskEditModal';
 import { OverviewChat } from '@/pages/overview/OverviewChat';
 import type { EngineModule, Packet, RiskEdit, RiskEditStage } from '@/types';
+import { workspaceUrlForEdit as workspaceUrl } from '@/lib/workspaceUrl';
 
 const REFETCH_MS = 3_600_000;
 
@@ -40,27 +41,18 @@ function formatTimeSince(dateStr: string): string {
   return `${Math.floor(h / 24)}d`;
 }
 
-function workspaceUrl(edit: RiskEdit): string {
-  if (edit.current_stage === 'uat_in_progress') return '/workspace/uat';
-  if (edit.current_stage === 'qa_review')       return `/workspace/qa?edit=${edit.id}`;
-  if (['draft', 'ready_for_uat'].includes(edit.current_stage)) {
-    return `/workspace/draft-queue?edit=${edit.id}`;
-  }
-  return '/workspace/draft-queue';
-}
-
 type StageKey = Extract<
   RiskEditStage,
   'draft' | 'ready_for_uat' | 'uat_in_progress' | 'qa_review' | 'approved' | 'sent_to_it' | 'live'
 >;
 
 const STAGE_CARDS: { key: StageKey; labelKey: string; color: string }[] = [
-  { key: 'draft',           labelKey: 'overview.stage_card_draft',      color: 'text-arc-500 dark:text-arc-dark-500'    },
-  { key: 'ready_for_uat',   labelKey: 'overview.stage_card_uat_queue',  color: 'text-amber-600'  },
-  { key: 'uat_in_progress', labelKey: 'overview.stage_card_in_uat',     color: 'text-amber-600'  },
-  { key: 'qa_review',       labelKey: 'overview.stage_card_qa_review',  color: 'text-amber-600'  },
-  { key: 'approved',        labelKey: 'overview.stage_card_approved',   color: 'text-emerald-600' },
-  { key: 'sent_to_it',      labelKey: 'overview.stage_card_sent_to_it', color: 'text-emerald-600' },
+  { key: 'draft',           labelKey: 'overview.stage_card_draft',      color: 'text-arc-500 dark:text-arc-dark-500'        },
+  { key: 'ready_for_uat',   labelKey: 'overview.stage_card_uat_queue',  color: 'text-amber-600 dark:text-amber-400'        },
+  { key: 'uat_in_progress', labelKey: 'overview.stage_card_in_uat',     color: 'text-amber-600 dark:text-amber-400'        },
+  { key: 'qa_review',       labelKey: 'overview.stage_card_qa_review',  color: 'text-amber-600 dark:text-amber-400'        },
+  { key: 'approved',        labelKey: 'overview.stage_card_approved',   color: 'text-emerald-600 dark:text-emerald-400'    },
+  { key: 'sent_to_it',      labelKey: 'overview.stage_card_sent_to_it', color: 'text-emerald-600 dark:text-emerald-400'    },
   { key: 'live',            labelKey: 'overview.stage_card_live',       color: 'text-forest-600 dark:text-forest-dark-700' },
 ];
 

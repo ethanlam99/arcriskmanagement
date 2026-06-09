@@ -469,11 +469,44 @@
   "login": {
     "title":              "ARC",
     "tagline":            "Kontrol Risiko AI",
-    "phase_1_credit":     "dibangun oleh Ethan · untuk Webank · POC Fase 1",
-    "subtitle":           "Pilih persona untuk melanjutkan",
-    "subtitle_help":      "Fase 1 — tidak perlu kata sandi. Setiap persona memiliki peran dan izin yang berbeda.",
-    "loading":            "Memuat…",
-    "footer_note":        "POC Fase 1 — seluruh data bersifat lokal. Tidak ada sistem eksternal yang dihubungi."
+    "heading":            "Masuk",
+    "subtitle":           "Masukkan kredensial Anda untuk mengakses platform.",
+    "email_label":        "Email",
+    "email_placeholder":  "you@webank.id",
+    "password_label":     "Kata sandi",
+    "password_placeholder": "••••••••",
+    "sign_in":            "Masuk",
+    "signing_in":         "Memproses…",
+    "error_generic":      "Email atau kata sandi salah.",
+    "hero_eyebrow":       "Pipeline ARC yang baru",
+    "hero_headline":      "Edit risiko, tanpa hambatan.",
+    "hero_subline":       "Penulisan berbantuan AI, UAT otomatis, dan serah terima yang rapi ke IT — satu alur terkontrol yang mengubah pekan menjadi hari.",
+    "footer_note":        "Hanya untuk akses resmi. Seluruh aktivitas tercatat atas nama akun Anda."
+  },
+  "change_password": {
+    "heading":               "Atur kata sandi",
+    "subtitle":              "Pilih kata sandi baru untuk mengamankan akun Anda sebelum melanjutkan.",
+    "new_password_label":    "Kata sandi baru",
+    "confirm_password_label": "Konfirmasi kata sandi",
+    "submit":                "Atur kata sandi",
+    "submitting":            "Menyimpan…",
+    "error_too_short":       "Kata sandi minimal {{min}} karakter.",
+    "error_mismatch":        "Kata sandi tidak cocok."
+  },
+  "view_as": {
+    "label":    "Lihat sebagai",
+    "as_self":  "Anda (Admin)"
+  },
+  "landing": {
+    "scroll_hint": "Gulir untuk menjelajah",
+    "p1_title":    "Jelaskan perubahannya. ARC menulis SQL-nya.",
+    "p1_body":     "Maksud dalam bahasa sehari-hari menjadi logika risiko yang siap ditinjau — tanpa halaman kosong, tanpa boilerplate.",
+    "p2_title":    "Setiap perubahan, terbukti otomatis.",
+    "p2_body":     "UAT dan QA bawaan memastikan tidak ada yang rilis tanpa diuji, ditinjau, atau terlacak.",
+    "p3_title":    "Dari 2,3 minggu menjadi hari.",
+    "p3_body":     "Satu pipeline terkontrol, dari draf pertama hingga live — seluruh siklus, dipadatkan.",
+    "cta_headline": "Era baru untuk mendongkrak edit risiko telah tiba.",
+    "cta_cue":     "Mari mulai."
   },
   "confirm": {
     "default_confirm": "Konfirmasi",

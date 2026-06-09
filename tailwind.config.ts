@@ -34,10 +34,13 @@ const config: Config = {
         // primary hovers. Deliberately fewer tones than the light palette;
         // expand if specific surfaces need more granularity.
         'arc-dark': {
-          50:  '#1E2820',
+          50:  '#222D25',
           100: '#1A231C',
-          200: '#243029',
-          300: '#3D4E43',
+          // 200 is the primary border/divider + hover-fill token. Brightened
+          // (was #243029) so card outlines actually read against the 100 surface
+          // — same-surface-with-visible-border (GitHub-dark style).
+          200: '#34433A',
+          300: '#46594D',
           500: '#7A8C81',
           700: '#C5CFC8',
           900: '#0E1310',

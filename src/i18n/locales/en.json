@@ -469,11 +469,44 @@
   "login": {
     "title":              "ARC",
     "tagline":            "AI Risk Control",
-    "phase_1_credit":     "built by Ethan · for Webank · Phase 1 POC",
-    "subtitle":           "Select a persona to continue",
-    "subtitle_help":      "Phase 1 — no password required. Each persona has a different role and permission set.",
-    "loading":            "Loading…",
-    "footer_note":        "Phase 1 POC — all data is local. No external systems are contacted."
+    "heading":            "Sign in",
+    "subtitle":           "Enter your credentials to access the platform.",
+    "email_label":        "Email",
+    "email_placeholder":  "you@webank.id",
+    "password_label":     "Password",
+    "password_placeholder": "••••••••",
+    "sign_in":            "Sign in",
+    "signing_in":         "Signing in…",
+    "error_generic":      "Incorrect email or password.",
+    "hero_eyebrow":       "The new ARC pipeline",
+    "hero_headline":      "Risk edits, without the friction.",
+    "hero_subline":       "AI-assisted authoring, automated UAT, and a clean handoff to IT — one governed flow that turns weeks into days.",
+    "footer_note":        "Authorized access only. All activity is attributed to your account."
+  },
+  "change_password": {
+    "heading":               "Set your password",
+    "subtitle":              "Choose a new password to secure your account before continuing.",
+    "new_password_label":    "New password",
+    "confirm_password_label": "Confirm password",
+    "submit":                "Set password",
+    "submitting":            "Saving…",
+    "error_too_short":       "Password must be at least {{min}} characters.",
+    "error_mismatch":        "Passwords do not match."
+  },
+  "view_as": {
+    "label":    "View as",
+    "as_self":  "Yourself (Admin)"
+  },
+  "landing": {
+    "scroll_hint": "Scroll to explore",
+    "p1_title":    "Describe the change. ARC writes the SQL.",
+    "p1_body":     "Plain-language intent becomes review-ready risk logic — no blank page, no boilerplate.",
+    "p2_title":    "Every change, automatically proven.",
+    "p2_body":     "Built-in UAT and QA mean nothing ships untested, unreviewed, or untraceable.",
+    "p3_title":    "From 2.3 weeks to days.",
+    "p3_body":     "One governed pipeline, first draft to live — the whole cycle, compressed.",
+    "cta_headline": "The new age of supercharging risk edits is here.",
+    "cta_cue":     "Let's begin."
   },
   "confirm": {
     "default_confirm": "Confirm",

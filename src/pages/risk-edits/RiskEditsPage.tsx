@@ -15,6 +15,7 @@ import { StageBadge } from '@/components/shared/StageBadge';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import { CreateRiskEditModal } from './CreateRiskEditModal';
 import type { AuditLogEntry, RiskEdit, RiskEditStage, User } from '@/types';
+import { workspaceUrlForEdit as workspaceUrl } from '@/lib/workspaceUrl';
 
 const ACTIVE_STAGES: RiskEditStage[] = [
   'draft', 'ready_for_uat', 'uat_in_progress', 'qa_review', 'approved', 'sent_to_it',
@@ -29,15 +30,6 @@ const PIPELINE: RiskEditStage[] = [
 const STAGE_FILTER_KEYS: RiskEditStage[] = [
   'draft', 'ready_for_uat', 'uat_in_progress', 'qa_review', 'approved', 'sent_to_it', 'live', 'rejected',
 ];
-
-function workspaceUrl(edit: RiskEdit): string {
-  if (edit.current_stage === 'uat_in_progress') return '/workspace/uat';
-  if (edit.current_stage === 'qa_review')       return `/workspace/qa?edit=${edit.id}`;
-  if (['draft', 'ready_for_uat'].includes(edit.current_stage)) {
-    return `/workspace/draft-queue?edit=${edit.id}`;
-  }
-  return '/workspace/draft-queue';
-}
 
 function fmtDateTime(dateStr: string) {
   return new Date(dateStr).toLocaleString('en-GB', {
