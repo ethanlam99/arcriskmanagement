@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { LoginPage } from '@/pages/login/LoginPage';
 import { ChangePasswordPage } from '@/pages/change-password/ChangePasswordPage';
+import { SsoCallbackPage } from '@/pages/sso/SsoCallbackPage';
 import { OverviewPage } from '@/pages/overview/OverviewPage';
 import { EngineModuleDetailPage } from '@/pages/engine-modules/EngineModuleDetailPage';
 import { RiskEditsPage } from '@/pages/risk-edits/RiskEditsPage';
@@ -20,6 +21,11 @@ export const router = createBrowserRouter([
   {
     path: '/change-password',
     element: <ChangePasswordPage />,
+  },
+  {
+    // LEO SSO hand-off landing — standalone (outside the AppShell auth guard).
+    path: '/sso/callback',
+    element: <SsoCallbackPage />,
   },
   {
     path: '/',
