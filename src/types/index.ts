@@ -14,7 +14,13 @@ export type VersionSource = 'ai_proposal' | 'human_edit';
 export type UatRunStatus = 'pending' | 'running' | 'completed' | 'failed';
 export type UatVerdict = 'approved' | 'rejected' | 'changes_requested';
 export type TestCaseStatus = 'passed' | 'failed' | 'inconclusive';
+// v0.4.3 Line 4 — outcome a tester records when executing a case by hand in the
+// manual UAT lane. 'pending' = not yet executed; 'blocked' = could not run.
+export type ManualCaseStatus = 'pending' | 'passed' | 'failed' | 'blocked';
 export type PacketStatus = 'proposed' | 'confirmed' | 'rejected' | 'live';
+// v0.4.3 Line 5 — IT-owned deployment lifecycle a packet moves through while it is
+// with IT (packet.status stays 'confirmed' until deploy flips it to 'live').
+export type ITDeployStatus = 'received' | 'in_development' | 'deployed_to_live';
 
 // ── Core entities ────────────────────────────────────────────────────────────
 
@@ -30,6 +36,9 @@ export interface EngineModule {
   id: string;
   module_name: string;
   description: string;
+  // Dual representation (v0.4.3): analysts read/author in Node.js; current_sql_code
+  // is the compiled target that runs in the live engine. Both are kept in sync.
+  current_node_code: string;
   current_sql_code: string;
   updated_at: string;
   updated_by: string;
@@ -53,6 +62,10 @@ export interface RiskEditVersion {
   id: string;
   risk_edit_id: string;
   version_number: number;
+  // Node.js is the authored representation (v0.4.3); sql_* is the compiled engine
+  // target. node_* are optional until an edit is authored through the chatbox flow.
+  node_before?: string;
+  node_after?: string;
   sql_before: string;
   sql_after: string;
   diff_summary: string;
@@ -99,6 +112,26 @@ export interface ProposedTestCase {
   included_in_run: boolean;
   proposed_by: string;          // 'system' for AI-generated, userId for human-added
   created_at: string;
+  // v0.4.3 Line 4 — manual UAT execution record. The curated case list IS the plan
+  // the tester executes by hand; the result is captured back onto the case. All
+  // optional so existing seed cases need no migration.
+  manual_status?: ManualCaseStatus;
+  manual_actual?: string;       // observed outcome the tester recorded (free text)
+  manual_note?: string;         // tester commentary on this case
+  executed_by?: string;         // userId of the tester who ran it
+  executed_at?: string;
+}
+
+// v0.4.3 Line 4 — an AI-surfaced coverage gap ("a case you might miss"). Advisory
+// only; the tester turns one into a real case with a single click. Not persisted as
+// an entity — produced on demand by testCaseProposer.proposeCoverageCritique.
+export interface CoverageGap {
+  id: string;
+  area: string;                 // short label for the kind of gap (e.g. "Boundary")
+  gap: string;                  // the missing scenario, in plain language
+  suggested_description: string;
+  suggested_input: Record<string, unknown>;
+  suggested_expected: Record<string, unknown>;
 }
 
 export interface UatRun {
@@ -150,6 +183,15 @@ export interface Packet {
   rejection_notes?: string;
   lived_by?: string;
   lived_at?: string;
+  // v0.4.3 Line 5 — IT deployment lifecycle (bidirectional handoff). Tracked while
+  // the packet is with IT; surfaced back on the changelog + originating edits.
+  // lived_by / lived_at double as the deployed_to_live actor + timestamp.
+  it_status?: ITDeployStatus;
+  received_by?: string;
+  received_at?: string;
+  dev_started_by?: string;
+  dev_started_at?: string;
+  release_ref?: string;         // IT's release/deployment reference, e.g. "REL-2026-06-15.1"
 }
 
 export interface PacketEdit {
@@ -199,7 +241,8 @@ export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  proposed_sql?: string;
+  proposed_node?: string;   // v0.4.3: Node.js snippet shown to the analyst
+  proposed_sql?: string;    // compiled engine target
   diff_summary?: string;
   rationale?: string;
   created_at: string;
@@ -210,7 +253,8 @@ export interface ChatMessageEntity {
   risk_edit_id: string;
   role: 'user' | 'assistant';
   content: string;
-  proposed_sql?: string;
+  proposed_node?: string;   // v0.4.3: Node.js snippet shown to the analyst
+  proposed_sql?: string;    // compiled engine target
   diff_summary?: string;
   rationale?: string;
   author_id: string | null;
@@ -261,6 +305,7 @@ export interface DatabaseSchema {
 
 export interface LlmEditRequest {
   conversation: ChatMessage[];
+  moduleNode?: string;   // v0.4.3: Node.js source the analyst is editing
   moduleSql: string;
   moduleContext: string;
   dbContext?: DatabaseSchema;
@@ -268,7 +313,8 @@ export interface LlmEditRequest {
 
 export interface LlmEditResponse {
   reply: string;
-  proposed_sql?: string;
+  proposed_node?: string;   // v0.4.3: Node.js snippet shown to the analyst
+  proposed_sql?: string;    // compiled engine target
   diff_summary?: string;
   rationale?: string;
   location_hint?: string;

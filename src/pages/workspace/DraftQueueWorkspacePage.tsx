@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { Inbox } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/auth/AuthProvider';
-import { useRiskEdits, useUpdateRiskEditStage } from '@/hooks/useRiskEdits';
+import { useRiskEdits, useUpdateRiskEditStage, useRiskEditVersions } from '@/hooks/useRiskEdits';
+import { useEngineModule } from '@/hooks/useEngineModules';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ensureProposedCasesForReadyForUat } from '@/integrations/testCaseProposer';
@@ -11,7 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { StageBadge } from '@/components/shared/StageBadge';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import { Stepper } from '@/components/ui/Stepper';
-import { ConfirmModal } from '@/components/shared/ConfirmModal';
+import { EditPacket, type EditPacketData } from '@/components/shared/EditPacket';
 import { DraftQueueTab } from './tabs/DraftQueueTab';
 import type { RiskEdit } from '@/types';
 
@@ -109,6 +110,25 @@ export function DraftQueueWorkspacePage() {
   function goToNext() {
     if (selectedIdx < combined.length - 1) selectEdit(combined[selectedIdx + 1]);
   }
+
+  // Assemble the standardised packet shown at the Confirm step — the same artifact
+  // the UAT stage reviews. Built from the latest saved version + the edit.
+  const { data: selectedVersions = [] } = useRiskEditVersions(selectedId);
+  const { data: selectedModule } = useEngineModule(selectedEdit?.target_module_id ?? '');
+  const latestSelVersion = selectedVersions[0];
+  const packetData: EditPacketData | null = selectedEdit
+    ? {
+        editIdDisplay: selectedEdit.edit_id_display,
+        title:         selectedEdit.title,
+        brief:         selectedEdit.natural_language_brief,
+        moduleName:    selectedModule?.module_name ?? selectedEdit.target_module_id,
+        nodeSource:    latestSelVersion?.node_after ?? selectedModule?.current_node_code ?? '',
+        compiledSql:   latestSelVersion?.sql_after ?? selectedModule?.current_sql_code ?? '',
+        diffSummary:   latestSelVersion?.diff_summary,
+        rationale:     latestSelVersion?.ai_rationale || undefined,
+        authorName:    userMap[selectedEdit.created_by]?.name,
+      }
+    : null;
 
   const canSendForUat =
     selectedEdit?.current_stage === 'draft' &&
@@ -241,15 +261,35 @@ export function DraftQueueWorkspacePage() {
         )}
       </div>
 
-      {showConfirm && selectedEdit && (
-        <ConfirmModal
-          title={t('workspace.draft.send_for_uat_modal_title')}
-          description={t('workspace.draft.send_for_uat_modal_desc', { title: selectedEdit.title })}
-          confirmLabel={t('workspace.draft.send_for_uat_confirm')}
-          loading={stageTransition.isPending}
-          onConfirm={handleSendForUat}
-          onCancel={() => setShowConfirm(false)}
-        />
+      {showConfirm && selectedEdit && packetData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-arc-900/40 dark:bg-arc-dark-900/60 backdrop-blur-sm"
+            onClick={() => setShowConfirm(false)}
+          />
+          <div className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl bg-arc-50 dark:bg-arc-dark-50 border border-arc-200 dark:border-arc-dark-200 shadow-xl p-5">
+            <h2 className="text-base font-semibold text-arc-900 dark:text-arc-dark-700">
+              {t('workspace.draft.confirm_packet_title')}
+            </h2>
+            <p className="text-xs text-arc-500 dark:text-arc-dark-500 mt-1 mb-4">
+              {t('workspace.draft.confirm_packet_desc')}
+            </p>
+            <EditPacket data={packetData} />
+            <div className="flex justify-end gap-2 mt-5">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowConfirm(false)}
+                disabled={stageTransition.isPending}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button size="sm" loading={stageTransition.isPending} onClick={handleSendForUat}>
+                {t('workspace.draft.send_for_uat_confirm')}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

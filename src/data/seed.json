@@ -67,6 +67,7 @@
   "engine_modules": [
     {
       "id": "module-001",
+      "current_node_code": "// loan_limit_rules \u2014 maximum loan limit per customer\n// Compiles to risk.usp_CalculateLoanLimit\nfunction calculateLoanLimit({ monthlyIncome, employmentType, tenureMonths, creditScore }) {\n  const CEILING = 500_000_000; // 500M IDR\n  const FLOOR = 1_000_000;     //   1M IDR\n\n  // Hard gate on credit score\n  if (creditScore < 500) return FLOOR;\n\n  // Income bracket multiplier\n  const incomeFactor =\n    monthlyIncome >= 20_000_000 ? 30 :\n    monthlyIncome >= 10_000_000 ? 24 :\n    monthlyIncome >= 5_000_000  ? 18 :\n    monthlyIncome >= 3_000_000  ? 12 : 6;\n\n  let limit = monthlyIncome * incomeFactor;\n\n  // Employment-type adjustment (reference table; defaults to 0.80 if unknown)\n  limit *= employmentMultiplier(employmentType) ?? 0.80;\n\n  // Tenure haircut for new customers\n  if (tenureMonths < 6) limit *= 0.50;\n  else if (tenureMonths < 12) limit *= 0.75;\n\n  // Apply ceiling / floor\n  return Math.min(Math.max(limit, FLOOR), CEILING);\n}",
       "module_name": "loan_limit_rules",
       "description": "Calculates maximum loan limit for a customer based on income bracket, employment type, tenure, and credit score.",
       "updated_at": "2026-04-10T08:22:00Z",
@@ -75,6 +76,7 @@
     },
     {
       "id": "module-002",
+      "current_node_code": "// leverage_ratio_rules \u2014 max debt-to-income leverage by segment\n// Compiles to risk.fn_GetMaxLeverageRatio\nfunction getMaxLeverageRatio({ segment, monthlyIncome, existingDebt }) {\n  const MAX_RATIO = 0.55;\n\n  // Segment base ratios\n  const baseRatio =\n    segment === 'corporate' ? 0.45 :\n    segment === 'sme'       ? 0.35 :\n    segment === 'retail'    ? 0.30 : 0.25;\n\n  let incomeAdj = 0;\n\n  // High-income uplift for retail\n  if (segment === 'retail' && monthlyIncome >= 10_000_000) incomeAdj += 0.05;\n\n  // Penalise heavy existing debt\n  if (existingDebt > monthlyIncome * 12) incomeAdj -= 0.05;\n\n  const result = baseRatio + incomeAdj;\n  return Math.min(Math.max(result, 0.10), MAX_RATIO);\n}",
       "module_name": "leverage_ratio_rules",
       "description": "Determines maximum debt-to-income leverage ratio permitted per customer segment (retail, SME, corporate).",
       "updated_at": "2026-03-28T14:05:00Z",
@@ -83,6 +85,7 @@
     },
     {
       "id": "module-003",
+      "current_node_code": "// repayment_behavior_score \u2014 0..1000 behavioural repayment score\n// Compiles to risk.usp_ComputeRepaymentScore\nfunction computeRepaymentScore({ customerId, lookbackMonths = 24 }) {\n  const history = getPaymentHistory(customerId, lookbackMonths);\n\n  const onTimePct   = avg(history.map(p => (p.daysLate === 0 ? 1 : 0)));\n  const missedCount = history.filter(p => p.daysLate > 30).length;\n  const earlySettle = history.filter(p => p.settledEarly).length;\n\n  // Weighted composite score (weights are placeholders)\n  const rawScore = onTimePct * 600 + earlySettle * 20 - missedCount * 50;\n\n  // Clamp to [0, 1000]\n  return Math.min(Math.max(Math.trunc(rawScore), 0), 1000);\n}",
       "module_name": "repayment_behavior_score",
       "description": "Computes a 0–1000 behavioural repayment score from payment history, missed payments, and early settlement events.",
       "updated_at": "2026-04-02T09:40:00Z",
@@ -91,6 +94,7 @@
     },
     {
       "id": "module-004",
+      "current_node_code": "// kyc_eligibility_rules \u2014 KYC eligibility gates\n// Compiles to risk.fn_IsKycEligible\nfunction isKycEligible({ customerId, productCode }) {\n  const c = getCustomer(customerId);\n  const age = yearsSince(c.dateOfBirth);\n\n  // Hard blocks\n  if (c.isSanctioned) return false;\n  if (c.isPep) return false;\n  if (!c.idVerified) return false;\n  if (age < 18) return false;\n  if (age > 70 && productCode === 'LONG_TERM_LOAN') return false;\n\n  // KYC status gate\n  return ['verified', 'enhanced_verified'].includes(c.kycStatus);\n}",
       "module_name": "kyc_eligibility_rules",
       "description": "Determines whether a customer passes KYC eligibility gates before any credit product can be issued.",
       "updated_at": "2026-04-18T11:00:00Z",
@@ -99,6 +103,7 @@
     },
     {
       "id": "module-005",
+      "current_node_code": "// interest_rate_adjustment \u2014 dynamic interest rate adjustment\n// Compiles to risk.fn_ComputeAdjustedRate\nfunction computeAdjustedRate({ customerId, baseRate, riskTier, productCode }) {\n  const REG_MINIMUM = 0.0600;\n\n  const tierSpread    = riskTierSpread(riskTier) ?? 0.02;\n  const promoDiscount = activePromoDiscount(productCode) ?? 0;\n\n  // Loyalty discount for long-tenure customers\n  const tenureMonths = monthsSince(getCustomer(customerId).onboardDate);\n  let loyaltyDiscount = 0;\n  if (tenureMonths >= 36) loyaltyDiscount = 0.0025;\n  if (tenureMonths >= 60) loyaltyDiscount = 0.0050;\n\n  const finalRate = baseRate + tierSpread - promoDiscount - loyaltyDiscount;\n\n  // Floor at regulatory minimum\n  return Math.max(finalRate, REG_MINIMUM);\n}",
       "module_name": "interest_rate_adjustment",
       "description": "Applies dynamic interest rate adjustments based on risk tier, market benchmarks, and promotional flags.",
       "updated_at": "2026-03-15T16:30:00Z",
@@ -107,6 +112,7 @@
     },
     {
       "id": "module-006",
+      "current_node_code": "// credit_utilization_cap \u2014 enforce max utilization across facilities\n// Compiles to risk.usp_EnforceCreditUtilizationCap\nfunction enforceCreditUtilizationCap({ customerId, newDrawdown }) {\n  const CAP = 0.85; // 85% utilization cap\n\n  const facilities = getActiveFacilities(customerId);\n  const totalLimit = sum(facilities.map(f => f.creditLimit));\n  const totalUsed  = sum(facilities.map(f => f.outstandingBalance));\n\n  if (!totalLimit) {\n    return { isAllowed: false, currentUtilization: null, projectedUtilization: null };\n  }\n\n  const currentUtil  = totalUsed / totalLimit;\n  const postDrawdown = (totalUsed + newDrawdown) / totalLimit;\n\n  return {\n    isAllowed: postDrawdown <= CAP,\n    currentUtilization: currentUtil,\n    projectedUtilization: postDrawdown,\n  };\n}",
       "module_name": "credit_utilization_cap",
       "description": "Enforces maximum credit utilization thresholds across a customer's active credit facilities.",
       "updated_at": "2026-02-20T10:15:00Z",
@@ -559,7 +565,12 @@
       "created_by": "user-007",
       "created_at": "2026-05-07T12:30:00Z",
       "confirmed_by": "user-008",
-      "confirmed_at": "2026-05-08T10:00:00Z"
+      "confirmed_at": "2026-05-08T10:00:00Z",
+      "it_status": "in_development",
+      "received_by": "user-008",
+      "received_at": "2026-05-08T14:00:00Z",
+      "dev_started_by": "user-008",
+      "dev_started_at": "2026-05-09T09:30:00Z"
     },
     {
       "id": "packet-003",
@@ -570,6 +581,12 @@
       "created_at": "2026-04-07T09:00:00Z",
       "confirmed_by": "user-009",
       "confirmed_at": "2026-04-10T11:00:00Z",
+      "it_status": "deployed_to_live",
+      "received_by": "user-008",
+      "received_at": "2026-04-11T09:00:00Z",
+      "dev_started_by": "user-008",
+      "dev_started_at": "2026-04-14T10:00:00Z",
+      "release_ref": "REL-2026-05-01.A",
       "lived_by": "user-008",
       "lived_at": "2026-05-01T11:00:00Z"
     }

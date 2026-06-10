@@ -10,8 +10,6 @@ import { useRepository } from '@/data/RepositoryProvider';
 import { TopBar, Breadcrumb } from '@/components/layout/TopBar';
 import { StageBadge } from '@/components/shared/StageBadge';
 import { UserAvatar } from '@/components/shared/UserAvatar';
-import { Button } from '@/components/ui/Button';
-import { CreateRiskEditModal } from '@/pages/risk-edits/CreateRiskEditModal';
 import { OverviewChat } from '@/pages/overview/OverviewChat';
 import type { EngineModule, Packet, RiskEdit, RiskEditStage } from '@/types';
 import { workspaceUrlForEdit as workspaceUrl } from '@/lib/workspaceUrl';
@@ -219,15 +217,7 @@ function Panel({
   );
 }
 
-function ModuleMiniCard({
-  module,
-  canCreate,
-  onNewEdit,
-}: {
-  module: EngineModule;
-  canCreate: boolean;
-  onNewEdit: () => void;
-}) {
+function ModuleMiniCard({ module }: { module: EngineModule }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const lines = module.current_sql_code.split('\n').length;
@@ -250,18 +240,9 @@ function ModuleMiniCard({
           <p className="text-xs text-arc-500 dark:text-arc-dark-500">
             {t('overview.module_updated', { date: fmtDate(module.updated_at) })}
           </p>
-          {canCreate && (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={(e) => {
-                e.stopPropagation();
-                onNewEdit();
-              }}
-            >
-              {t('overview.module_new_edit')}
-            </Button>
-          )}
+          <span className="text-xs font-medium text-forest-600 dark:text-forest-dark-700 opacity-0 group-hover:opacity-100 transition-opacity">
+            {t('overview.module_view')}
+          </span>
         </div>
       </div>
     </div>
@@ -276,7 +257,6 @@ export function OverviewPage() {
   const qc       = useQueryClient();
 
   const canCreateRiskEdit = role === 'risk_analyst' || role === 'risk_lead' || role === 'admin';
-  const [newEditModuleId, setNewEditModuleId] = useState<string | null>(null);
 
   const editsQuery   = useRiskEdits(undefined, { refetchInterval: REFETCH_MS });
   const modulesQuery = useEngineModules({ refetchInterval: REFETCH_MS });
@@ -572,12 +552,7 @@ export function OverviewPage() {
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {modulesSorted.map((mod) => (
-                <ModuleMiniCard
-                  key={mod.id}
-                  module={mod}
-                  canCreate={canCreateRiskEdit}
-                  onNewEdit={() => setNewEditModuleId(mod.id)}
-                />
+                <ModuleMiniCard key={mod.id} module={mod} />
               ))}
             </div>
           </div>
@@ -585,12 +560,6 @@ export function OverviewPage() {
         </div>
       </div>
 
-      {newEditModuleId && (
-        <CreateRiskEditModal
-          defaultModuleId={newEditModuleId}
-          onClose={() => setNewEditModuleId(null)}
-        />
-      )}
     </div>
   );
 }

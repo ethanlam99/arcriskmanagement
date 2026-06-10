@@ -7,7 +7,7 @@
 //     scenarios based on the diff being proposed.
 //   - Returns 3–10 proposed cases with description/input/expected.
 
-import type { ProposedTestCase, RiskEdit } from '@/types';
+import type { CoverageGap, ProposedTestCase, RiskEdit } from '@/types';
 import type { Repository } from '@/data/repository';
 
 const SIMULATED_DELAY_MS = 800;
@@ -137,6 +137,146 @@ const GENERIC_FALLBACK: FixtureCase[] = [
   { description: 'Boundary case at the new threshold', input: { customer_id: 10002, value: 'at_threshold' }, expected: { result: 'pass' } },
   { description: 'Out-of-bound case — should reject', input: { customer_id: 10003, value: 'above_threshold' }, expected: { result: 'fail' } },
 ];
+
+// ── Coverage critique ("cases you might miss") ────────────────────────────────
+// v0.4.3 Line 4. The standout tester-facing AI outcome in the manual UAT lane:
+// the AI reviews the curated plan and flags scenarios that look unguarded. Each
+// gap carries a ready-made case so the tester can add it with one click.
+//
+// Phase 2 notes: a real agent would diff the proposed change against the module's
+// branch/boundary structure and the already-included cases, then reason about what
+// is provably untested. The fixtures below are hand-authored to complement the
+// 3 proposed cases per module above (they target scenarios those 3 don't cover).
+type FixtureGap = Pick<CoverageGap, 'area' | 'gap' | 'suggested_description' | 'suggested_input' | 'suggested_expected'>;
+
+const CRITIQUE_BY_MODULE: Record<string, FixtureGap[]> = {
+  // module-001 — loan_limit_rules
+  'module-001': [
+    {
+      area: 'Boundary',
+      gap: 'No case sits just below the 20M income bracket — an off-by-one here would silently mis-bracket customers.',
+      suggested_description: 'Income one rupiah under the 20M bracket — must stay in the lower bracket',
+      suggested_input:    { customer_id: 10004, monthly_income: 19999999, employment_type: 'salaried', tenure_months: 24, credit_score: 720 },
+      suggested_expected: { loan_limit_bracket: '10M-20M', applied_multiplier: 25.0 },
+    },
+    {
+      area: 'Segment',
+      gap: 'Self-employed applicants are never exercised; the multiplier path for non-salaried income is unverified.',
+      suggested_description: 'Self-employed customer — non-salaried multiplier path',
+      suggested_input:    { customer_id: 10005, monthly_income: 15000000, employment_type: 'self_employed', tenure_months: 24, credit_score: 700 },
+      suggested_expected: { income_verification: 'required', applied_multiplier: 20.0 },
+    },
+  ],
+  // module-002 — leverage_ratio_rules
+  'module-002': [
+    {
+      area: 'Boundary',
+      gap: 'No case lands exactly on the new tighter leverage ceiling — the inclusive/exclusive edge is untested.',
+      suggested_description: 'SME customer exactly at the new leverage ceiling — boundary inclusive',
+      suggested_input:    { customer_id: 20004, segment: 'sme', total_debt: 600000000, monthly_income: 80000000 },
+      suggested_expected: { within_cap: true, at_ceiling: true },
+    },
+    {
+      area: 'Regression',
+      gap: 'Retail customers below the cap are checked, but none confirm the cap value itself is unchanged for retail.',
+      suggested_description: 'Retail customer at prior cap — confirm retail ceiling did not move',
+      suggested_input:    { customer_id: 20005, segment: 'retail', total_debt: 60000000, monthly_income: 12000000 },
+      suggested_expected: { max_leverage_ratio: 5.0, within_cap: false },
+    },
+  ],
+  // module-003 — repayment_behavior_score
+  'module-003': [
+    {
+      area: 'Boundary',
+      gap: 'The A/B band cutoff (score 80) is never hit exactly — a customer right on the threshold is unverified.',
+      suggested_description: 'Customer scoring exactly 80 — A/B band cutoff',
+      suggested_input:    { customer_id: 30004, on_time_months: 10, missed_months: 2, last_missed_month_ago: 8 },
+      suggested_expected: { behavior_score_band: 'A', score_min: 80 },
+    },
+    {
+      area: 'Edge',
+      gap: 'Multiple recent missed payments (vs a single one) are not exercised — the penalty stacking is unverified.',
+      suggested_description: 'Two missed payments in last quarter — penalty stacking',
+      suggested_input:    { customer_id: 30005, on_time_months: 9, missed_months: 3, last_missed_month_ago: 1 },
+      suggested_expected: { behavior_score_band: 'C', requires_review: true },
+    },
+  ],
+  // module-004 — kyc_eligibility_rules
+  'module-004': [
+    {
+      area: 'Boundary',
+      gap: 'Selfie match exactly at the acceptance threshold is untested — the >= vs > behaviour is unverified.',
+      suggested_description: 'Selfie match exactly at threshold — boundary acceptance',
+      suggested_input:    { customer_id: 40004, ktp_status: 'verified', selfie_match_score: 0.70 },
+      suggested_expected: { kyc_eligible: true, at_threshold: true },
+    },
+    {
+      area: 'Edge',
+      gap: 'An expired (not missing) ID document is a distinct branch that no case covers.',
+      suggested_description: 'Expired KTP — distinct from missing document',
+      suggested_input:    { customer_id: 40005, ktp_status: 'expired', selfie_match_score: 0.91 },
+      suggested_expected: { kyc_eligible: false, route: 'document_renewal' },
+    },
+  ],
+  // module-005 — interest_rate_adjustment
+  'module-005': [
+    {
+      area: 'Boundary',
+      gap: 'No case checks the rate cap — a high-risk customer whose adjusted rate would exceed the regulatory ceiling is unguarded.',
+      suggested_description: 'High-risk customer near the regulatory rate ceiling — must clamp',
+      suggested_input:    { customer_id: 50004, risk_band: 'high', base_rate: 0.23 },
+      suggested_expected: { adjusted_rate_max: 0.24, clamped_to_ceiling: true },
+    },
+    {
+      area: 'Edge',
+      gap: 'A zero or missing base_rate is never exercised — the adjustment maths on a null input is unverified.',
+      suggested_description: 'Missing base rate — adjustment should not divide by zero',
+      suggested_input:    { customer_id: 50005, risk_band: 'mid', base_rate: null },
+      suggested_expected: { error: 'base_rate_required', adjusted_rate: null },
+    },
+  ],
+  // module-006 — credit_utilization_cap
+  'module-006': [
+    {
+      area: 'Boundary',
+      gap: 'Utilization one point over the lowered cap is untested — the just-over edge is where breaches first appear.',
+      suggested_description: 'Utilization one point over the new cap — first breach',
+      suggested_input:    { customer_id: 60004, current_utilization: 0.81, credit_limit: 50000000 },
+      suggested_expected: { within_cap: false, over_by_pct: 0.01 },
+    },
+    {
+      area: 'Edge',
+      gap: 'A customer over their limit (utilization > 1.0) is a distinct overflow branch no case covers.',
+      suggested_description: 'Utilization above 100% — over-limit overflow branch',
+      suggested_input:    { customer_id: 60005, current_utilization: 1.15, credit_limit: 30000000 },
+      suggested_expected: { within_cap: false, over_limit: true },
+    },
+  ],
+};
+
+const GENERIC_CRITIQUE: FixtureGap[] = [
+  {
+    area: 'Boundary',
+    gap: 'No case sits exactly on the changed threshold — the inclusive/exclusive edge is untested.',
+    suggested_description: 'Value exactly at the new threshold — boundary case',
+    suggested_input:    { customer_id: 10005, value: 'at_threshold' },
+    suggested_expected: { result: 'pass', at_threshold: true },
+  },
+  {
+    area: 'Regression',
+    gap: 'No case confirms unrelated customers are unaffected by this change.',
+    suggested_description: 'Out-of-scope customer — confirm no behaviour change',
+    suggested_input:    { customer_id: 10006, scenario: 'unrelated' },
+    suggested_expected: { result: 'pass', unchanged: true },
+  },
+];
+
+export async function proposeCoverageCritique(edit: RiskEdit): Promise<CoverageGap[]> {
+  await delay(SIMULATED_DELAY_MS);
+  const gaps = CRITIQUE_BY_MODULE[edit.target_module_id] ?? GENERIC_CRITIQUE;
+  // Deterministic ids so the same gap maps to the same dismiss-state across renders.
+  return gaps.map((g, idx) => ({ id: `${edit.id}-gap-${idx}`, ...g }));
+}
 
 export async function proposeTestCases(
   edit: RiskEdit,

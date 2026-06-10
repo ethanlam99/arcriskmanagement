@@ -1,19 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useRiskEdits } from '@/hooks/useRiskEdits';
 import { useEngineModules } from '@/hooks/useEngineModules';
 import { useAuditLog } from '@/hooks/useAuditLog';
+import { usePackets, useAllPacketEdits } from '@/hooks/useITHandoffPackets';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/auth/AuthProvider';
+import { effectiveItStatus, IT_STATUS_LABEL_KEY } from '@/lib/itDeploy';
 import { TopBar, Breadcrumb } from '@/components/layout/TopBar';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { StageBadge } from '@/components/shared/StageBadge';
 import { UserAvatar } from '@/components/shared/UserAvatar';
-import { CreateRiskEditModal } from './CreateRiskEditModal';
 import type { AuditLogEntry, RiskEdit, RiskEditStage, User } from '@/types';
 import { workspaceUrlForEdit as workspaceUrl } from '@/lib/workspaceUrl';
 
@@ -277,6 +278,44 @@ function ModuleCell({ moduleId }: { moduleId: string }) {
   return <span className="font-mono text-xs text-arc-700 dark:text-arc-dark-700">{mod?.module_name ?? moduleId}</span>;
 }
 
+// v0.4.3 Line 5 — risk-facing mirror of the IT deployment lifecycle. Closes the loop:
+// the analyst sees where with IT their handed-off edit is, and its release reference
+// once live. Self-contained — renders nothing unless the edit is with IT / live.
+function EditDeploymentLine({ edit }: { edit: RiskEdit }) {
+  const { t } = useTranslation();
+  const { data: packets = [] } = usePackets();
+  const { data: packetEdits = [] } = useAllPacketEdits();
+
+  if (edit.current_stage !== 'sent_to_it' && edit.current_stage !== 'live') return null;
+
+  const pe = packetEdits.find((x) => x.risk_edit_id === edit.id);
+  const packet = pe ? packets.find((p) => p.id === pe.packet_id) : undefined;
+  if (!packet) return null;
+
+  const eff = effectiveItStatus(packet) ?? 'awaiting';
+  return (
+    <div>
+      <p className="text-xs font-semibold text-arc-500 dark:text-arc-dark-500 uppercase tracking-wide mb-2">
+        {t('risk_edits.it_deployment')}
+      </p>
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full border border-arc-200 dark:border-arc-dark-200 text-arc-700 dark:text-arc-dark-700">
+          {t(IT_STATUS_LABEL_KEY[eff])}
+        </span>
+        <span className="text-arc-500 dark:text-arc-dark-500">{packet.name}</span>
+        {packet.release_ref && (
+          <span className="font-mono text-forest-700 dark:text-forest-dark-700">
+            {t('it_handoff.released_as', { ref: packet.release_ref })}
+          </span>
+        )}
+        {eff === 'deployed_to_live' && packet.lived_at && (
+          <span className="text-arc-500 dark:text-arc-dark-500">· {fmtDate(packet.lived_at)}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface RowProps {
   edit:        RiskEdit;
   userMap:     Record<string, string>;
@@ -373,6 +412,8 @@ function EditRow({ edit, userMap, nowMs, showFinalTs, index, isOpen, onToggle }:
                 </p>
                 <StageTimeline edit={edit} nowMs={nowMs} />
               </div>
+
+              <EditDeploymentLine edit={edit} />
             </div>
           </td>
         </tr>
@@ -499,8 +540,8 @@ export function RiskEditsPage() {
   const [stageFilter,  setStageFilter]  = useState<'' | RiskEditStage>('');
   const [moduleFilter, setModuleFilter] = useState('');
   const [authorFilter, setAuthorFilter] = useState('');
-  const [showCreate,   setShowCreate]   = useState(false);
   const [sort,         setSort]         = useState<SortState>({ key: 'since_update', dir: 'asc' });
+  const navigate = useNavigate();
 
   const { data: rawEdits = [], isLoading } = useRiskEdits();
 
@@ -574,7 +615,7 @@ export function RiskEditsPage() {
           breadcrumb={<Breadcrumb items={[{ label: t('risk_edits.title') }]} />}
           actions={
             canCreate ? (
-              <Button size="sm" onClick={() => setShowCreate(true)}>{t('risk_edits.new_edit')}</Button>
+              <Button size="sm" onClick={() => navigate('/overview')}>{t('risk_edits.new_edit')}</Button>
             ) : undefined
           }
         />
@@ -684,7 +725,6 @@ export function RiskEditsPage() {
         </div>
       </div>
 
-      {showCreate && <CreateRiskEditModal onClose={() => setShowCreate(false)} />}
     </>
   );
 }

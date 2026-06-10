@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { History, Send, ChevronUp, MessageSquarePlus } from 'lucide-react';
@@ -138,6 +138,8 @@ export function OverviewChat() {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const seededRef = useRef(false);
 
   const { data: threads = [] } = useQuery({
     queryKey: ['arc', 'overview_chat_threads', currentUser?.id],
@@ -157,6 +159,24 @@ export function OverviewChat() {
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages, expanded, sending]);
+
+  // v0.4.3: deep-link from a view-only module page (?discuss=<moduleId>) opens the
+  // chatbox pre-seeded with that module, so the analyst starts with context. The AI
+  // still infers + confirms the module from the conversation as usual.
+  useEffect(() => {
+    if (seededRef.current) return;
+    const discussId = searchParams.get('discuss');
+    if (!discussId || modules.length === 0) return;
+    seededRef.current = true;
+    const mod = modules.find((m) => m.id === discussId);
+    setExpanded(true);
+    if (mod) {
+      // Conversation stays English per the chatbox boundary (see handleRefine).
+      setDraft(`I'd like to make a change to the ${mod.module_name} module: `);
+    }
+    searchParams.delete('discuss');
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, modules, setSearchParams]);
 
   async function handleSend() {
     if (!currentUser || !draft.trim() || sending) return;

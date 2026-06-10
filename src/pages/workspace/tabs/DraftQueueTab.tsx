@@ -8,7 +8,7 @@ import { useChatMessages, useAppendChatMessage } from '@/hooks/useChatMessages';
 import { useLatestRejectedReview } from '@/hooks/useUatRuns';
 import { useRepository } from '@/data/RepositoryProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { proposeSqlEdit } from '@/integrations/llm';
+import { proposeEdit } from '@/integrations/llm';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { UserAvatar } from '@/components/shared/UserAvatar';
@@ -133,20 +133,25 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
   });
 
   const latestVersion = versions[0];
-  const baseSQL = latestVersion?.sql_after ?? module?.current_sql_code ?? '';
+  // Dual representation (v0.4.3): the analyst authors in Node.js (editorNode); the
+  // compiled engine SQL travels alongside as a read-only view + the engine target.
+  const baseNode = latestVersion?.node_after ?? module?.current_node_code ?? '';
+  const baseSQL  = latestVersion?.sql_after  ?? module?.current_sql_code  ?? '';
 
-  const [editorSQL, setEditorSQL] = useState(baseSQL);
+  const [editorNode, setEditorNode] = useState(baseNode);
+  const [compiledSql, setCompiledSql] = useState(baseSQL);
+  const [codeView, setCodeView] = useState<'node' | 'sql'>('node');
   const [chatInput, setChatInput] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [pendingSql, setPendingSql] = useState<string | null>(null);
+  const [pendingNode, setPendingNode] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [hasManualEdits, setHasManualEdits] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const sql = versions[0]?.sql_after ?? module?.current_sql_code ?? '';
-    setEditorSQL(sql);
+    setEditorNode(versions[0]?.node_after ?? module?.current_node_code ?? '');
+    setCompiledSql(versions[0]?.sql_after ?? module?.current_sql_code ?? '');
   }, [module?.id, versions[0]?.id]);
 
   // Chat bubble content stays English regardless of language — the AI greeting,
@@ -160,6 +165,7 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
         id: m.id,
         role: m.role,
         content: m.content,
+        proposed_node: m.proposed_node ?? undefined,
         proposed_sql: m.proposed_sql ?? undefined,
         diff_summary: m.diff_summary ?? undefined,
         rationale: m.rationale ?? undefined,
@@ -170,10 +176,10 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
           id: 'greeting',
           role: 'assistant',
           content: `I've loaded **${module?.module_name ?? 'the module'}** (${
-            module ? module.current_sql_code.split('\n').length : '…'
-          } lines) and I'm ready to help.\n\nYour brief:\n\n*"${
+            module ? module.current_node_code.split('\n').length : '…'
+          } lines of Node.js) and I'm ready to help.\n\nYour brief:\n\n*"${
             change.natural_language_brief
-          }"*\n\nShall I propose a SQL change based on this brief, or would you like to refine it first?`,
+          }"*\n\nShall I propose a Node.js change based on this brief, or would you like to refine it first?`,
           created_at: change.created_at,
         },
       ];
@@ -188,11 +194,11 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
 
   const handleEditorChange = useCallback(
     (value: string | undefined) => {
-      if (!value || !canEdit) return;
-      setEditorSQL(value);
+      if (value === undefined || !canEdit || codeView !== 'node') return;
+      setEditorNode(value);
       setHasManualEdits(true);
     },
-    [canEdit]
+    [canEdit, codeView]
   );
 
   async function handleChatSend() {
@@ -218,9 +224,10 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
         created_at: new Date().toISOString(),
       });
 
-      const response = await proposeSqlEdit({
+      const response = await proposeEdit({
         conversation: currentUiMessages,
-        moduleSql: editorSQL,
+        moduleNode: editorNode,
+        moduleSql: compiledSql,
         moduleContext: module.description,
       });
 
@@ -228,6 +235,7 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
         risk_edit_id: change.id,
         role: 'assistant',
         content: response.reply,
+        proposed_node: response.proposed_node ?? undefined,
         proposed_sql: response.proposed_sql ?? undefined,
         diff_summary: response.diff_summary ?? undefined,
         rationale: response.rationale ?? undefined,
@@ -235,10 +243,14 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
         created_at: new Date().toISOString(),
       });
 
-      if (response.proposed_sql) {
-        setEditorSQL(response.proposed_sql);
-        setPendingSql(response.proposed_sql);
+      if (response.proposed_node) {
+        setEditorNode(response.proposed_node);
+        setPendingNode(response.proposed_node);
         setHasManualEdits(false);
+      }
+      // The AI emits the compiled engine SQL alongside the Node.js it authored.
+      if (response.proposed_sql) {
+        setCompiledSql(response.proposed_sql);
       }
     } finally {
       setIsAiLoading(false);
@@ -264,9 +276,11 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
       await createVersion.mutateAsync({
         risk_edit_id:   change.id,
         version_number: nextVersionNumber,
+        node_before:    baseNode,
+        node_after:     editorNode,
         sql_before:     baseSQL,
-        sql_after:      editorSQL,
-        diff_summary:   hasManualEdits ? 'Manual SQL edit' : (lastAiMsg?.diff_summary ?? 'SQL change'),
+        sql_after:      compiledSql,
+        diff_summary:   hasManualEdits ? 'Manual Node.js edit' : (lastAiMsg?.diff_summary ?? 'Node.js change'),
         ai_rationale:   hasManualEdits ? '' : (lastAiMsg?.rationale ?? ''),
         author_id:      currentUser.id,
         source,
@@ -282,7 +296,7 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
         created_at: new Date().toISOString(),
       });
 
-      setPendingSql(null);
+      setPendingNode(null);
       setHasManualEdits(false);
       qc.invalidateQueries({ queryKey: ['arc', 'risk_edit_versions', change.id] });
     } finally {
@@ -304,23 +318,46 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
           <div className="h-10 shrink-0 bg-arc-900 dark:bg-arc-dark-900 border-b border-arc-700 dark:border-arc-dark-200 flex items-center justify-between px-4">
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono text-arc-200 dark:text-arc-dark-300">
-                {module?.module_name ?? '…'}.sql
+                {module?.module_name ?? '…'}.{codeView === 'node' ? 'js' : 'sql'}
               </span>
               {latestVersion && (
                 <span className="text-xs text-arc-200 dark:text-arc-dark-300 font-mono">· v{latestVersion.version_number}</span>
               )}
-              {(hasManualEdits || pendingSql) && (
+              {(hasManualEdits || pendingNode) && (
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               )}
+              <div className="ml-1 inline-flex rounded-md border border-arc-700 dark:border-arc-dark-200 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setCodeView('node')}
+                  className={`px-2 py-0.5 text-[11px] font-medium rounded transition-colors ${
+                    codeView === 'node' ? 'bg-arc-700 dark:bg-arc-dark-200 text-white' : 'text-arc-200 dark:text-arc-dark-300 hover:text-white'
+                  }`}
+                >
+                  {t('workspace.draft_tab.view_node')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCodeView('sql')}
+                  className={`px-2 py-0.5 text-[11px] font-medium rounded transition-colors ${
+                    codeView === 'sql' ? 'bg-arc-700 dark:bg-arc-dark-200 text-white' : 'text-arc-200 dark:text-arc-dark-300 hover:text-white'
+                  }`}
+                >
+                  {t('workspace.draft_tab.view_sql')}
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-2">
+              {codeView === 'sql' && (
+                <span className="text-[11px] text-arc-300 dark:text-arc-dark-500">{t('workspace.draft_tab.sql_readonly')}</span>
+              )}
               <button
                 onClick={() => setShowVersions(!showVersions)}
                 className="text-xs text-arc-200 dark:text-arc-dark-300 hover:text-white transition-colors"
               >
                 {showVersions ? t('workspace.draft_tab.hide_history') : t('workspace.draft_tab.history')}
               </button>
-              {canEdit && (hasManualEdits || pendingSql) && (
+              {canEdit && (hasManualEdits || pendingNode) && (
                 <Button size="sm" loading={isSaving} onClick={handleSaveVersion}>
                   {t('workspace.draft_tab.save_version')}
                 </Button>
@@ -336,7 +373,11 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
               {versions.map((v) => (
                 <button
                   key={v.id}
-                  onClick={() => { setEditorSQL(v.sql_after); setShowVersions(false); }}
+                  onClick={() => {
+                    setEditorNode(v.node_after ?? module?.current_node_code ?? '');
+                    setCompiledSql(v.sql_after);
+                    setShowVersions(false);
+                  }}
                   className="w-full text-left px-4 py-3 border-b border-arc-200 dark:border-arc-dark-200 hover:bg-arc-100 dark:hover:bg-arc-dark-50 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-0.5">
@@ -357,11 +398,12 @@ export function DraftQueueTab({ change }: DraftQueueTabProps) {
           <div className="flex-1 min-h-0">
             <Editor
               height="100%"
-              language="sql"
-              value={editorSQL}
+              path={`${module?.module_name ?? 'module'}.${codeView === 'node' ? 'js' : 'sql'}`}
+              language={codeView === 'node' ? 'javascript' : 'sql'}
+              value={codeView === 'node' ? editorNode : compiledSql}
               onChange={handleEditorChange}
               options={{
-                readOnly: !canEdit,
+                readOnly: !canEdit || codeView === 'sql',
                 minimap: { enabled: false },
                 fontSize: 13,
                 fontFamily: 'JetBrains Mono, Menlo, monospace',

@@ -1,9 +1,11 @@
 // INTEGRATION STUB — Phase 2 will replace with real LLM provider (TBD, subject to Indonesian data-residency constraints). Do not call external services here.
 //
 // Phase 2 notes:
-//   - proposeSqlEdit() will send the full conversation + module SQL + dbContext to the LLM.
+//   - proposeEdit() will send the full conversation + module Node.js + dbContext to the LLM.
+//   - Dual representation (v0.4.3): the model authors the Node.js snippet the analyst
+//     reads, and emits the compiled SQL that runs in the live engine. Phase 2 may
+//     generate the SQL by a real transpile step; here the mock emits both directly.
 //   - dbContext (DatabaseSchema) is already typed — Phase 2 populates it from the live engine schema.
-//   - Prompt engineering for SQL Server dialect and Webank risk conventions goes here.
 //   - Consider streaming responses for long diffs.
 
 import type { LlmEditRequest, LlmEditResponse } from '@/types';
@@ -53,40 +55,41 @@ function parseIntent(text: string): EditIntent {
   return { verb, subject, magnitude };
 }
 
-function buildMockDiff(sql: string, intent: EditIntent): { proposed_sql: string; diff_summary: string } {
-  // Find a DECIMAL or numeric literal in the SQL to mutate for demo purposes
+// Mutate the first non-comment numeric literal as a plausible demo edit. Works on
+// both the Node.js source (commentToken '//') and the compiled SQL ('--').
+function mutateNumericLiteral(code: string, intent: EditIntent, commentToken: string): string {
   const numericPattern = /(\d+\.\d+|\d{4,})/;
-  const lines = sql.split('\n');
-  let mutatedLine = -1;
-  let proposed_sql = sql;
+  const lines = code.split('\n');
 
   for (let i = 0; i < lines.length; i++) {
-    if (numericPattern.test(lines[i]) && !lines[i].trim().startsWith('--')) {
-      mutatedLine = i;
-      break;
-    }
-  }
+    const trimmed = lines[i].trim();
+    if (trimmed.startsWith('--') || trimmed.startsWith('//')) continue;
+    if (!numericPattern.test(lines[i])) continue;
 
-  if (mutatedLine >= 0) {
-    const original = lines[mutatedLine];
-    // Demonstrate a plausible in-line edit with a comment
-    lines[mutatedLine] = original.replace(
-      numericPattern,
-      (m) => {
-        const n = parseFloat(m.replace(/,/g, ''));
-        const delta = intent.verb === 'increase' ? n * 1.1 : intent.verb === 'decrease' ? n * 0.9 : n;
-        return Number.isInteger(n) ? Math.round(delta).toString() : delta.toFixed(4);
-      }
-    ) + `  -- AI: adjusted for "${intent.subject}"`;
-    proposed_sql = lines.join('\n');
+    lines[i] = lines[i].replace(numericPattern, (m) => {
+      const n = parseFloat(m.replace(/,/g, ''));
+      const delta = intent.verb === 'increase' ? n * 1.1 : intent.verb === 'decrease' ? n * 0.9 : n;
+      return Number.isInteger(n) ? Math.round(delta).toString() : delta.toFixed(4);
+    }) + `  ${commentToken} AI: adjusted for "${intent.subject}"`;
+    return lines.join('\n');
   }
+  return code;
+}
+
+function buildMockDiff(
+  node: string,
+  sql: string,
+  intent: EditIntent,
+): { proposed_node: string; proposed_sql: string; diff_summary: string } {
+  const proposed_node = mutateNumericLiteral(node, intent, '//');
+  const proposed_sql  = mutateNumericLiteral(sql, intent, '--');
 
   const diff_summary =
     intent.verb === 'unknown'
-      ? `Reviewed module SQL for "${intent.subject}". No automatic modification applied — please clarify the exact change.`
+      ? `Reviewed the module for "${intent.subject}". No automatic modification applied — please clarify the exact change.`
       : `${intent.verb.charAt(0).toUpperCase() + intent.verb.slice(1)}d ${intent.subject}${intent.magnitude ? ` by ${intent.magnitude}` : ''}.`;
 
-  return { proposed_sql, diff_summary };
+  return { proposed_node, proposed_sql, diff_summary };
 }
 
 function buildReply(intent: EditIntent, diff_summary: string, isFollowUp: boolean): string {
@@ -110,14 +113,14 @@ function buildReply(intent: EditIntent, diff_summary: string, isFollowUp: boolea
     `I've analysed the module and located the relevant section.\n\n` +
     `**Proposed change:** ${diff_summary}\n\n` +
     `**Rationale:** This targets the ${intent.subject} parameter directly. The surrounding validation logic and boundary checks are preserved. ` +
-    `Review the diff in the SQL Editor tab — accept it as-is or ask me to refine.\n\n` +
+    `Review the proposed Node.js in the editor (the compiled engine SQL updates alongside it) — accept it as-is or ask me to refine.\n\n` +
     `Any follow-up questions before you confirm?`
   );
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-export async function proposeSqlEdit(request: LlmEditRequest): Promise<LlmEditResponse> {
+export async function proposeEdit(request: LlmEditRequest): Promise<LlmEditResponse> {
   await delay(MOCK_DELAY);
 
   const latestUserMessage = [...request.conversation]
@@ -130,14 +133,19 @@ export async function proposeSqlEdit(request: LlmEditRequest): Promise<LlmEditRe
 
   const isFollowUp = request.conversation.filter((m) => m.role === 'assistant').length > 0;
   const intent     = parseIntent(latestUserMessage.content);
-  const { proposed_sql, diff_summary } = buildMockDiff(request.moduleSql, intent);
-  const reply      = buildReply(intent, diff_summary, isFollowUp);
+  const { proposed_node, proposed_sql, diff_summary } = buildMockDiff(
+    request.moduleNode ?? '',
+    request.moduleSql,
+    intent,
+  );
+  const reply = buildReply(intent, diff_summary, isFollowUp);
 
   return {
     reply,
+    proposed_node,
     proposed_sql,
     diff_summary,
     rationale: `Mock rationale: ${diff_summary} Surrounding logic preserved.`,
-    location_hint: 'See highlighted line in SQL Editor.',
+    location_hint: 'See highlighted line in the editor.',
   };
 }

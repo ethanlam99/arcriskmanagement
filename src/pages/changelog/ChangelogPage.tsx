@@ -15,6 +15,7 @@ import { Tabs, TabList, TabTrigger, TabPanel } from '@/components/ui/Tabs';
 import { Button } from '@/components/ui/Button';
 import { StageBadge } from '@/components/shared/StageBadge';
 import { ConfirmModal } from '@/components/shared/ConfirmModal';
+import { effectiveItStatus, IT_STATUS_LABEL_KEY } from '@/lib/itDeploy';
 import type { Packet, RiskEdit } from '@/types';
 
 function fmt(dateStr: string) {
@@ -596,6 +597,9 @@ function PacketSection({
           {packets.map((pkt) => {
             const edits  = getPacketEdits(pkt.id);
             const isOpen = expanded.has(pkt.id);
+            // Mirror the IT-owned lifecycle back to the risk side: show where with IT
+            // a still-confirmed packet is (awaiting/received/in development).
+            const itEff = pkt.status === 'confirmed' ? (effectiveItStatus(pkt) ?? 'awaiting') : null;
             return (
               <div key={pkt.id} className="rounded-xl border border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 overflow-hidden">
                 <div className="px-5 py-4 flex items-start justify-between gap-4">
@@ -604,6 +608,11 @@ function PacketSection({
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${badge.className}`}>
                         {badge.label}
                       </span>
+                      {itEff && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs border border-arc-200 dark:border-arc-dark-200 text-arc-700 dark:text-arc-dark-700">
+                          {t(IT_STATUS_LABEL_KEY[itEff])}
+                        </span>
+                      )}
                       <span className="text-xs text-arc-500 dark:text-arc-dark-500">{t('changelog.edits_count', { count: edits.length })}</span>
                     </div>
                     <h3 className="font-semibold text-arc-900 dark:text-arc-dark-700">{pkt.name}</h3>
@@ -626,6 +635,9 @@ function PacketSection({
                           name: userMap[pkt.lived_by] ?? pkt.lived_by,
                           date: fmt(pkt.lived_at),
                         })}</>
+                      )}
+                      {pkt.release_ref && (
+                        <> · <span className="font-mono text-forest-700 dark:text-forest-dark-700">{t('it_handoff.released_as', { ref: pkt.release_ref })}</span></>
                       )}
                     </p>
                   </div>

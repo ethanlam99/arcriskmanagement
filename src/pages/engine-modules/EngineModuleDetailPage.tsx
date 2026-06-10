@@ -8,7 +8,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/auth/AuthProvider';
 import { TopBar, Breadcrumb } from '@/components/layout/TopBar';
 import { Button } from '@/components/ui/Button';
-import { CreateRiskEditModal } from '@/pages/risk-edits/CreateRiskEditModal';
 
 export function EngineModuleDetailPage() {
   const { t } = useTranslation();
@@ -24,8 +23,11 @@ export function EngineModuleDetailPage() {
     enabled: !!module?.updated_by,
   });
 
-  const [showModal, setShowModal] = useState(false);
+  const [view, setView] = useState<'node' | 'sql'>('node');
 
+  // v0.4.3: modules are view-only. Edits can no longer be started by clicking into
+  // a module — analysts describe the change in the Overview chatbox instead. This
+  // button deep-links there, pre-seeding the conversation with this module.
   const canCreate = role === 'risk_analyst' || role === 'risk_lead' || role === 'admin';
 
   if (isLoading) {
@@ -45,7 +47,9 @@ export function EngineModuleDetailPage() {
     );
   }
 
-  const lineCount = module.current_sql_code.split('\n').length;
+  const activeCode = view === 'node' ? module.current_node_code : module.current_sql_code;
+  const ext = view === 'node' ? 'js' : 'sql';
+  const lineCount = activeCode.split('\n').length;
 
   return (
     <>
@@ -55,14 +59,14 @@ export function EngineModuleDetailPage() {
             <Breadcrumb
               items={[
                 { label: t('engine_modules.title'), to: '/overview' },
-                { label: `${module.module_name}.sql` },
+                { label: `${module.module_name}.${ext}` },
               ]}
             />
           }
           actions={
             canCreate ? (
-              <Button size="sm" onClick={() => setShowModal(true)}>
-                {t('engine_modules.new_edit_on_module')}
+              <Button size="sm" onClick={() => navigate(`/overview?discuss=${module.id}`)}>
+                {t('engine_modules.discuss_change')}
               </Button>
             ) : undefined
           }
@@ -72,7 +76,7 @@ export function EngineModuleDetailPage() {
           <div className="flex items-start justify-between gap-6">
             <div className="min-w-0">
               <h1 className="text-base font-semibold text-arc-900 dark:text-arc-dark-700 font-mono">
-                {module.module_name}.sql
+                {module.module_name}.{ext}
               </h1>
               <p className="text-sm text-arc-500 dark:text-arc-dark-500 mt-0.5 leading-relaxed">{module.description}</p>
             </div>
@@ -101,34 +105,65 @@ export function EngineModuleDetailPage() {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 bg-arc-900 dark:bg-arc-dark-900">
-          <Editor
-            height="100%"
-            language="sql"
-            value={module.current_sql_code}
-            options={{
-              readOnly: true,
-              minimap: { enabled: false },
-              fontSize: 13,
-              fontFamily: 'JetBrains Mono, Menlo, monospace',
-              lineNumbers: 'on',
-              scrollBeyondLastLine: false,
-              wordWrap: 'on',
-              theme: 'vs-dark',
-              renderLineHighlight: 'gutter',
-              padding: { top: 12, bottom: 12 },
-            }}
-            theme="vs-dark"
-          />
+        <div className="flex-1 min-h-0 flex flex-col">
+          {/* Dual representation: Node.js is what analysts read/author; Engine SQL
+              is the compiled target that runs in the live engine (read-only). */}
+          <div className="flex items-center justify-between px-6 py-2 border-b border-arc-200 dark:border-arc-dark-200 bg-white dark:bg-arc-dark-100 shrink-0">
+            <div className="inline-flex rounded-lg border border-arc-200 dark:border-arc-dark-200 p-0.5 bg-arc-50 dark:bg-arc-dark-50">
+              <button
+                type="button"
+                onClick={() => setView('node')}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                  view === 'node'
+                    ? 'bg-white dark:bg-arc-dark-200 text-arc-900 dark:text-arc-dark-700 shadow-sm'
+                    : 'text-arc-500 dark:text-arc-dark-500 hover:text-arc-900 dark:hover:text-arc-dark-700'
+                }`}
+              >
+                {t('engine_modules.view_node')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setView('sql')}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                  view === 'sql'
+                    ? 'bg-white dark:bg-arc-dark-200 text-arc-900 dark:text-arc-dark-700 shadow-sm'
+                    : 'text-arc-500 dark:text-arc-dark-500 hover:text-arc-900 dark:hover:text-arc-dark-700'
+                }`}
+              >
+                {t('engine_modules.view_sql')}
+              </button>
+            </div>
+            {view === 'sql' && (
+              <span className="text-xs text-arc-400 dark:text-arc-dark-500">
+                {t('engine_modules.engine_sql_readonly')}
+              </span>
+            )}
+          </div>
+
+          <div className="flex-1 min-h-0 bg-arc-900 dark:bg-arc-dark-900">
+            <Editor
+              height="100%"
+              path={`${module.module_name}.${ext}`}
+              language={view === 'node' ? 'javascript' : 'sql'}
+              value={activeCode}
+              options={{
+                readOnly: true,
+                minimap: { enabled: false },
+                fontSize: 13,
+                fontFamily: 'JetBrains Mono, Menlo, monospace',
+                lineNumbers: 'on',
+                scrollBeyondLastLine: false,
+                wordWrap: 'on',
+                theme: 'vs-dark',
+                renderLineHighlight: 'gutter',
+                padding: { top: 12, bottom: 12 },
+              }}
+              theme="vs-dark"
+            />
+          </div>
         </div>
       </div>
 
-      {showModal && (
-        <CreateRiskEditModal
-          defaultModuleId={module.id}
-          onClose={() => setShowModal(false)}
-        />
-      )}
     </>
   );
 }

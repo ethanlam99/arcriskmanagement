@@ -31,3 +31,11 @@ export async function getCurrentSql(moduleId: string): Promise<string> {
   if (!mod) throw new Error(`Module ${moduleId} not found`);
   return mod.current_sql_code;
 }
+
+// v0.4.3: the Node.js representation analysts read/author. Phase 2 syncs this
+// alongside the compiled SQL from the live engine.
+export async function getCurrentNode(moduleId: string): Promise<string> {
+  const mod = await assertRepo().engineModules.get(moduleId);
+  if (!mod) throw new Error(`Module ${moduleId} not found`);
+  return mod.current_node_code;
+}
