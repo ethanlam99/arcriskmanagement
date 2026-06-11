@@ -52,18 +52,38 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   const { request, env } = context;
   const url = new URL(request.url);
   const origin = url.origin;
-  // On any failure send the user to the normal login screen; never leak why.
-  const toLogin = (): Response => Response.redirect(new URL('/login', origin).toString(), 302);
-
-  const token = (url.searchParams.get('t') ?? '').trim();
-  const redirect = safePath(url.searchParams.get('redirect'));
-  if (!TOKEN_RE.test(token)) return toLogin();
+  // [SSO-DEBUG] temporary: surface where the flow ends in-browser. REMOVE after diagnosis.
+  const debug = (msg: string): Response =>
+    new Response(`SSO-DEBUG (temporary)\n${msg}\n`, {
+      status: 200,
+      headers: { 'content-type': 'text/plain; charset=utf-8' },
+    });
 
   const verifyUrl = env.DASHBOARD_SSO_VERIFY_URL;
   const directoryToken = env.DIRECTORY_API_TOKEN;
   const supabaseUrl = env.SUPABASE_URL ?? env.VITE_SUPABASE_URL;
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!verifyUrl || !directoryToken || !supabaseUrl || !serviceRoleKey) return toLogin();
+
+  // [SSO-DEBUG] env-presence probe — curlable without a ticket: ?__debug=env
+  if (url.searchParams.get('__debug') === 'env') {
+    return debug(
+      `env presence (booleans only):\n` +
+        `DASHBOARD_SSO_VERIFY_URL=${!!verifyUrl}\n` +
+        `DIRECTORY_API_TOKEN=${!!directoryToken}\n` +
+        `SUPABASE_URL_or_VITE=${!!supabaseUrl}\n` +
+        `SUPABASE_SERVICE_ROLE_KEY=${!!serviceRoleKey}`,
+    );
+  }
+
+  const token = (url.searchParams.get('t') ?? '').trim();
+  const redirect = safePath(url.searchParams.get('redirect'));
+  if (!TOKEN_RE.test(token)) return debug(`STAGE: bad-token-format tokenLen=${token.length}`);
+
+  if (!verifyUrl || !directoryToken || !supabaseUrl || !serviceRoleKey) {
+    return debug(
+      `STAGE: missing-env verify=${!!verifyUrl} dir=${!!directoryToken} url=${!!supabaseUrl} svc=${!!serviceRoleKey}`,
+    );
+  }
 
   // ③ Verify the ticket against LEO Dashboard (single-use; never retry the same token).
   let result: VerifyResult;
@@ -73,10 +93,17 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${directoryToken}` },
       body: JSON.stringify({ action: 'verify', token }),
     });
-    result = (await verifyRes.json()) as VerifyResult;
-    if (!verifyRes.ok || !result.allowed || !result.email) return toLogin();
-  } catch {
-    return toLogin();
+    const rawBody = await verifyRes.text();
+    try {
+      result = JSON.parse(rawBody) as VerifyResult;
+    } catch {
+      result = {};
+    }
+    if (!verifyRes.ok || !result.allowed || !result.email) {
+      return debug(`STAGE: verify-reject status=${verifyRes.status}\nbody: ${rawBody.slice(0, 300)}`);
+    }
+  } catch (e) {
+    return debug(`STAGE: verify-threw\n${e instanceof Error ? e.message : String(e)}`);
   }
 
   const email = result.email.toLowerCase().trim();
@@ -96,7 +123,9 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
       sso_provisioned: true,
     },
   });
-  if (createError && !/already|exists|registered/i.test(createError.message)) return toLogin();
+  if (createError && !/already|exists|registered/i.test(createError.message)) {
+    return debug(`STAGE: createUser FAILED\nmessage: ${createError.message}`);
+  }
 
   // ④b Mint a single-use magic-link token; the browser completes verifyOtp so the
   //     session lands in localStorage (where AuthProvider reads it) and the
@@ -106,11 +135,14 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
     email,
   });
   const tokenHash = link?.properties?.hashed_token;
-  if (linkError || !tokenHash) return toLogin();
+  if (linkError || !tokenHash) {
+    return debug(`STAGE: generateLink FAILED\nerr: ${linkError?.message ?? 'no-hash'} hasHash=${!!tokenHash}`);
+  }
 
-  // ⑤ Hand off to the client callback. token_hash rides the URL fragment (single-use,
-  //    short-lived) and the callback strips it via location.replace once consumed.
-  const callback = new URL('/sso/callback', origin);
-  callback.hash = `token_hash=${encodeURIComponent(tokenHash)}&redirect=${encodeURIComponent(redirect)}`;
-  return Response.redirect(callback.toString(), 302);
+  // ⑤ [SSO-DEBUG] confirm the server fully succeeded before the browser step.
+  return debug(
+    `STAGE: server SUCCESS — verify ok, user ready, magic-link minted.\n` +
+      `The browser callback (/sso/callback) is the next step.\n` +
+      `email: ${email}\ntokenHash length: ${tokenHash.length}\nredirect: ${redirect}`,
+  );
 }
